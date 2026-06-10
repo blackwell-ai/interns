@@ -29,6 +29,7 @@ How the audits are produced: [[audit-methodology]] (`brain/company/audit-methodo
   pilots
 - Revenue to date is one-time project fees
 - Team is relocating to SF for the batch
+- YC group partner: Diana (per Armaan, June 10, 2026)
 
 ## Commercial model to date
 

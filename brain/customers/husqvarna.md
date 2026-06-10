@@ -3,6 +3,11 @@
 Forest & Garden — robotic mowers.
 Last updated June 10, 2026. Source: founder-provided canonical context.
 
+## Contacts
+
+- **Mandy Iswarienko** — mandy.iswarienko@husqvarnagroup.com (primary thread)
+- **Hector BautistaDon** — hector.bautistadon@husqvarnagroup.com
+
 ## Documents
 
 - Audit deck: [documents/husqvarna-audit.pdf](documents/husqvarna-audit.pdf)

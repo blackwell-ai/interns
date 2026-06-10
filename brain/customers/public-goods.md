@@ -12,6 +12,13 @@ Last updated June 10, 2026. Source: founder-provided canonical context.
 - Engagement letter, May 27, 2026 (earlier draft — bundles audit into scope):
   [documents/public-goods-engagement-letter-2026-05-27.pdf](documents/public-goods-engagement-letter-2026-05-27.pdf)
 
+## Contact & cadence
+
+- **Michael Ferchak** — michael@publicgoods.com
+- Blackwell/Public Goods kickoff: weekly Tuesdays 5–5:30pm EDT, 4 occurrences
+  starting June 2, 2026 (calendar invites in Armaan's Dartmouth inbox)
+- Shared Slack workspace (Michael invited the team June 2, 2026)
+
 ## Delivered
 
 - Full AI visibility audit delivered as a 22-page deck, composite grade D, six

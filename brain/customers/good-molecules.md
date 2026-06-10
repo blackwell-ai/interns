@@ -43,10 +43,14 @@ confirmed by Armaan:
   Molecules; site lacks FAQ sections and LLM-readable structure
 - Pitched a 30-day pilot at **$250** with full refund if baseline thresholds
   not met (pricing later evolved — see engagement letter)
-- The contact agreed to review a one-pager and share it with a co-founder
-  (heard as "Samir") — plausibly Beautylish's other founder; the contact also
-  angel-invests in YC companies
-- Next step from the call: send one-pager; co-founder follow-up the next week
+- The contact agreed to review a one-pager and share it with a colleague —
+  confirmed from the Dartmouth inbox (June 10): the contact is **Nils Johnson**
+  (nils@beautylish.com, Beautylish co-founder, angel-invests in YC companies)
+  and the colleague is **Sameer Iyengar** (sameer@beautylish.com), who Granola
+  had transcribed as "Samir"
+- Next step from the call: send one-pager; follow-up the next week. The email
+  thread started as a May 21 cold email and stayed active through May 27+
+  (subject: "Stanford Student Question - thoughts on AI retail tools")
 
 ## Engagement
 
