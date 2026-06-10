@@ -17,3 +17,7 @@ supabase/.branches/
 
 # Local credentials — never committed (secrets distributed out-of-band)
 credentials/.env
+
+# Outreach run scratch (lead emails / send logs stay local)
+skills/autonomous-outreach/*.csv
+/tmp/

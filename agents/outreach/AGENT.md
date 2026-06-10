@@ -47,10 +47,11 @@ canonical cold-email flow** — input is a Clay lead export.
 4. Every email is grounded in something real about the lead (their store,
    their role, a recent change) — `compose.render --personalize` drops rows
    with no concrete hook; never force a generic blast through.
-5. Check replies each run (`gmail.replies --file-inbox-tasks`). Positive
-   replies become tasks in `inbox/queue/` addressed to a human, with full
-   context. Bounces (`gmail.bounces`) are suppressed automatically and
-   permanently.
+5. Check replies each run. Run `skills/handle-replies/` — it classifies each
+   reply, answers questions, and for interested leads proposes real open
+   calendar slots and books a Google Meet on their pick (all via gogcli +
+   headless Claude Code). Positive/ambiguous replies also become
+   `inbox/queue/` tasks. Bounces are suppressed automatically.
 6. Write what's working (angles, subject lines, reply rates) into
    `brain/research/outreach-learnings.md`. Run reports live in
    `runs/<id>/report.md`.
@@ -68,6 +69,16 @@ canonical cold-email flow** — input is a Clay lead export.
   it per PROTOCOL.md.
 - Anything ambiguous (pricing questions, partnership asks, angry replies)
   goes to a human via `inbox/queue/` — do not improvise.
+
+## Autonomous mode
+
+For high-volume autonomous campaigns where token cost matters, use
+`skills/autonomous-outreach/` (a headless script) instead of driving sends
+turn-by-turn in the model context. It enforces the same suppression/no-double-
+contact gate per send and CCs the co-founders. Pair with `skills/handle-replies/`
+on a schedule to triage and book calls. The accountable, fully-gated version is
+`skills/clay-cold-email/`; reach for it when a campaign needs the
+clarify→dryrun→canary chain.
 
 ## Reporting
 
