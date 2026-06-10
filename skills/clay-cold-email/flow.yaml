@@ -11,5 +11,5 @@ steps:
   - test.smoke: {}
   - test.dryrun: {of: gmail.send, sample: 10, checks: "SKILL.md#acceptance-checks"}
   - canary.run: {of: gmail.send, count: 10, seeds: "{{seed_inboxes}}"}
-  - gmail.send: {in: outbox.csv, from: "{{from_account}}", from_name: "{{from_name}}", concurrency: 8}
+  - gmail.send: {in: outbox.csv, from: "{{from_account}}", from_name: "{{from_name}}", cc: "{{cc}}", concurrency: 8}
   - report.write: {}

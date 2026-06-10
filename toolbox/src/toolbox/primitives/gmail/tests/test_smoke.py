@@ -148,3 +148,16 @@ def test_bounce_parse():
 def test_address_extraction():
     assert lib.address_of("Jane Doe <Jane@X.com>") == "jane@x.com"
     assert lib.address_of("bare@x.com") == "bare@x.com"
+
+
+def test_build_raw_message_cc():
+    import base64
+    from toolbox.primitives.gmail import lib
+
+    raw = lib.build_raw_message(
+        to="lead@example.com", subject="s", body="b",
+        from_address="me@example.com",
+        cc="a@x.com, b@y.com",
+    )
+    decoded = base64.urlsafe_b64decode(raw.encode()).decode()
+    assert "Cc: a@x.com, b@y.com" in decoded

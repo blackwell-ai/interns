@@ -52,6 +52,7 @@ def send(
     from_: str = typer.Option(..., "--from", help="From address (the connected Gmail account)"),
     from_name: str = typer.Option("", "--from-name"),
     reply_to: str = typer.Option("", "--reply-to"),
+    cc: str = typer.Option("", "--cc", help="CC list (comma-separated) added to every send"),
     concurrency: int = typer.Option(8, "--concurrency"),
     allow_recontact: bool = typer.Option(False, "--allow-recontact",
                                          help="Deliberate follow-up sequences only. Logged loudly."),
@@ -70,7 +71,7 @@ def send(
 
     sent_already = ledger.mirror_sent(run_dir)
     counts = asyncio.run(_send_all(rows, run_dir, run_id, skill, from_, from_name, reply_to,
-                                   concurrency, allow_recontact, sent_already))
+                                   cc, concurrency, allow_recontact, sent_already))
     events.emit("gmail.send.summary", **counts)
     typer.echo(f"gmail.send: {counts}")
     if counts["quota_aborted"]:
@@ -96,7 +97,7 @@ async def _dry_run(rows: list[models.OutboxRow], run_dir: str) -> None:
 
 
 async def _send_all(rows, run_dir, run_id, skill, from_, from_name, reply_to,
-                    concurrency, allow_recontact, sent_already) -> dict:
+                    cc, concurrency, allow_recontact, sent_already) -> dict:
     token = auth.get_token("gmail")
     led = ledger.Ledger(auth.session_token())
     sem = asyncio.Semaphore(max(1, concurrency))
@@ -132,7 +133,7 @@ async def _send_all(rows, run_dir, run_id, skill, from_, from_name, reply_to,
                 raw = lib.build_raw_message(
                     to=recipient, subject=row.subject, body=row.body,
                     from_address=from_, from_name=from_name, reply_to=reply_to,
-                    body_html=getattr(row, "body_html", "") or "",
+                    cc=cc, body_html=getattr(row, "body_html", "") or "",
                 )
                 try:
                     resp = await do_send(client, raw)

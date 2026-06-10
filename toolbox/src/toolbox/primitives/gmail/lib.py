@@ -49,9 +49,12 @@ def build_raw_message(
     from_name: str = "",
     reply_to: str = "",
     body_html: str = "",
+    cc: str = "",
 ) -> str:
     msg = EmailMessage()
     msg["To"] = to
+    if cc:
+        msg["Cc"] = cc
     msg["From"] = formataddr((from_name, from_address)) if from_name else from_address
     msg["Subject"] = subject
     if reply_to:

@@ -4,5 +4,6 @@ leads_csv: "leads.csv"        # Clay export: email,name,company[,enrichment colu
 segment: "small merchants / DTC brands"   # report label; ICP per brain/company/targets.md
 from_account: "armaan.priyadarshan.29@dartmouth.edu"  # cold-email account (brain/company/connections.md)
 from_name: "Armaan Priyadarshan"
+cc: "samarjit.deshmukh.29@dartmouth.edu,ethanpzhou@berkeley.edu,shamitd@stanford.edu"  # co-founders, CC'd on every cold send (the May convention)
 seed_inboxes: "armaan.priyadarshan.29@dartmouth.edu"
 allow_recontact: false

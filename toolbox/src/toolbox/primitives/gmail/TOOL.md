@@ -6,7 +6,8 @@ armaan.priyadarshan.29@dartmouth.edu per brain/company/connections.md).
 
 ## gmail.send
 - in: outbox CSV — `email,subject,body[,body_html,…]` (extra columns ignored)
-- flags: `--from` (required), `--from-name`, `--reply-to`, `--concurrency` (8),
+- flags: `--from` (required), `--from-name`, `--reply-to`, `--cc` (comma-separated,
+  added to every send — the co-founder CC convention), `--concurrency` (8),
   `--limit N`, `--allow-recontact` (loud, deliberate follow-ups only), `--dry-run`
 - per recipient: claim → send → mirror(`runs/<id>/ledger.jsonl`) → mark_sent.
   Already-contacted → skipped; suppressed → never sent, no override.
