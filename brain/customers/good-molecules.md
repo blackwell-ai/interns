@@ -3,6 +3,14 @@
 goodmolecules.com — skincare, ~$100M brand.
 Last updated June 10, 2026. Source: founder-provided canonical context.
 
+## Documents
+
+- Audit deck: [documents/good-molecules-audit.pdf](documents/good-molecules-audit.pdf)
+- Engagement letter: **not yet in the repo** — no Good Molecules letter file was
+  found on Armaan's machine as of June 10, 2026 (the "GM-Engagement-Letter"
+  files in Downloads are G&M Liquor's). Retrieve from wherever it lives and add
+  it to `documents/`.
+
 ## Delivered
 
 - Full AI visibility audit, composite D/61, eight findings (two Critical, two

@@ -3,6 +3,15 @@
 publicgoods.com — sustainable DTC, Shopify.
 Last updated June 10, 2026. Source: founder-provided canonical context.
 
+## Documents
+
+- Audit deck: [documents/public-goods-audit.pdf](documents/public-goods-audit.pdf)
+  (also [.docx](documents/public-goods-audit.docx))
+- Engagement letter, June 2, 2026 (latest — references the separately delivered
+  audit): [documents/public-goods-engagement-letter-2026-06-02.pdf](documents/public-goods-engagement-letter-2026-06-02.pdf)
+- Engagement letter, May 27, 2026 (earlier draft — bundles audit into scope):
+  [documents/public-goods-engagement-letter-2026-05-27.pdf](documents/public-goods-engagement-letter-2026-05-27.pdf)
+
 ## Delivered
 
 - Full AI visibility audit delivered as a 22-page deck, composite grade D, six

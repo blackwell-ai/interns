@@ -3,6 +3,10 @@
 Forest & Garden — robotic mowers.
 Last updated June 10, 2026. Source: founder-provided canonical context.
 
+## Documents
+
+- Audit deck: [documents/husqvarna-audit.pdf](documents/husqvarna-audit.pdf)
+
 ## Delivered
 
 - Full GEO audit of the current residential robotic mower line (Automower
