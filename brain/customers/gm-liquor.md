@@ -13,9 +13,10 @@ No AI visibility audit was done for G&M. The actual engagement:
 ## Documents
 
 - Engagement letter ("A Website and Online Store for G&M Liquor and Smoke
-  Shop", May 31, 2026), two versions differing only in the Attn: line:
-  [Attn: Rakesh Patel](documents/gm-liquor-engagement-letter-attn-rakesh.pdf) ·
-  [Attn: Dhruvika Patel](documents/gm-liquor-engagement-letter-attn-dhruvika.pdf)
+  Shop", May 31, 2026, Attn: Dhruvika Patel):
+  [documents/gm-liquor-engagement-letter.pdf](documents/gm-liquor-engagement-letter.pdf)
+  — an earlier version was addressed to Rakesh Patel; Dhruvika is the correct
+  contact
 
 ## Storefront build
 
