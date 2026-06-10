@@ -30,6 +30,24 @@ Last updated June 10, 2026. Source: founder-provided canonical context.
 - Bing reached the brand but reported the shipping policy as the product price,
   which became its own finding
 
+## Initial pitch call — May 21, 2026 ("Website structure review")
+
+Source: Granola notes, filed June 10, 2026. **Caveat: Granola's speaker labels
+on this call are scrambled** (it attributes the Blackwell side to "two Berkeley
+freshmen" and places Armaan on the customer side). Reconstruction, to be
+confirmed by Armaan:
+
+- Blackwell pitched the Good Molecules/Beautylish contact on AI visibility
+- Evidence used live: ChatGPT asked for "smaller specialty online beauty
+  stores" suggests competitors (Credo Beauty, Violet Grey, etc.) but not Good
+  Molecules; site lacks FAQ sections and LLM-readable structure
+- Pitched a 30-day pilot at **$250** with full refund if baseline thresholds
+  not met (pricing later evolved — see engagement letter)
+- The contact agreed to review a one-pager and share it with a co-founder
+  (heard as "Samir") — plausibly Beautylish's other founder; the contact also
+  angel-invests in YC companies
+- Next step from the call: send one-pager; co-founder follow-up the next week
+
 ## Engagement
 
 - One-page engagement letter delivered at $1,000 upfront with full refund if
