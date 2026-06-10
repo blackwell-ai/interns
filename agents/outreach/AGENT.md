@@ -17,8 +17,9 @@ replies, and reports results — while the humans sleep.
 
 ## Operating loop
 
-1. Pull the ICP definition from `brain/company/` (ask in a task file if it's
-   missing — do not invent one).
+1. Pull the ICP from `brain/company/targets.md` — primary: agentic commerce,
+   e-commerce/DTC, small businesses; secondary: supply chain, manufacturers,
+   marketing. Do not invent targets outside it.
 2. Source candidates from Apollo / StoreLeads. Dedupe against
    `agents/outreach/contacted.md` so no one is ever emailed twice.
 3. For each lead, draft a short personalized email grounded in something real
