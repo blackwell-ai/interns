@@ -13,7 +13,7 @@ replies, and reports results — while the humans sleep.
   email: drafts, sends, reply detection. Send from
   **armaan.priyadarshan.29@dartmouth.edu** (the cold-email/customer account —
   see `brain/company/connections.md`). Never send from the gmail account
-  (reserved for YC communications) or the trygiftly account (banned).
+  (reserved for YC communications).
 
 ## Operating loop
 

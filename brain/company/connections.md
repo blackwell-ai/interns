@@ -10,14 +10,14 @@ Armaan's accounts and their roles (per Armaan, June 10, 2026):
   outreach agent sends from.
 - **armaanp4423@gmail.com** — YC communications. Also the claude.ai account
   (what the claude.ai MCP connectors authenticate as).
-- **armaan@trygiftly.com** — 🚫 do not use (see table).
+
+These two are the only email accounts agents may touch.
 
 | Platform | Method | Account | Status (June 10, 2026) |
 |---|---|---|---|
 | Gmail | claude.ai Gmail connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
 | Gmail / Google Workspace | gogcli (`gog`, /sbin/gog) | armaan.priyadarshan.29@dartmouth.edu | ✅ Verified June 10 — full scopes (gmail, calendar, drive, docs, sheets, contacts, tasks, …) |
 | Gmail | gogcli | armaanp4423@gmail.com | ✅ Token present (gmail scope only) |
-| Gmail | gogcli | armaan@trygiftly.com | 🚫 **Do not use** — Armaan's instruction (June 10, 2026). Token removed from the gog keyring; do not re-add this Giftly-era account. |
 | Google Calendar | claude.ai Calendar connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
 | Google Drive | claude.ai Drive connector (MCP) | armaanp4423@gmail.com | ✅ Connected (verified June 10 — sees shared docs incl. "Blackwell Work Doc") |
 | Granola | MCP, https://mcp.granola.ai/mcp | Armaan's Granola account | ⚠️ Server added; awaiting OAuth (run `/mcp` → granola) |
