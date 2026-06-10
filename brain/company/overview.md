@@ -35,7 +35,6 @@ How the audits are produced: [[audit-methodology]] (`brain/company/audit-methodo
 - Pilot pricing: $1,000 upfront, refunded in full if benchmarks are not met
 - Each engagement letter includes a no-additional-cost AI assistant pilot,
   building toward agent-run store management with the client as design partner
-- Operating costs roughly $500/month at two customers
 
 ## History
 
