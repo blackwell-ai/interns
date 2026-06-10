@@ -13,9 +13,13 @@ should go into editing and improving these documents.
 |---|---|
 | `brain/` | Durable company knowledge: who we are, customers, research, decisions |
 | `agents/` | One folder per agent — its charter, tools, and operating instructions |
-| `skills/` | Reusable, named procedures any agent (or human) can invoke |
+| `skills/` | Remembered flows (SKILL.md + flow.yaml + inputs.yaml) — see `skills/PROTOCOL.md` |
 | `inbox/` | Task queue: `queue/` → `in-progress/` → `done/` |
-| `credentials/` | Shared credentials (`.env`) for humans and agents |
+| `toolbox/` | The automation harness: primitives + runner — the only maintained code |
+| `runs/` | One folder per flow execution: artifacts, events, report (gitignored) |
+| `supabase/` | Backbone: per-person auth, provider connections, the contact ledger |
+| `harness/` | The harness spec + build plan |
+| `credentials/` | Legacy `.env` (gogcli only) — retired at harness milestone M4 |
 
 ## How it works
 

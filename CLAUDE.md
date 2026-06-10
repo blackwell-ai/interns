@@ -14,7 +14,10 @@ documents, not just the code.
 
 1. Read `brain/company/overview.md` to ground yourself in what the company is.
 2. Read your own charter in `agents/<your-name>/AGENT.md`.
-3. Source credentials from `credentials/.env`.
+3. Auth: harness automations use per-person Supabase auth — `toolbox auth
+   login` once, then `toolbox auth connect <provider>` per integration (see
+   `toolbox/TOOLBOX.md`). Transitional: legacy non-harness tools (gogcli)
+   still read `credentials/.env` until the M4 credential rotation.
 4. Check `inbox/queue/` for tasks addressed to you (or unassigned tasks you can do).
 
 ## Task queue protocol (`inbox/`)
@@ -61,6 +64,17 @@ so any agent can call upon it later.
 
 ## Credentials
 
-All shared credentials live in `credentials/.env`. Read them from there; never
-hardcode a secret in any other file, and never paste secret values into task
-files, brain entries, or commit messages.
+Harness flows fetch secrets at runtime from Supabase (`toolbox auth`); no
+secret ever lands in the repo, argv, or logs. The legacy `credentials/.env`
+remains ONLY for tools not yet migrated (gogcli) — it gets deleted, and every
+secret in git history rotated at its provider, as part of harness milestone
+M4 (see `harness/outreach_automation_docs/automation-harness-build-plan.md`
+§6). Never hardcode a secret in any other file, and never paste secret values
+into task files, brain entries, or commit messages.
+
+## Automations
+
+Repeatable automations are skills run by the automation harness: read
+`skills/PROTOCOL.md` (composing/forking flows) and `toolbox/TOOLBOX.md` (the
+primitive contract). Prefer rerunning or forking an existing skill over
+writing anything new.

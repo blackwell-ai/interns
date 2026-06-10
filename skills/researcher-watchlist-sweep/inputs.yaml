@@ -1,0 +1,8 @@
+# sources_csv: a CSV with a `url` column. Default: the checked-in snapshot of
+# agents/researcher/watchlist.md sources (keep sources.csv in sync with it).
+sources_csv: "{{skill_dir}}/sources.csv"
+relevance_bar: >-
+  Relevant to Blackwell (we audit how e-commerce stores appear to AI shopping
+  agents): agentic commerce news, AI shopping agent launches, merchant
+  complaints about agent traffic, competitor moves. The bar: would a human on
+  the team act on this or want it in brain/research/? Routine chatter fails.

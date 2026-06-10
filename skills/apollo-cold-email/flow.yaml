@@ -1,0 +1,13 @@
+# The spec §6/§10 flow. Every line is removable except the ledger check,
+# which lives inside gmail.send, not here.
+steps:
+  - clarify.ask: {}
+  - domains.source: {query: "{{segment}}", count: "{{target_count}}", exclude: "{{exclude}}", out: domains.csv}
+  - apollo.enrich: {in: domains.csv, roles: "{{contact_roles}}", out: contacts.csv, concurrency: 20}
+  - verify.check: {in: contacts.csv, out: verified.csv, concurrency: 20}
+  - compose.render: {in: verified.csv, template: "{{skill_dir}}/template.md", out: outbox.csv, personalize: true}
+  - test.smoke: {}
+  - test.dryrun: {of: gmail.send, sample: 10, checks: "SKILL.md#acceptance-checks"}
+  - canary.run: {of: gmail.send, count: 10, seeds: "{{seed_inboxes}}"}
+  - gmail.send: {in: outbox.csv, from: "{{from_account}}", from_name: "{{from_name}}", concurrency: 8}
+  - report.write: {}

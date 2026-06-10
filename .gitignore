@@ -1,0 +1,16 @@
+# run folders are per-execution artifacts — never committed (spec §4)
+runs/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
+
+# supabase local dev
+supabase/.temp/
+supabase/.branches/

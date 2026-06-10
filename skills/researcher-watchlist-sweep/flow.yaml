@@ -1,0 +1,8 @@
+# M4 breadth proof: a NON-outreach agent composing the same harness.
+# fetch sources → llm filter → file inbox tasks → report. No send-class steps,
+# so no ledger involvement; read-only in the outside world per the charter.
+steps:
+  - fetch.urls: {in: "{{sources_csv}}", out: pages.jsonl, concurrency: 8}
+  - llm.filter: {in: pages.jsonl, out: relevant.jsonl, criteria: "{{relevance_bar}}"}
+  - inbox.file: {in: relevant.jsonl, source: researcher-agent (watchlist sweep), assign_to: human}
+  - report.write: {}
