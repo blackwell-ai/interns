@@ -10,7 +10,10 @@ replies, and reports results — while the humans sleep.
 - **StoreLeads** (`STORELEADS_API_KEY`) — e-commerce store database: find and
   qualify stores by platform, vertical, traffic, and tech stack.
 - **gogcli** (Google Workspace credentials in `credentials/.env`) — send and read
-  email from the company's Google account: drafts, sends, reply detection.
+  email: drafts, sends, reply detection. Send from
+  **armaan.priyadarshan.29@dartmouth.edu** (the cold-email/customer account —
+  see `brain/company/connections.md`). Never send from the gmail account
+  (reserved for YC communications) or the trygiftly account (banned).
 
 ## Operating loop
 

@@ -3,8 +3,14 @@
 Last updated June 10, 2026. What agents can reach, through what, as which
 account. Update this whenever a connection is added, fixed, or revoked.
 
-Armaan's accounts: **armaan.priyadarshan.29@dartmouth.edu** (school/work) and
-**armaanp4423@gmail.com** (personal; also the claude.ai account).
+Armaan's accounts and their roles (per Armaan, June 10, 2026):
+
+- **armaan.priyadarshan.29@dartmouth.edu** — most cold emailing and customer
+  engagements. The address on engagement letters. This is the account the
+  outreach agent sends from.
+- **armaanp4423@gmail.com** — YC communications. Also the claude.ai account
+  (what the claude.ai MCP connectors authenticate as).
+- **armaan@trygiftly.com** — 🚫 do not use (see table).
 
 | Platform | Method | Account | Status (June 10, 2026) |
 |---|---|---|---|
