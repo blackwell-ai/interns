@@ -31,13 +31,31 @@ Per row:
 5. Paced at 25s/send (domain-reputation safety). On a Gmail hard-quota error it
    releases the claim and exits 9 (resume next day).
 
-## Why a script, not an in-context loop
+## Token strategy (what's expensive vs free)
 
-The user asked to minimize tokens. Orchestrating hundreds of sends turn-by-turn
-in the model context is the expensive way; this script does the whole batch
-headless and only reports a summary. Clay enrichment (finding named founders)
-is the one step that must run in-session — do that in batches, append to the
-CSV, then hand it to this script.
+Per Armaan's standing instruction (2026-06-10): make everything that *can* be
+token-cheap, cheap.
+
+- **Irreducible cost — Clay MCP enrichment.** Finding named contacts means
+  calling the Clay connector, and every result (often 3–19 contacts ×
+  many fields) lands in the model context. There is no headless path: the Clay
+  connector only lives in an interactive session. To bound it: cap roles to the
+  decision-makers you'll actually email, and do NOT re-poll `get-task` once the
+  emails are `completed` — the poll re-returns the entire blob.
+- **Free — everything downstream.** Sending, the suppression/ledger claim,
+  logging, bounce handling, and reply triage all run in headless scripts
+  (`send_fast.py`, `handle-replies/`) with zero model tokens. Send the proven
+  template (no per-email LLM hook — that was slow and token-burning).
+- **Rule of thumb:** the model context should only ever touch *new* enrichment
+  data once. Bank it to `queue.csv` immediately; let the headless sender drain.
+
+## send_fast.py vs send_batch.py
+
+`send_fast.py` is the token-optimal sender: the proven "Stanford Student
+Question" template with `{brand}`/`{first_name}` substitution, no per-email LLM
+call, ~6s pacing with 403 rate-limit backoff. Use it for volume.
+`send_batch.py` adds a per-email Claude hook (slower, nicer) — use only when a
+small high-value batch warrants the personalization.
 
 ## Pairs with
 
