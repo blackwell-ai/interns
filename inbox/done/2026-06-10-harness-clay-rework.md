@@ -4,8 +4,8 @@ created: 2026-06-10
 created_by: claude (on Armaan's decision)
 assignee:            # harness owner
 priority: high
-claimed_by:
-claimed_at:
+claimed_by: claude (session agent)
+claimed_at: 2026-06-10
 ---
 
 ## Task
@@ -34,3 +34,16 @@ Remaining work — build the canonical **Clay-fed cold-email skill**:
 
 A Clay lead list goes end-to-end (smoke + dryrun green) through verify →
 compose → send, and the skill is registered as the canonical cold-email flow.
+
+## Result
+
+Done 2026-06-10 (claude, in session). Built `skills/clay-cold-email/` —
+flow.yaml (full default chain: clarify → verify → compose → smoke → dryrun →
+canary → gmail.send → report), inputs.yaml, template.md (the proven "Stanford
+Student Question" email with a personalization-hook slot), SKILL.md with
+acceptance checks. Registered in skills/INDEX.md; outreach charter points to
+it as canonical. Input path chosen: **Clay CSV export** passed as `leads_csv`
+(a `clay` primitive against Clay's HTTP API remains future work if exports
+get tedious). Offline tests green (39); smoke + dryrun of a live run still
+pending the Google OAuth secrets (`supabase secrets set`) and `toolbox auth
+connect gmail` — the harness's last setup gate.

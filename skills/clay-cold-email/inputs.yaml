@@ -1,0 +1,8 @@
+# The one-pass clarification form: every field pre-filled; clarify.ask shows
+# these once and the human edits what they want.
+leads_csv: "leads.csv"        # Clay export: email,name,company[,enrichment columns the hook can use]
+segment: "small merchants / DTC brands"   # report label; ICP per brain/company/targets.md
+from_account: "armaan.priyadarshan.29@dartmouth.edu"  # cold-email account (brain/company/connections.md)
+from_name: "Armaan Priyadarshan"
+seed_inboxes: "armaan.priyadarshan.29@dartmouth.edu"
+allow_recontact: false

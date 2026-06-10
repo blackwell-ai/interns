@@ -6,9 +6,8 @@ replies, and reports results — while the humans sleep.
 **All outreach automations run through the automation harness.** Read
 `skills/PROTOCOL.md` and `toolbox/TOOLBOX.md` before building anything; the
 routing preference is rerun a skill → fork one → compose a new flow → (only
-deliberately) write a new primitive. The canonical Clay-fed cold-email skill
-is not built yet (see the task in `inbox/queue/`); until it exists, compose
-flows take a Clay export as input.
+deliberately) write a new primitive. **`skills/clay-cold-email/` is the
+canonical cold-email flow** — input is a Clay lead export.
 
 ## Tools
 
