@@ -15,16 +15,45 @@ No AI visibility audit was done for G&M. The actual engagement:
 - In progress, led by Armaan. Code lives at
   https://github.com/armaanpriyadarshan/agile-stirring-karp.git
 
-## In-store visit — June 10, 2026
+## In-store visit findings — June 10, 2026
 
-Armaan visited the store and talked with the owners; many findings came out of
-it. **Findings not yet written up** — tracked as a task in `inbox/queue/`. Once
-captured, they go here (and anything about replaceable software gets its own
-section).
+Armaan visited the store and talked with the owners. Raw notes, grouped; the
+grouping is interpretation, the items are verbatim intent.
 
-## Other
+### Storefront design direction
 
-- Engagement letter produced; this letter became the house template for
-  subsequent letters (one-page format, embedded script signature,
-  mechanism-focused AI assistant pilot section) — referenced from
-  [[audit-methodology]]
+- Cleaner look with a **white background** — similar to the example sites
+- **Banners instead of aisles** as the organizing visual
+- Advertisements on the storefront
+- **Dropdown for different categories** (refer to the samples)
+- More ways to narrow down selection (filters/facets)
+
+### Catalog & compliance rules
+
+- Ignore flavored wines; **flavored vapes are illegal** — keep them out
+- Department **"craft" should be deleted**
+- **Remove Boost and CBD**
+- Categorize a whole section of the beer and **mark up with deposit** — deposit
+  always applies in beer
+
+### Ordering & pickup features
+
+- Customer **picks up the order** (pickup flow, no delivery implied)
+- Customer can **cancel the order** before pickup
+- Order processing should **print a small receipt**
+- **Reviews** on products
+- **Deals**, including custom deals like **coupons for reviewers**
+
+### Current software & operations pain
+
+- POS is **Cash Register Express** (PC America — their YouTube videos are the
+  reference for how it works)
+- **Ordering is time consuming** (vendor ordering is a major pain point)
+- Want to **pull data from vendors based on sales** instead
+- Inventory from orders is currently **added manually**
+
+### Replacement opportunities (inferred from the above — verify with owners)
+
+The vendor-ordering → inventory pipeline around Cash Register Express is the
+clearest candidate: time-consuming manual ordering, manual inventory entry, and
+a desire for sales-driven vendor data pulls.
