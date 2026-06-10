@@ -21,16 +21,7 @@ These two are the only email accounts agents may touch.
 | Google Calendar | claude.ai Calendar connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
 | Google Drive | claude.ai Drive connector (MCP) | armaanp4423@gmail.com | ✅ Connected (verified June 10 — sees shared docs incl. "Blackwell Work Doc") |
 | Granola | MCP, https://mcp.granola.ai/mcp | armaanp4423@gmail.com (workspace: Armaan Priyadarshan) | ✅ Connected (verified June 10). Free tier: AI summaries/notes readable, verbatim transcripts paywalled. Speaker attribution in summaries can be scrambled — corroborate names before relying on them. |
-
-## Pending
-
-- **Clay** (clay.com, GTM/enrichment): direct MCP from Claude Code fails —
-  Clay's OAuth registration rejects clients named like known platforms
-  ("Client name must not impersonate a known platform"). Connect it as a
-  claude.ai connector instead (directory → Clay → Connect, on claude.ai
-  while signed in as armaanp4423@gmail.com); it then appears in Claude Code
-  sessions like the Gmail/Calendar/Drive connectors. Not yet connected as of
-  June 10, 2026.
+| Clay (clay.com, GTM/enrichment) | claude.ai connector (MCP, https://api.clay.com/v3/mcp) | armaanp4423@gmail.com (claude.ai account) | ✅ Connected June 10 via claude.ai directory. Note: do NOT add Clay directly with `claude mcp add` — Clay's OAuth rejects clients named like known platforms; the claude.ai connector is the only path. |
 
 ## Notes for agents
 
