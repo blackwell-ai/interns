@@ -20,7 +20,7 @@ These two are the only email accounts agents may touch.
 | Gmail | gogcli | armaanp4423@gmail.com | ✅ Token present (gmail scope only) |
 | Google Calendar | claude.ai Calendar connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
 | Google Drive | claude.ai Drive connector (MCP) | armaanp4423@gmail.com | ✅ Connected (verified June 10 — sees shared docs incl. "Blackwell Work Doc") |
-| Granola | MCP, https://mcp.granola.ai/mcp | Armaan's Granola account | ⚠️ Server added; awaiting OAuth (run `/mcp` → granola) |
+| Granola | MCP, https://mcp.granola.ai/mcp | armaanp4423@gmail.com (workspace: Armaan Priyadarshan) | ✅ Connected (verified June 10 — meeting notes/transcripts readable) |
 
 ## Notes for agents
 
