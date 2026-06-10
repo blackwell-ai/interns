@@ -19,6 +19,8 @@ cd toolbox && uv sync          # install
 uv run toolbox auth login      # once per person: Google sign-in (keychain)
 uv run toolbox auth connect gmail      # second consent: gmail.send for the SENDING account
 uv run toolbox auth connect clay       # paste API key (use --org-shared for team keys)
+# LLM steps need no key: they run headless Claude Code (`claude -p`) under the
+# machine's logged-in Claude subscription.
 uv run toolbox run <skill> [-i key=value] [--yes]
 uv run toolbox resume <run_id>
 uv run toolbox fork <src> <dst>
@@ -58,19 +60,19 @@ calling skill's SKILL.md ("no existing primitive can X").
 | Step | What it does | Connection |
 |---|---|---|
 | `gmail.send` / `gmail.replies` / `gmail.bounces` | send mail; read replies/bounces | gmail (oauth) |
-| `domains.source` | web-search domain sourcing (Anthropic web_search) | anthropic (key/env) |
+| `domains.source` | web-search domain sourcing (Claude Code WebSearch) | Claude subscription (`claude` CLI login) |
 | `verify.check` | MX/DNS deliverability | — |
-| `compose.render` | template render + LLM personalization | anthropic (optional) |
+| `compose.render` | template render + LLM personalization | Claude subscription (optional) |
 | `fetch.urls` | pull web sources → pages.jsonl | — |
-| `llm.filter` | LLM relevance filter over JSONL | anthropic |
+| `llm.filter` | LLM relevance filter over JSONL | Claude subscription |
 | `inbox.file` | file findings as inbox/queue/ tasks | — |
+| `throttle.wait` | explicit pacing (in NO default chain) | — |
 
 Lead sourcing/enrichment is **Clay-only**
 (`brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`): leads enter
 flows as Clay CSV exports passed via `-i`, or through a future `clay`
 primitive against Clay's HTTP API. The former `apollo`/`storeleads`
 primitives were removed under that decision.
-| `throttle.wait` | explicit pacing (in NO default chain) | — |
 
 **Process primitives** (removable lines like any other): `plan.write`,
 `clarify.ask`, `test.smoke`, `test.dryrun`, `canary.run`, `report.write`.

@@ -22,6 +22,7 @@ These two are the only email accounts agents may touch.
 | Google Drive | claude.ai Drive connector (MCP) | armaanp4423@gmail.com | ✅ Connected (verified June 10 — sees shared docs incl. "Blackwell Work Doc") |
 | Granola | MCP, https://mcp.granola.ai/mcp | armaanp4423@gmail.com (workspace: Armaan Priyadarshan) | ✅ Connected (verified June 10). Free tier: AI summaries/notes readable, verbatim transcripts paywalled. Speaker attribution in summaries can be scrambled — corroborate names before relying on them. |
 | Clay (clay.com, GTM/enrichment) | claude.ai connector (MCP, https://api.clay.com/v3/mcp) | armaanp4423@gmail.com (claude.ai account) | ✅ Connected June 10 via claude.ai directory. Note: do NOT add Clay directly with `claude mcp add` — Clay's OAuth rejects clients named like known platforms; the claude.ai connector is the only path. |
+| Supabase (hosted project `lvzvmqeynkwywodcqxkv`) | MCP (project-scoped, `.mcp.json`) + keys in `credentials/.env` (`SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY`) | Blackwell project | ✅ Connected + provisioned June 10: both harness migrations applied (6 tables, RLS on, ledger RPCs live) and both edge functions deployed (`oauth-connect` verify_jwt=off per config.toml, `token-refresh`). Remaining: set `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` via `supabase secrets set`, then `toolbox auth login` + `connect gmail`. |
 
 ## Notes for agents
 

@@ -1,93 +1,126 @@
-"""Anthropic client wrapper (port of llm.py, provider swapped per spec §2).
+"""Headless Claude Code wrapper (provider swapped per the 2026-06-10 decision:
+harness LLM calls run through `claude -p` so usage bills to the team's Claude
+subscription, not an Anthropic API key).
 
-Three entry points:
-  * parse(...)      — structured output via client.messages.parse (Pydantic).
+Three entry points (signatures unchanged from the API-client version, so all
+primitives and their monkeypatching tests keep working):
+  * parse(...)      — structured output: prompt for strict JSON, validate with
+                      Pydantic; one repair retry on a malformed response.
   * complete(...)   — plain text completion.
-  * web_search(...) — completion with the hosted web_search server tool,
-                      handling the `pause_turn` continuation loop.
+  * web_search(...) — completion with Claude Code's WebSearch tool enabled
+                      (replaces the hosted web_search server tool; Claude Code
+                      runs its own search loop, so no pause_turn handling).
 
-The SDK already retries 429/5xx with exponential backoff (max_retries below);
-we do not hand-roll retry here. A safety refusal is surfaced as LLMRefusal —
-callers MUST NOT retry those.
+A safety refusal is surfaced as LLMRefusal — callers MUST NOT retry those.
 
-Auth: ANTHROPIC_API_KEY from the environment, or the team key fetched via
-core/auth.get_token("anthropic") once connections hold it. No key in the repo.
+Auth: the `claude` CLI's logged-in Claude subscription. ANTHROPIC_API_KEY is
+stripped from the subprocess env so a stray key can never silently flip usage
+back to API billing. Calls run from the system temp dir so the repo's
+CLAUDE.md and project MCP servers are not loaded into the prompt.
 """
 
 from __future__ import annotations
 
+import json
+import os
+import re
+import subprocess
+import tempfile
 from typing import TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from toolbox.core import config
 
 M = TypeVar("M", bound=BaseModel)
 
-_MAX_RETRIES = 4
-_WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search"}
-_MAX_CONTINUATIONS = 5
+_TIMEOUT_S = 600
+_FENCE_RE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$")
 
 
 class LLMRefusal(Exception):
     """Model safety-refused. Do not retry, do not escalate."""
 
 
-def _client():
-    import anthropic
+def _run(prompt: str, *, system: str, model: str | None, tools: str = "") -> str:
+    """One headless Claude Code invocation; returns the result text.
 
-    return anthropic.Anthropic(max_retries=_MAX_RETRIES)
+    `tools` is the value for `--tools` ("" disables every built-in tool).
+    Transient process/parse failures raise RuntimeError, which the runner's
+    step-level retry treats like any other transient error.
+    """
+    cmd = [
+        "claude",
+        "-p",
+        "--output-format", "json",
+        "--model", model or config.DEFAULT_LLM_MODEL,
+        "--system-prompt", system,
+        "--tools", tools,
+        "--no-session-persistence",
+    ]
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    proc = subprocess.run(
+        cmd,
+        input=prompt,
+        capture_output=True,
+        text=True,
+        timeout=_TIMEOUT_S,
+        env=env,
+        cwd=tempfile.gettempdir(),
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"claude -p exited {proc.returncode}: {proc.stderr.strip()[:500]}")
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"claude -p returned non-JSON output: {proc.stdout[:200]}") from e
+    if data.get("stop_reason") == "refusal":
+        raise LLMRefusal(data.get("result") or "refused")
+    if data.get("is_error"):
+        raise RuntimeError(f"claude -p error result: {str(data.get('result'))[:500]}")
+    return data.get("result") or ""
+
+
+def _extract_json(text: str) -> str:
+    return _FENCE_RE.sub("", text.strip())
 
 
 def parse(prompt: str, schema: type[M], *, system: str = "", model: str | None = None) -> M:
     """One structured-output call; returns a validated instance of `schema`."""
-    client = _client()
-    resp = client.messages.parse(
-        model=model or config.DEFAULT_LLM_MODEL,
-        max_tokens=4096,
-        system=system or "You are a precise data-processing assistant.",
-        messages=[{"role": "user", "content": prompt}],
-        output_format=schema,
+    schema_json = json.dumps(schema.model_json_schema())
+    sys_prompt = (
+        (system or "You are a precise data-processing assistant.")
+        + "\nRespond with ONLY a single JSON object that validates against this"
+        + f" JSON Schema — no prose, no markdown fences:\n{schema_json}"
     )
-    if resp.stop_reason == "refusal":
-        raise LLMRefusal(getattr(resp.stop_details, "explanation", "") or "refused")
-    if resp.parsed_output is None:
-        raise ValueError("model returned no parseable output")
-    return resp.parsed_output
+    raw = _run(prompt, system=sys_prompt, model=model)
+    try:
+        return schema.model_validate(json.loads(_extract_json(raw)))
+    except (json.JSONDecodeError, ValidationError) as first_error:
+        repair = (
+            f"{prompt}\n\nYour previous reply was:\n{raw}\n\n"
+            f"It failed validation with: {first_error}\n"
+            "Reply again with ONLY a corrected JSON object."
+        )
+        raw = _run(repair, system=sys_prompt, model=model)
+        try:
+            return schema.model_validate(json.loads(_extract_json(raw)))
+        except (json.JSONDecodeError, ValidationError) as e:
+            raise ValueError("model returned no parseable output") from e
 
 
 def complete(prompt: str, *, system: str = "", model: str | None = None, max_tokens: int = 2048) -> str:
-    client = _client()
-    resp = client.messages.create(
-        model=model or config.DEFAULT_LLM_MODEL,
-        max_tokens=max_tokens,
-        system=system or "You are a helpful assistant.",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    if resp.stop_reason == "refusal":
-        raise LLMRefusal(getattr(resp.stop_details, "explanation", "") or "refused")
-    return "".join(b.text for b in resp.content if b.type == "text")
+    """Plain text completion. `max_tokens` is kept for signature compatibility;
+    Claude Code headless has no per-response token cap flag."""
+    del max_tokens
+    return _run(prompt, system=system or "You are a helpful assistant.", model=model)
 
 
 def web_search(prompt: str, *, system: str = "", model: str | None = None, max_searches: int = 8) -> str:
-    """Completion with the hosted web_search tool. The server runs its own
-    sampling loop; on `pause_turn` we re-send to resume (per API docs) up to
-    _MAX_CONTINUATIONS times."""
-    client = _client()
-    tool = dict(_WEB_SEARCH_TOOL, max_uses=max_searches)
-    messages: list[dict] = [{"role": "user", "content": prompt}]
-    for _ in range(_MAX_CONTINUATIONS):
-        resp = client.messages.create(
-            model=model or config.DEFAULT_LLM_MODEL,
-            max_tokens=4096,
-            system=system or "You are a careful web researcher. Cite the source URL for every fact.",
-            messages=messages,
-            tools=[tool],
-        )
-        if resp.stop_reason == "refusal":
-            raise LLMRefusal(getattr(resp.stop_details, "explanation", "") or "refused")
-        if resp.stop_reason == "pause_turn":
-            messages = [messages[0], {"role": "assistant", "content": resp.content}]
-            continue
-        return "".join(b.text for b in resp.content if b.type == "text")
-    return "".join(b.text for b in resp.content if b.type == "text")
+    """Completion with Claude Code's WebSearch tool. There is no hard search
+    cap flag; the limit is stated in the system prompt."""
+    sys_prompt = (
+        (system or "You are a careful web researcher. Cite the source URL for every fact.")
+        + f"\nUse at most {max_searches} web searches."
+    )
+    return _run(prompt, system=sys_prompt, model=model, tools="WebSearch")

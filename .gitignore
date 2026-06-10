@@ -14,3 +14,6 @@ __pycache__/
 # supabase local dev
 supabase/.temp/
 supabase/.branches/
+
+# Local credentials — never committed (secrets distributed out-of-band)
+credentials/.env
