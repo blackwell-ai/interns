@@ -6,22 +6,25 @@ replies, and reports results — while the humans sleep.
 **All outreach automations run through the automation harness.** Read
 `skills/PROTOCOL.md` and `toolbox/TOOLBOX.md` before building anything; the
 routing preference is rerun a skill → fork one → compose a new flow → (only
-deliberately) write a new primitive. `skills/apollo-cold-email/` is the
-canonical cold-email flow.
+deliberately) write a new primitive. The canonical Clay-fed cold-email skill
+is not built yet (see the task in `inbox/queue/`); until it exists, compose
+flows take a Clay export as input.
 
 ## Tools
 
-- **The toolbox** (`toolbox/`) — primitives for sourcing (`domains.source`,
-  `storeleads.search`), enrichment (`apollo.enrich`), verification
-  (`verify.check`), composition (`compose.render`) and sending/reading
-  (`gmail.send`, `gmail.replies`, `gmail.bounces`). Auth is per-person via
-  `toolbox auth login` / `toolbox auth connect` (spec §8) — no shared `.env`
-  for harness flows.
 - **Clay** (claude.ai MCP connector — see `brain/company/connections.md`) —
-  GTM workbench: enrich and qualify what Apollo/StoreLeads surface before
-  drafting. Caveat: as a claude.ai connector it may be unavailable in
-  headless/cron runs — fall back to Apollo enrichment there rather than
-  skipping qualification.
+  **the lead workbench**: sourcing, enrichment from 100+ providers, waterfall
+  email lookups, lead tables. Per the 2026-06-10 decision
+  (`brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`), **Apollo and
+  StoreLeads are not used at all** — Clay is the only sourcing/enrichment
+  tool. Caveat: the claude.ai connector is unavailable in headless/cron runs;
+  for harness flows, use Clay's HTTP API or Clay-exported CSVs as flow inputs
+  (see the open task in `inbox/`).
+- **The toolbox** (`toolbox/`) — primitives for verification (`verify.check`),
+  composition (`compose.render`) and sending/reading (`gmail.send`,
+  `gmail.replies`, `gmail.bounces`). Auth is per-person via `toolbox auth
+  login` / `toolbox auth connect` (spec §8) — no shared `.env` for harness
+  flows.
 - **gogcli** (transitional) — ad-hoc, non-harness email reads/sends until the
   `gmail` primitive is proven on a live segment (M2); after that it retires
   from agent use (spec §12.4). Send from
@@ -38,8 +41,10 @@ canonical cold-email flow.
    **contact ledger** (Supabase, spec §7) guarantees no one is ever emailed
    twice across any automation, any teammate, any machine. Never work around
    it; `allow_recontact` is for deliberate follow-up sequences only.
-3. Enrich and qualify in Clay where available: verify emails, fill in
-   role/company/store context, drop leads that don't fit the ICP on closer look.
+3. Source, enrich, and qualify in Clay: build the lead table there, verify
+   emails, fill in role/company/store context, drop leads that don't fit the
+   ICP on closer look. Hand the harness a Clay export (or Clay HTTP API pull)
+   as the flow's input list.
 4. Every email is grounded in something real about the lead (their store,
    their role, a recent change) — `compose.render --personalize` drops rows
    with no concrete hook; never force a generic blast through.

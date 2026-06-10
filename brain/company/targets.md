@@ -11,9 +11,9 @@ this; the researcher agent weights relevance against it.
    (armaan.priyadarshan.29@dartmouth.edu), incl. a Slack workspace (invite from
    Peyton McGovern, May 18, 2026). Monthly consortium meetings are a known
    intel source (see [[catalog-product-data-infra]]).
-2. **E-commerce / DTC brands** — sourced from StoreLeads, Shopify store lists,
-   and online retail databases. The GEO-audit motion targets these (current
-   customers: [[public-goods]], [[good-molecules]], [[husqvarna]], [[lundhags]]).
+2. **E-commerce / DTC brands** — sourced via Clay (Shopify store lists, online
+   retail data). The GEO-audit motion targets these (current customers:
+   [[public-goods]], [[good-molecules]], [[husqvarna]], [[lundhags]]).
 3. **Small businesses** — local retail like [[gm-liquor]]: storefronts, online
    ordering, replacing legacy software (POS, inventory, vendor ordering).
 
@@ -25,8 +25,9 @@ this; the researcher agent weights relevance against it.
 
 ## Lead / signal sources
 
-- **Apollo** — people search and enrichment across all segments
-- **StoreLeads** — DTC/e-commerce store discovery and qualification
+- **Clay** — the lead workbench: sourcing, enrichment, and email lookup for
+  all segments. Apollo and StoreLeads are **not used** (dropped 2026-06-10 —
+  see `brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`)
 - **Freelancer marketplaces (Upwork, Fiverr)** — watch posted jobs as buying
   signals: small businesses and brands posting for website builds, online
   ordering, Shopify work, SEO/AI-visibility help are warm leads for the

@@ -28,7 +28,7 @@ supabase stop           # when done
 
 4. Everyone on the team: export `SUPABASE_URL` + `SUPABASE_ANON_KEY` (NOT
    secrets — the anon key is a public client identifier; RLS protects data),
-   then `toolbox auth login`, then `toolbox auth connect gmail|apollo|...`.
+   then `toolbox auth login`, then `toolbox auth connect gmail|clay|...`.
 
 ## What lives where
 

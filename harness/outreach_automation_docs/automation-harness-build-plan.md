@@ -1,3 +1,5 @@
+> **Superseded in part (2026-06-10):** Apollo and StoreLeads were dropped entirely — Clay is the only lead sourcing/enrichment tool. References to `apollo`/`storeleads` primitives and the `apollo-cold-email` skill below are historical; see `brain/decisions/2026-06-10-clay-is-the-lead-workbench.md` and the Clay-fed skill task in `inbox/queue/`.
+
 # Automation Harness — Build Plan v1
 
 **Repo:** `blackwell-ai/interns` · **Date:** 2026-06-10 · **Status:** draft for team review

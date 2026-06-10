@@ -88,7 +88,7 @@ def _substitute(value, variables: dict):
 
 
 def _parse_step(step) -> tuple[str, dict]:
-    """A step is a single-key mapping: {'apollo.enrich': {...args}} or a bare
+    """A step is a single-key mapping: {'verify.check': {...args}} or a bare
     string 'report.write'. The 'python:' key is the escape hatch."""
     if isinstance(step, str):
         return step, {}
