@@ -31,8 +31,16 @@ _TODO — server name, invite/ID, channels to watch, what matters there_
 
 ## Subreddits
 
-_TODO — subreddit, what counts as signal (candidates given the ICP: r/ecommerce,
-r/shopify, r/smallbusiness — confirm with Armaan)_
+Confirmed by Armaan, June 10, 2026:
+
+- **r/ecommerce** — DTC operators discussing AI visibility, agent traffic,
+  store-management pain
+- **r/shopify** — merchants on the platform Blackwell's customers run on;
+  app/tooling gaps, GEO questions
+- **r/ai_agents** — agentic-commerce developments, competitor launches,
+  consumer-use-case signals
+- **r/smallbusiness** — local merchants (the G&M segment) struggling with
+  websites, online ordering, POS/inventory software
 
 ## Researchers
 
