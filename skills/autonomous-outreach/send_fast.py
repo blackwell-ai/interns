@@ -58,33 +58,47 @@ def send(to, first_name, brand):
         return "ratelimit", ""
     return "failed", out[:150]
 
-def main(path):
-    rows = list(csv.DictReader(open(path)))
-    sent = skipped = failed = 0
-    log = csv.writer(open(LOG, "a", newline=""))
-    i = 0
-    while i < len(rows):
-        r = rows[i]
-        email = (r["email"] or "").strip().lower(); brand = r["brand"].strip()
-        if "@" not in email: i += 1; continue
-        if not claim(email, brand):
-            skipped += 1; i += 1; continue
+def process_row(r, counts, log):
+    email = (r.get("email") or "").strip().lower(); brand = (r.get("brand") or "").strip()
+    if "@" not in email: return
+    if not claim(email, brand):
+        counts["skipped"] += 1; return
+    while True:
         status, detail = send(email, r.get("first_name",""), brand)
-        if status == "ratelimit":
-            # back off; the claim is held, retry same row after cooldown
-            time.sleep(45); continue
-        ts = time.strftime("%Y-%m-%dT%H:%M:%S")
-        log.writerow([ts, email, brand, status, detail])
-        if status == "sent":
-            update_reason(email, f"contacted 2026-06-10: blackwell volume cold email ({brand}; msg {detail})")
-            sent += 1
-            if sent % 10 == 0: print(f"... {sent} sent"); sys.stdout.flush()
+        if status != "ratelimit": break
+        time.sleep(45)  # hold the claim, retry same recipient after cooldown
+    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+    log.writerow([ts, email, brand, status, detail]);
+    if status == "sent":
+        update_reason(email, f"contacted 2026-06-10: blackwell volume cold email ({brand}; msg {detail})")
+        counts["sent"] += 1
+        if counts["sent"] % 10 == 0: print(f"... {counts['sent']} sent", flush=True)
+    else:
+        update_reason(email, f"send FAILED 2026-06-10 ({brand}): {detail[:100]}")
+        counts["failed"] += 1
+    time.sleep(PACE)
+
+def main(path):
+    """Daemon: re-scan the queue file forever; claim() dedups already-sent rows
+    so re-scanning is safe. Exits after IDLE_CYCLES scans with no new sends so it
+    doesn't run forever once the queue is drained and no longer being appended."""
+    counts = {"sent": 0, "skipped": 0, "failed": 0}
+    log = csv.writer(open(LOG, "a", newline=""))
+    idle = 0
+    IDLE_CYCLES = int(os.environ.get("IDLE_CYCLES", "20"))  # ~20 min of no new rows -> stop
+    while idle < IDLE_CYCLES:
+        before = counts["sent"]
+        try:
+            rows = list(csv.DictReader(open(path)))
+        except FileNotFoundError:
+            rows = []
+        for r in rows:
+            process_row(r, counts, log)
+        if counts["sent"] == before:
+            idle += 1; time.sleep(60)
         else:
-            update_reason(email, f"send FAILED 2026-06-10 ({brand}): {detail[:100]}")
-            failed += 1
-        i += 1
-        time.sleep(PACE)
-    print(f"SUMMARY sent={sent} skipped={skipped} failed={failed} of {len(rows)}")
+            idle = 0
+    print(f"SUMMARY sent={counts['sent']} skipped={counts['skipped']} failed={counts['failed']}", flush=True)
 
 if __name__ == "__main__":
     main(sys.argv[1])
