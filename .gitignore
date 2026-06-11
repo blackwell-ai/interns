@@ -22,3 +22,4 @@ credentials/.env
 skills/autonomous-outreach/*.csv
 /tmp/
 !skills/autonomous-outreach/lead_bank.csv
+.gstack/

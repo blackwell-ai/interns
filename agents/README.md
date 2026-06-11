@@ -11,6 +11,8 @@ charter at any time.
   runs outreach via gogcli.
 - `researcher/` — monitors Discord servers, subreddits, researchers, and
   conferences; surfaces anything relevant to us.
+- `geo/` — owns all GEO (AI visibility) work: audits, implementation,
+  re-benchmarks, per `brain/company/audit-methodology.md`.
 
 ## Adding an agent
 
