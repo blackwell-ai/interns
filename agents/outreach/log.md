@@ -2,6 +2,34 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-10 (evening) — fully-headless sourcing + 166-send run from Samarjit
+
+- **Approach (zero manual lead work):** built the `findemail` harness primitive
+  (Clay can't be driven headlessly — see
+  `brain/decisions/2026-06-10-clay-not-headless-findemail-primitive.md`). Pipeline:
+  web-search harvested ~224 DTC brand domains → `findemail.find-exec` (Hunter
+  Domain Search) → 180 verified named decision-makers (median deliverability
+  score 98; 362/2000 Hunter credits used) → filtered out invalid/generic/no-name
+  → 169-lead queue.
+- **Sent: 166** verified founders/decision-makers (CEO/founder/CMO/head of
+  ecommerce) from **samarjit.deshmukh.29@dartmouth.edu**, co-founders CC'd,
+  **HTML/rich-text** version of the proven "Stanford Student Question" template
+  (plaintext fallback included), paced ~8s with rate-limit backoff. **0 failures,
+  0 double-contacts** (every recipient claimed in the Supabase suppression ledger
+  before send; UNIQUE constraint held — 242 unique blackwell-volume rows, 0 dups).
+- **Skipped: 3** (Cuts Clothing, Grove, Buck Mason) — already in suppression from
+  a prior session; correctly not re-contacted.
+- **Brands include:** Caraway, Cuts, Halfdays, Blueland, Pepper, Cometeer, Knix,
+  Phlur, Glamnetic, Magic Spoon, Our Place, Lovevery, The Ridge, MUD\WTR,
+  Dr. Squatch, Mack Weldon, Jones Road, Brightland, Four Sigmatic, Rhone,
+  Madhappy, TRUFF, Tushy, Tatcha, Bombas, and ~140 more.
+- **Replies/meetings:** — (check the Dartmouth inbox; run `gmail.replies
+  --file-inbox-tasks` and `gmail.bounces` over the next days).
+- **Note:** one mid-run stop/restart happened because Gmail's *search* index
+  lagged and made healthy sends look like failures; the ledger proved all sends
+  succeeded, and the claim-dedup made the restart safe (already-sent rows
+  skipped). Lesson: trust the ledger, not Gmail search, for live send progress.
+
 ## 2026-06-10 — first Blackwell-era cold send (manual, pre-harness)
 
 - **Sourced:** 705 never-contacted brands recovered from the Giftly batch

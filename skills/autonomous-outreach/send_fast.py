@@ -57,9 +57,28 @@ If not, we would appreciate even a one-sentence response with your thoughts on h
 Thanks,
 {SENDER_NAME}"""
 
+def html_escape(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+def body_html_for(first_name, brand):
+    """Rich-text (HTML) version of the proven template. Kept deliberately
+    minimal — real paragraphs, system font, one subtle emphasis, no images or
+    heavy styling (which hurt cold-email deliverability and feel less personal).
+    A plaintext alternative is always sent alongside as the fallback."""
+    greeting = f"Hi {html_escape(first_name)}," if first_name else "Hi there,"
+    b = html_escape(brand)
+    return f"""<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#222;">
+<p>{greeting}</p>
+<p>We're Stanford/Dartmouth students curious how {b} is thinking about AI, given <strong>50 million people now shop with ChatGPT daily</strong>.</p>
+<p>Would you be open to a quick 10-minute call?</p>
+<p>If not, we would appreciate even a one-sentence response with your thoughts on how retailers are improving their visibility with AI.</p>
+<p>Thanks,<br>{html_escape(SENDER_NAME)}</p>
+</div>"""
+
 def send(to, first_name, brand):
     p = subprocess.run(["gog","gmail","send","-a",ACC,"--to",to,"--cc",CC,
-                        "--subject",SUBJECT,"--body",body_for(first_name,brand),"--no-input"],
+                        "--subject",SUBJECT,"--body",body_for(first_name,brand),
+                        "--body-html",body_html_for(first_name,brand),"--no-input"],
                        capture_output=True, text=True, timeout=120)
     out = p.stdout + p.stderr
     if p.returncode == 0 and "message_id" in out:
