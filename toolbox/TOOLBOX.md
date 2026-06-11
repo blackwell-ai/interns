@@ -61,6 +61,7 @@ calling skill's SKILL.md ("no existing primitive can X").
 |---|---|---|
 | `gmail.send` / `gmail.replies` / `gmail.bounces` | send mail; read replies/bounces | gmail (oauth) |
 | `domains.source` | web-search domain sourcing (Claude Code WebSearch) | Claude subscription (`claude` CLI login) |
+| `findemail.find` / `findemail.find-exec` | name+domain → verified work email; or domain → decision-maker + email (the headless lead-enrichment step) | hunter or findymail (API key) |
 | `verify.check` | MX/DNS deliverability | — |
 | `compose.render` | template render + LLM personalization | Claude subscription (optional) |
 | `fetch.urls` | pull web sources → pages.jsonl | — |
@@ -68,11 +69,14 @@ calling skill's SKILL.md ("no existing primitive can X").
 | `inbox.file` | file findings as inbox/queue/ tasks | — |
 | `throttle.wait` | explicit pacing (in NO default chain) | — |
 
-Lead sourcing/enrichment is **Clay-only**
-(`brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`): leads enter
-flows as Clay CSV exports passed via `-i`, or through a future `clay`
-primitive against Clay's HTTP API. The former `apollo`/`storeleads`
-primitives were removed under that decision.
+Lead enrichment: **Clay cannot be driven fully headlessly** — it has no API to
+create a table or configure its enrichment recipe (the waterfall lives in the
+UI; "Clay doesn't have a traditional API"). So the headless enrichment step is
+`findemail`, which calls the same underlying providers Clay waterfalls across
+(Hunter, Findymail) via their REST APIs — one key, zero manual setup. A Clay
+CSV export passed via `-i` remains a valid input too. The former
+`apollo`/`storeleads` primitives were removed under the Clay decision
+(`brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`).
 
 **Process primitives** (removable lines like any other): `plan.write`,
 `clarify.ask`, `test.smoke`, `test.dryrun`, `canary.run`, `report.write`.

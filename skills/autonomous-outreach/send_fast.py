@@ -11,8 +11,18 @@ idempotent per claim). Exits 0 at end; the per-minute API cap is the ceiling.
 """
 import csv, json, os, re, subprocess, sys, time, urllib.request, urllib.parse, urllib.error
 
-ACC = "armaan.priyadarshan.29@dartmouth.edu"
-CC = "samarjit.deshmukh.29@dartmouth.edu,ethanpzhou@berkeley.edu,shamitd@stanford.edu"
+# Sender + CC are env-parameterized so the same proven script runs from any
+# co-founder's account (each CCs the other three). Defaults preserve the
+# original Armaan-sent behavior.
+ACC = os.environ.get("SEND_ACCOUNT", "armaan.priyadarshan.29@dartmouth.edu")
+_COFOUNDERS = {
+    "armaan.priyadarshan.29@dartmouth.edu": "Armaan",
+    "samarjit.deshmukh.29@dartmouth.edu": "Samarjit",
+    "ethanpzhou@berkeley.edu": "Ethan",
+    "shamitd@stanford.edu": "Shamit",
+}
+CC = os.environ.get("SEND_CC") or ",".join(a for a in _COFOUNDERS if a != ACC)
+SENDER_NAME = os.environ.get("SENDER_NAME") or _COFOUNDERS.get(ACC, "Armaan")
 SUBJECT = "Stanford Student Question - thoughts on AI retail tools"
 SUPA = os.environ["SUPABASE_URL"] + "/rest/v1/suppression"
 KEY = os.environ["SUPABASE_SECRET_KEY"]
@@ -45,7 +55,7 @@ Would you be open to a quick 10-minute call?
 If not, we would appreciate even a one-sentence response with your thoughts on how retailers are improving their visibility with AI.
 
 Thanks,
-Armaan"""
+{SENDER_NAME}"""
 
 def send(to, first_name, brand):
     p = subprocess.run(["gog","gmail","send","-a",ACC,"--to",to,"--cc",CC,

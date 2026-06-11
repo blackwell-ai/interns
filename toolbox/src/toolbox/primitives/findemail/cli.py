@@ -1,0 +1,253 @@
+"""findemail primitive — find + verify a work email from a name + domain.
+
+This is the *headless* equivalent of Clay's "find work email" enrichment:
+Clay itself has no API to drive its enrichment recipe (the waterfall lives in
+a Clay table configured in the UI), but the providers Clay waterfalls across
+— Hunter, Findymail, Enrow — expose clean REST APIs. This primitive calls one
+of them directly, so a flow can go name+domain → verified email with one API
+key and zero manual steps.
+
+Input  : candidates CSV with `domain` + (`first_name`,`last_name`) or `name`
+         (and any passthrough columns, e.g. brand/title).
+Output : contacts CSV (models.Contact) with the found email, plus
+         `email_score` / `email_status` so downstream/compose can gate on
+         confidence. Rows with no email found (or below --min-score) are
+         dropped and logged — never guessed.
+
+Providers (--provider): `hunter` (default) | `findymail`.
+Auth: core/auth.get_token("hunter"|"findymail") — Supabase connection or the
+TOOLBOX_TOKEN_<PROVIDER> env override. No key in argv or the repo.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import sys
+
+import httpx
+import typer
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
+from toolbox.core import auth, events, io, models
+
+app = typer.Typer(no_args_is_help=True)
+
+
+@app.callback()
+def _group():
+    """findemail primitive."""
+
+
+_transient = retry(
+    retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.TransportError)),
+    wait=wait_exponential(multiplier=1, max=60),
+    stop=stop_after_attempt(6),
+    reraise=True,
+)
+
+
+def _split_name(row: models.Row) -> tuple[str, str]:
+    first = (getattr(row, "first_name", "") or "").strip()
+    last = (getattr(row, "last_name", "") or "").strip()
+    if first:
+        return first, last
+    full = (getattr(row, "name", "") or "").strip()
+    if full:
+        parts = full.split()
+        return parts[0], " ".join(parts[1:])
+    return "", ""
+
+
+# ---- provider adapters: each returns (email, score_0_100, status) -----------
+
+
+@_transient
+async def _hunter(client: httpx.AsyncClient, key: str, domain: str, first: str, last: str):
+    r = await client.get(
+        "https://api.hunter.io/v2/email-finder",
+        params={"domain": domain, "first_name": first, "last_name": last, "api_key": key},
+    )
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()  # transient → retried
+    if r.status_code != 200:
+        return "", 0, f"http_{r.status_code}"
+    data = r.json().get("data") or {}
+    email = (data.get("email") or "").strip().lower()
+    score = int(data.get("score") or 0)
+    status = (data.get("verification") or {}).get("status") or "unknown"
+    return email, score, status
+
+
+@_transient
+async def _findymail(client: httpx.AsyncClient, key: str, domain: str, first: str, last: str):
+    name = f"{first} {last}".strip()
+    r = await client.post(
+        "https://app.findymail.com/api/search/name",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={"name": name, "domain": domain},
+    )
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()
+    if r.status_code != 200:
+        return "", 0, f"http_{r.status_code}"
+    contact = (r.json() or {}).get("contact") or {}
+    email = (contact.get("email") or "").strip().lower()
+    # Findymail only returns verified/deliverable emails → treat as high score.
+    return email, (90 if email else 0), "valid" if email else "not_found"
+
+
+_PROVIDERS = {"hunter": _hunter, "findymail": _findymail}
+
+# Seniority/role ranking for picking the decision-maker out of a domain search.
+_ROLE_RANK = ("founder", "owner", "ceo", "chief executive", "president",
+              "co-founder", "cofounder", "partner", "head", "vp", "director")
+
+
+def _decision_maker_rank(position: str, seniority: str) -> int:
+    p = (position or "").lower()
+    for i, kw in enumerate(_ROLE_RANK):
+        if kw in p:
+            return i
+    if (seniority or "").lower() == "executive":
+        return len(_ROLE_RANK)
+    return len(_ROLE_RANK) + 1
+
+
+@_transient
+async def _hunter_domain(client: httpx.AsyncClient, key: str, domain: str):
+    """Domain search → pick the most senior decision-maker + their email."""
+    r = await client.get(
+        "https://api.hunter.io/v2/domain-search",
+        params={"domain": domain, "api_key": key, "limit": 25, "type": "personal"},
+    )
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()
+    if r.status_code != 200:
+        return None
+    emails = (r.json().get("data") or {}).get("emails") or []
+    candidates = [e for e in emails if (e.get("value") or "").strip()]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda e: (_decision_maker_rank(e.get("position", ""), e.get("seniority", "")),
+                                   -(e.get("confidence") or 0)))
+    best = candidates[0]
+    return {
+        "email": best["value"].strip().lower(),
+        "first_name": (best.get("first_name") or "").strip(),
+        "last_name": (best.get("last_name") or "").strip(),
+        "title": (best.get("position") or "").strip(),
+        "email_score": int(best.get("confidence") or 0),
+        "email_status": (best.get("verification") or {}).get("status") or "unknown",
+    }
+
+
+@app.command()
+def find(
+    in_: str = typer.Option(..., "--in", help="candidates CSV: domain + first_name/last_name or name"),
+    out: str = typer.Option(..., "--out", help="contacts CSV with email,email_score,email_status"),
+    provider: str = typer.Option("hunter", "--provider", help="hunter | findymail"),
+    concurrency: int = typer.Option(10, "--concurrency"),
+    min_score: int = typer.Option(80, "--min-score", help="drop emails below this confidence (hunter score)"),
+):
+    """name + domain -> verified work email (Clay's find-work-email, headless)."""
+    if provider not in _PROVIDERS:
+        raise typer.BadParameter(f"unknown provider {provider!r}; one of {sorted(_PROVIDERS)}")
+    rows = io.read_csv(in_, models.Row)
+    key = auth.get_token(provider)
+    adapter = _PROVIDERS[provider]
+
+    async def main() -> list[models.Contact]:
+        sem = asyncio.Semaphore(max(1, concurrency))
+        found: list[models.Contact] = []
+        async with httpx.AsyncClient(timeout=60) as client:
+            async def one(row: models.Row) -> None:
+                domain = (getattr(row, "domain", "") or "").strip().lower()
+                first, last = _split_name(row)
+                if not domain or not first:
+                    events.emit("findemail.skip_input", level="warn",
+                                reason="missing domain or name", domain=domain)
+                    return
+                async with sem:
+                    email, score, status = await adapter(client, key, domain, first, last)
+                if not email:
+                    events.emit("findemail.not_found", domain=domain, name=f"{first} {last}".strip())
+                    return
+                if score < min_score:
+                    events.emit("findemail.low_score", email=email, score=score, status=status)
+                    return
+                passthrough = {
+                    k: v for k, v in row.model_dump().items()
+                    if k not in ("email",) and isinstance(v, str | int | float | bool)
+                }
+                try:
+                    found.append(models.Contact(
+                        **{**passthrough, "email": email, "first_name": first, "last_name": last,
+                           "domain": domain, "email_score": score, "email_status": status}
+                    ))
+                except ValueError as e:
+                    events.emit("findemail.bad_email", level="warn", email=email, reason=str(e))
+                    return
+                events.emit("findemail.found", email=email, score=score, status=status)
+
+            await asyncio.gather(*(one(r) for r in rows))
+        return found
+
+    contacts = asyncio.run(main())
+    n = io.write_csv(out, contacts)
+    events.emit("findemail.done", provider=provider, input=len(rows), found=n)
+    typer.echo(f"findemail.find: {n}/{len(rows)} verified emails via {provider}")
+
+
+@app.command("find-exec")
+def find_exec(
+    in_: str = typer.Option(..., "--in", help="domains CSV: just `domain` (+ passthrough e.g. brand)"),
+    out: str = typer.Option(..., "--out"),
+    concurrency: int = typer.Option(10, "--concurrency"),
+    min_score: int = typer.Option(80, "--min-score"),
+):
+    """domain -> the most senior decision-maker + their verified email (Hunter
+    domain-search). No founder name needed — Hunter finds the person. This is
+    the fully domain-only headless path: domains.csv -> contacts.csv."""
+    rows = io.read_csv(in_, models.Row)
+    key = auth.get_token("hunter")
+
+    async def main() -> list[models.Contact]:
+        sem = asyncio.Semaphore(max(1, concurrency))
+        found: list[models.Contact] = []
+        async with httpx.AsyncClient(timeout=60) as client:
+            async def one(row: models.Row) -> None:
+                domain = (getattr(row, "domain", "") or "").strip().lower()
+                if not domain:
+                    return
+                async with sem:
+                    res = await _hunter_domain(client, key, domain)
+                if not res:
+                    events.emit("findemail.no_exec", domain=domain)
+                    return
+                if res["email_score"] < min_score:
+                    events.emit("findemail.low_score", domain=domain, **res)
+                    return
+                passthrough = {
+                    k: v for k, v in row.model_dump().items()
+                    if k not in ("email", "first_name", "last_name", "title")
+                    and isinstance(v, str | int | float | bool)
+                }
+                try:
+                    found.append(models.Contact(**{**passthrough, "domain": domain, **res}))
+                except ValueError as e:
+                    events.emit("findemail.bad_email", level="warn", reason=str(e))
+                    return
+                events.emit("findemail.found", domain=domain, email=res["email"],
+                            title=res["title"], score=res["email_score"])
+
+            await asyncio.gather(*(one(r) for r in rows))
+        return found
+
+    contacts = asyncio.run(main())
+    n = io.write_csv(out, contacts)
+    events.emit("findemail.done", provider="hunter-domain", input=len(rows), found=n)
+    typer.echo(f"findemail.find-exec: {n}/{len(rows)} decision-makers found")
+
+
+if __name__ == "__main__":
+    sys.exit(app())
