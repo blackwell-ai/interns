@@ -6,9 +6,27 @@ harness `clay-cold-email` skill — this is a standalone Python script (no LLM
 in the orchestration loop except the one-sentence hook), so a long campaign
 costs almost no Claude tokens.
 
-**Inputs:** a batch CSV with columns `brand,domain,email,first_name`. Build it
-from `~/Documents/Giftly` candidate lists (deduped against suppression) and/or
-Clay-enriched named contacts.
+## One command (the fast path — ≈3–5 min human time)
+
+```bash
+bash skills/autonomous-outreach/campaign.sh --from samarjit --dry   # enrich+filter, send nothing
+bash skills/autonomous-outreach/campaign.sh --from samarjit          # send it
+```
+
+`campaign.sh` chains the whole pipeline with the 2026-06-10-proven defaults:
+`findemail.find-exec` over `lead_bank.csv` (Hunter, conc 5, verified emails) →
+`prep_queue.py` (drop invalid/generic/no-name) → `send_fast.py` (HTML,
+co-founders CC'd, suppression-deduped, paced). Flags: `--from
+samarjit|armaan|ethan|shamit`, `--domains <csv>`, `--min-score N`, `--pace S`,
+`--dry`. Watch progress in the **Supabase ledger, not Gmail search** (it lags —
+see `harness/learnings/03`). Dedup means re-running the same bank sends to
+nobody new, so keep `lead_bank.csv` fed with fresh domains. Full reuse recipe +
+lessons: `harness/learnings/`.
+
+**Inputs:** a batch CSV with columns `brand,domain,email,first_name` (what
+`prep_queue.py` produces), or just `brand,domain` for `campaign.sh` to enrich.
+The committed `lead_bank.csv` (224 DTC domains) is the default universe; grow it
+over time. Clay CSV exports also still work as input.
 
 **Credentials:** gogcli (Dartmouth send account); Supabase keys from
 `credentials/.env` for the suppression/ledger writes. The personalization hook

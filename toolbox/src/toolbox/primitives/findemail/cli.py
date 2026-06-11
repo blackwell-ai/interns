@@ -146,7 +146,7 @@ def find(
     in_: str = typer.Option(..., "--in", help="candidates CSV: domain + first_name/last_name or name"),
     out: str = typer.Option(..., "--out", help="contacts CSV with email,email_score,email_status"),
     provider: str = typer.Option("hunter", "--provider", help="hunter | findymail"),
-    concurrency: int = typer.Option(10, "--concurrency"),
+    concurrency: int = typer.Option(5, "--concurrency", help="keep low: Hunter rate-limits above ~5 (see harness/learnings/03)"),
     min_score: int = typer.Option(80, "--min-score", help="drop emails below this confidence (hunter score)"),
 ):
     """name + domain -> verified work email (Clay's find-work-email, headless)."""
@@ -202,7 +202,7 @@ def find(
 def find_exec(
     in_: str = typer.Option(..., "--in", help="domains CSV: just `domain` (+ passthrough e.g. brand)"),
     out: str = typer.Option(..., "--out"),
-    concurrency: int = typer.Option(10, "--concurrency"),
+    concurrency: int = typer.Option(5, "--concurrency", help="keep low: Hunter rate-limits above ~5 (see harness/learnings/03)"),
     min_score: int = typer.Option(80, "--min-score"),
 ):
     """domain -> the most senior decision-maker + their verified email (Hunter
