@@ -20,12 +20,10 @@
   .eyebrow { font-size: 8.5pt; letter-spacing: 0.22em; text-transform: uppercase; color: #6e6e6e; margin: 1.2in 0 0.45in 0; }
   h1.title { font-size: 26pt; line-height: 1.15; margin: 0 0 0.4in 0; letter-spacing: -0.01em; }
   .lede { font-size: 11pt; line-height: 1.65; color: #222; max-width: 5.9in; }
-  .scorebox { border: 1.5px solid #1a1a1a; width: 3.4in; padding: 14pt 18pt; margin: 0.5in 0 0.9in 0; }
-  .scorebox .grade { font-size: 30pt; font-weight: bold; line-height: 1; }
-  .scorebox .label { font-size: 9.5pt; color: #555; margin-top: 6pt; }
-  .coverfoot { border-top: 0.75pt solid #cfcfcf; padding-top: 10pt; font-size: 9pt; color: #444; }
+  .coverfoot { border-top: 0.75pt solid #cfcfcf; padding-top: 10pt; font-size: 9pt; color: #444; margin-top: 1.6in; }
   .coverfoot .co { font-weight: bold; color: #1a1a1a; }
   h2 { font-size: 15.5pt; margin: 0 0 4pt 0; padding-bottom: 6pt; border-bottom: 0.75pt solid #cfcfcf; page-break-after: avoid; }
+  h3 { font-size: 10.5pt; margin: 14pt 0 4pt 0; page-break-after: avoid; }
   .section { page-break-before: always; }
   p { margin: 7pt 0; }
   ul { margin: 6pt 0 10pt 0; padding-left: 14pt; }
@@ -41,9 +39,25 @@
   th { text-align: left; font-size: 7.5pt; letter-spacing: 0.1em; text-transform: uppercase; color: #777; font-weight: normal; padding: 0 10pt 5pt 0; border-bottom: 0.75pt solid #cfcfcf; }
   td { padding: 6pt 10pt 6pt 0; border-bottom: 0.5pt solid #e3e3e3; vertical-align: top; }
   tr:last-child td { border-bottom: 0.75pt solid #cfcfcf; }
+  tr { page-break-inside: avoid; }
   td.num { white-space: nowrap; }
   .good { color: #1d5c34; font-weight: bold; }
   .bad  { color: #9b1c1c; font-weight: bold; }
+  .draftbox { border: 0.75pt solid #cfcfcf; background: #f7f7f7; padding: 10pt 14pt; margin: 10pt 0; font-size: 9.5pt; line-height: 1.6; page-break-inside: avoid; }
+  .draftbox .dl { font-size: 7.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: #777; margin-bottom: 5pt; }
+  .confirm { color: #946300; }
+  .figure { margin: 12pt 0; page-break-inside: avoid; }
+  .figure img { width: 100%; border: 0.5pt solid #d8d8d8; }
+  .figcap { font-size: 8.5pt; color: #666; margin-top: 4pt; line-height: 1.5; }
+  pre.code { font-family: "DejaVu Sans Mono", monospace; font-size: 7.6pt; line-height: 1.5;
+    background: #f7f7f7; border: 0.75pt solid #cfcfcf; padding: 9pt 12pt; margin: 8pt 0 4pt 0;
+    white-space: pre-wrap; page-break-inside: avoid; }
+  pre.code .add { background: #dcece1; display: inline-block; width: 100%; }
+  pre.code .ph { color: #946300; font-weight: bold; }
+  .codecap { font-size: 8.5pt; color: #666; margin: 2pt 0 12pt 0; line-height: 1.5; }
+  .eq { text-align: center; font-size: 15pt; font-weight: bold; letter-spacing: 0.04em;
+    margin: 14pt 0 4pt 0; }
+  .eqsub { text-align: center; font-size: 8.5pt; color: #666; margin: 0 0 12pt 0; }
   .methodnote { font-size: 8.5pt; color: #777; line-height: 1.55; margin-top: 22pt; }
 </style>
 </head>
@@ -53,69 +67,135 @@
 <div class="eyebrow">AI Visibility &middot; Follow-up Brief</div>
 <h1 class="title">Husqvarna Automower<br>iQ Series Follow-up</h1>
 <p class="lede">
-Since the June 2 audit we re-pulled the BBB profile on the entity registered to
-husqvarna.com/us, added Amazon Rufus to the engine battery, re-tested every
-critical finding, and traced the &ldquo;wired and dated&rdquo; mislabeling to named
-sources. The corrected inputs move the numbers by hundredths. This brief has the updated evidence and a fixed Phase&nbsp;1 scope.
+This brief leads with what Husqvarna asked to see: specific content
+proposals, drafted copy and structured data ready to hand to the web team,
+built only from publicly available product information. The Amazon testing
+requested in the meeting follows, and the engagement terms are on the last
+page.
 </p>
-<div class="coverfoot" style="margin-top: 1.4in;">
+<div class="coverfoot">
   <span class="co">Blackwell Enterprises</span><br>
   Armaan Priyadarshan &nbsp;&middot;&nbsp; Samarjit Deshmukh &nbsp;&middot;&nbsp; Ethan Zhou &nbsp;&middot;&nbsp; Shamit D&rsquo;Souza<br>
   June 11, 2026 &nbsp;&middot;&nbsp; armaan.priyadarshan.29@dartmouth.edu
 </div>
 
-<!-- RE-CHECKED -->
+<!-- PDP CONTENT PROPOSALS -->
 <div class="section">
-<h2>Re-checked live, June 11</h2>
+<h2>Proposed product-page updates</h2>
+<p>Everything in this section is drafted from public information: the current pages, their
+structured data, the product FAQs, and the live Amazon listings. The changes cover the
+product description, the visible page copy and price, the offer data (seller, shipping,
+returns, price validity, GTIN), the rating markup strategy, the retirement of the
+discontinued model pages, and additions to the page FAQs. Each one is paste-ready copy for
+the web team, with the facts that need Husqvarna&rsquo;s confirmation marked.</p>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-critical">Critical</span>An agent still cannot buy</div>
-  <p>The agent endpoints (/.well-known/ucp, agent.json, ai-plugin.json) return 403.
-  The product pages have no checkout: &ldquo;Add To Cart&rdquo; exists only as a script string next
-  to &ldquo;Not Available Online,&rdquo; and &ldquo;Buy Now&rdquo; is financing copy. The price ($2,599.99 /
-  $3,299.99 / $4,299.99) appears only in the structured-data block, not in the visible text.</p>
+<h3>1. The worked sample: the 440 iQ, as it would ship</h3>
+<p>This is the Product node the 440 iQ page serves today, with the proposed additions
+marked. Values come from the live page and listing; the two the web team cannot know are
+flagged for Husqvarna to fill in.</p>
+<pre class="code">{
+  "@type": "Product",
+  "name": "Automower&#174; 440 iQ",
+  "sku": "970727601",
+  "mpn": "970727601",
+<span class="add">+ "gtin13": <span class="ph">"[from product packaging]"</span>,</span>
+<span class="add">+ "description": "The Automower&#174; 440 iQ is a wire-free robotic lawn mower</span>
+<span class="add">+   for yards up to 2 acres. It navigates with Husqvarna's EPOS&#8482; satellite</span>
+<span class="add">+   positioning and the included reference station, with no boundary wire to</span>
+<span class="add">+   bury, handles slopes up to 45%, and is set up and managed from the</span>
+<span class="add">+   Automower&#174; Connect app.",</span>
+  "brand": { "@type": "Brand", "name": "Husqvarna" },
+  "image": [ ...three captioned ImageObjects, unchanged... ],
+  "offers": {
+    "@type": "Offer",
+    "price": 4299.99,
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock",
+    "itemCondition": "https://schema.org/NewCondition",
+<span class="add">+   "seller": { "@type": "Organization", "name": "Husqvarna" },</span>
+<span class="add">+   "priceValidUntil": <span class="ph">"[next price review date]"</span>,</span>
+<span class="add">+   "shippingDetails": { "@type": "OfferShippingDetails",</span>
+<span class="add">+     "shippingRate": { "@type": "MonetaryAmount", "value": 0, "currency": "USD" },</span>
+<span class="add">+     "deliveryTime": <span class="ph">[per fulfillment terms]</span> },</span>
+<span class="add">+   "hasMerchantReturnPolicy": { "@type": "MerchantReturnPolicy",</span>
+<span class="add">+     "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",</span>
+<span class="add">+     "merchantReturnDays": <span class="ph">[per return policy]</span> }</span>
+  }
+}</pre>
+<div class="codecap">No aggregate rating on this page yet: publishing today means publishing
+3.5 stars from 22 reviews. The 410/420 ship theirs now (4.0 and 4.1); the 440 adds it after
+the review program.</div>
+
+<p>And the new entry in the FAQPage node already on the page, shown in place on the live page below:</p>
+<pre class="code">{
+  "@type": "Question",
+<span class="add">+ "name": "Will the Automower&#174; 440 iQ work in a yard with many trees?",</span>
+<span class="add">+ "acceptedAnswer": { "@type": "Answer",</span>
+<span class="add">+   "text": "Yes. The 440 iQ navigates with EPOS&#8482; satellite positioning</span>
+<span class="add">+     supported by the included reference station, which provides correction</span>
+<span class="add">+     data when parts of the yard have a limited view of the sky. You can map</span>
+<span class="add">+     zones under dense canopy in the Automower&#174; Connect app and set how the</span>
+<span class="add">+     mower handles them." }</span>
+}</pre>
+<div class="codecap">The same description text also belongs in the visible page body, where
+the price ($4,299.99) should appear as well; today both exist only in the data block.</div>
+
+<h3>2. The new page copy, rendered in place</h3>
+<p>One example of the copy additions above, rendered on the live 440 iQ page: the trees
+answer, drafted because it is the most common buyer objection the pages currently leave
+unanswered. It sits between the existing questions in the production accordion. The 410/420
+versions change only the model name.</p>
+<div class="figure">
+  <img src="assets/faq-proposed.png" alt="Proposed trees FAQ shown on the live 440 iQ page">
+  <div class="figcap">The 440 iQ page on husqvarna.com/us, June 11, with the proposed
+  question inserted third and expanded. <span class="confirm">One item needs Husqvarna&rsquo;s
+  confirmation before this publishes: recommended practice for extended dense canopy, and
+  whether a guide-wire kit is offered as a fallback.</span></div>
 </div>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-critical">Critical</span>The quotable reputation numbers got worse</div>
-  <p>Trustpilot, read this morning: 1.4 of 5 across 872 reviews, 81% one-star, profile still
-  unclaimed. Trustpilot&rsquo;s sidebar on that page advertises Mammotion (4.0, 2.6K reviews) and
-  Navimow. A June 9 review reads &ldquo;Bought 3 robot lawn mowers&hellip; all 3 died.&rdquo;</p>
-  <p>BBB, re-pulled on the entity registered to husqvarna.com/us (Husqvarna Professional
-  Products, Inc., Charlotte NC): A+ letter rating, 1.03 of 5 customer average across 58
-  reviews, 204 complaints in three years. The corrected entity reads slightly worse than the
-  June 2 figures (1.04, 191).</p>
+<h3>3. Per-page changes</h3>
+<table>
+  <tr><th>Page</th><th>Proposed changes</th></tr>
+  <tr><td class="num">410 iQ</td><td>Add the trees FAQ and description. Publish an aggregate rating in the markup, sourced from the 4.0&#9733;/45 retailer reviews. Show the $2,599.99 price in the visible text, not only in the data block.</td></tr>
+  <tr><td class="num">420 iQ</td><td>Same set: trees FAQ, description, rating markup from the 4.1&#9733;/23 retailer reviews, visible $3,299.99 price.</td></tr>
+  <tr><td class="num">440 iQ</td><td>Trees FAQ, description, visible $4,299.99 price. Hold the rating markup: publishing today means publishing 3.5&#9733; from 22 reviews. Run the review program first, then add it.</td></tr>
+  <tr><td class="num">430X / 450X / 450XH</td><td>Remove the Product schema from the discontinued pages, date them, and add a plain line pointing to the iQ successor. This is a content edit on existing support pages.</td></tr>
+</table>
+
+<h3>4. The product feed</h3>
+<p>Husqvarna is providing a product feed with detailed page data across the catalog. That
+extends this work past the three iQ pages: we apply the same checks (description, rating,
+price visibility, FAQ coverage, discontinued status) feed-wide, flag feed-vs-page
+mismatches like the $37.99 spread on the live Amazon listings, and the feed becomes the ground truth for the
+re-benchmark. The fee covers the full feed regardless of SKU count, starting with the
+direct-to-consumer products.</p>
+
 </div>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-high">High</span>Discontinued models still look live to a machine</div>
-  <p>The 430X URL now redirects to a support page marked discontinued, but that page still
-  serves a Product schema node, and the 450X and 450XH URLs still return 200. This is why
-  engines answer brand queries with the wrong, costlier model, and why the 430X shows up in
-  Rufus results.</p>
-</div>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-high">High</span>The pages don&rsquo;t answer the question buyers actually ask</div>
-  <p>The top objection in the third-party corpus is satellite dropout under trees. The product
-  pages say nothing about trees or canopy, in the text or in any of the nine structured FAQs,
-  even though the iQ&rsquo;s wire fallback answers it directly. The offer markup also omits GTIN,
-  rating, reviews, shipping, returns and seller, and the description field is empty.</p>
-</div>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-strength">Strength</span>Access is clean and recent fixes are real</div>
-  <p>Every AI crawler we tested gets a byte-identical page. The pages now carry FAQ schema
-  that opens with the wire-free answer, captioned imagery and video markup, all server-rendered.
-  The remaining work is specific and small; Phase 1 specifies it.</p>
-</div>
-</div>
-
-<!-- RUFUS -->
+<!-- AMAZON TESTING -->
 <div class="section">
-<h2>Amazon Rufus, first battery</h2>
-<p>Four buying prompts, run by hand on June 11 (Amazon allows no automated access;
-screenshots on file).</p>
+<h2>The Amazon testing, in detail</h2>
+
+<h3>How it was run</h3>
+<p>Amazon permits no automated access, so the battery is run by hand against Alexa for Shopping in
+the Amazon app from a logged-in account, with a screenshot of every answer. For each
+product the assistant surfaces we record the model, the price quoted, the star rating and review
+count shown, the seller, and the framing language verbatim. The full twelve-prompt battery ran on
+June 11; this brief includes the results of these four:</p>
+<ul>
+  <li>&ldquo;What&rsquo;s the best robotic lawn mower in 2026?&rdquo;</li>
+  <li>&ldquo;Which robotic lawn mower should I buy for a large yard?&rdquo;</li>
+  <li>&ldquo;I have about two acres, what robotic mower handles that?&rdquo;</li>
+  <li>&ldquo;What&rsquo;s a reliable robotic mower that works around lots of trees?&rdquo;</li>
+</ul>
+<p>The remaining eight prompts cover branded queries (&ldquo;Tell me about Husqvarna robotic
+mowers&rdquo;), model-level queries, price checks, review summaries, head-to-head comparisons
+against Navimow and Mammotion, and an add-to-cart instruction to test the purchase path.
+One protocol note from the first run: Alexa for Shopping carries memory across a session (the
+tree-yard answer referenced &ldquo;your two acres&rdquo; from the prior prompt), so the full battery
+runs one prompt per fresh session.</p>
+
+<h3>What it found</h3>
 <table>
   <tr><th>Prompt</th><th>Husqvarna placement</th><th>Rating shown</th><th>Answer won by</th></tr>
   <tr><td>Best robotic mower 2026</td><td>Present, in the &ldquo;trusted brand, premium budget&rdquo; slot (410iQ)</td><td class="num">4.0&#9733; (45)</td><td>ECOVACS / Mammotion / Navimow</td></tr>
@@ -123,88 +203,84 @@ screenshots on file).</p>
   <tr><td>Two acres</td><td class="good">Top pick: 440iQ, &ldquo;only option rated for 2 acres&rdquo;</td><td class="num">3.5&#9733; (22)</td><td class="good">Husqvarna</td></tr>
   <tr><td>Tree-heavy yard</td><td>In the premium bucket, out of the top picks</td><td class="num">4.0/4.1&#9733;</td><td>ANTHBOT / ECOVACS</td></tr>
 </table>
-<p>Rufus reads Amazon&rsquo;s catalog, and it gets the iQ right: wire-free in every answer, with
+
+<p>Alexa for Shopping reads Amazon&rsquo;s catalog, and it gets the iQ right: wire-free in every answer, with
 the 430X correctly flagged as the wired one. The open-web engines read the third-party
-corpus and call the same products wired. That contrast localizes the problem. The product
-data is fine; the corpus is not.</p>
-<p>Where Rufus stated a preference, it priced reviews: best overall went to Mammotion at
-4.4&#9733;/87 against the 440iQ&rsquo;s 3.5&#9733;/22. An analysis of 1,300+ Rufus recommendations
-(Amalytix) found it almost never recommends below 4.0&#9733;, and its median pick has 4.5&#9733;
-and about 3,000 reviews. The 440iQ won the two-acre slot on spec coverage alone, which
-holds only until a competitor ships a 2-acre model. Amazon listings also run $38 over the
-brand site on the 410 and 420, a third-party seller signature.</p>
-</div>
+corpus and call the same products wired. The product data is fine; the corpus is not.</p>
+<p>Where it stated a preference, it priced reviews. Best overall went to Mammotion at
+4.4&#9733;/87 against the 440iQ&rsquo;s 3.5&#9733;/22. An Amalytix analysis of 1,300+ recommendations
+from Amazon&rsquo;s shopping assistant found it almost never recommends below 4.0&#9733;, and its median pick has 4.5&#9733;
+and about 3,000 reviews. The 440iQ won the two-acre slot on spec coverage alone. The
+discontinued 430X also appeared twice as a live option, at $2,153.06.</p>
 
-<!-- CORPUS -->
-<div class="section">
-<h2>Where &ldquo;wired and dated&rdquo; comes from</h2>
-<p>We swept 18 ranking pages, the comparison sites, Reddit and YouTube. The pattern: major
-publishers are still testing 2022 wired models, and the best-ranked wire-free content is
-written by competitors. Engines repeat what they can retrieve.</p>
+<h3>Listing prices vs the brand site</h3>
 <table>
-  <tr><th>Source</th><th>Updated</th><th>What it tells an engine</th></tr>
-  <tr><td>PCWorld</td><td class="num">Sep 2025</td><td>Husqvarna (435X) &ldquo;depends on a boundary wire&rdquo;; no iQ</td></tr>
-  <tr><td>Reviewed (USA Today)</td><td class="num">May 2026</td><td>Brand absent; used as the boundary-wire example</td></tr>
-  <tr><td>SlashGear</td><td class="num">Jun 9, 2026</td><td>Husqvarna &ldquo;requires boundary wire setup&rdquo;; Segway #1</td></tr>
-  <tr><td>Lawn Love</td><td class="num">May 2026</td><td>Wire install &ldquo;a notable limitation&rdquo;</td></tr>
-  <tr><td>BBC Gardeners&rsquo; World</td><td class="num">Apr 2026</td><td>Reviews the wired 308V; EPOS treated as an add-on</td></tr>
-  <tr><td>Mammotion&rsquo;s own blog</td><td class="num">Mar 2026</td><td>Ranks #1 in Google for &ldquo;best robot lawn mower 2026&rdquo;; Husqvarna absent</td></tr>
-  <tr><td>&ldquo;Luba vs Husqvarna&rdquo; sites (4)</td><td class="num">2024-25</td><td>All four say &ldquo;requires boundary wires&rdquo;; none mention the iQ</td></tr>
-  <tr><td>r/automower threads</td><td class="num">2024-25</td><td>&ldquo;EPOS loses satellites under trees,&rdquo; with no reply from anyone</td></tr>
-  <tr><td>YouTube 2026 roundups</td><td class="num">2026</td><td>40-135K views each, no iQ; the one iQ video has 11K views</td></tr>
+  <tr><th>Model</th><th>husqvarna.com</th><th>Amazon listing</th><th>Difference</th><th>Amazon rating</th></tr>
+  <tr><td>Automower 410 iQ</td><td class="num">$2,599.99</td><td class="num">$2,637.98</td><td class="num bad">+$37.99</td><td class="num">4.0&#9733; (45)</td></tr>
+  <tr><td>Automower 420 iQ</td><td class="num">$3,299.99</td><td class="num">$3,337.98</td><td class="num bad">+$37.99</td><td class="num">4.1&#9733; (23)</td></tr>
+  <tr><td>Automower 440 iQ</td><td class="num">$4,299.99</td><td class="num">$4,299.00</td><td class="num">&minus;$0.99</td><td class="num">3.5&#9733; (22)</td></tr>
 </table>
-<p>Only 4 of the 18 ranking pages mention the iQ at all, all small blogs, and those are the
-amplification targets. Why this matters: 43.8% of the pages ChatGPT cites on &ldquo;best X&rdquo;
-questions are exactly these lists, 79% updated within a year (Ahrefs, 26K cited URLs), and
-YouTube mentions are the strongest measured correlate of AI visibility (r&nbsp;&asymp;&nbsp;0.74,
-Ahrefs, 75K brands). ChatGPT&rsquo;s citations track Bing, not Google, and about 90% of what it
-cites sits past position 20 in Google, so existing SEO work doesn&rsquo;t transfer.</p>
+<p>The identical $37.99 markup on two models is a third-party seller signature. The next pass adds a
+seller-of-record check on each listing and a review of whether A+ brand content is present;
+87% of the assistant&rsquo;s recommended products carry it.</p>
 </div>
 
-<!-- PHASE 1 -->
+<!-- ENGAGEMENT -->
 <div class="section">
-<h2>Phase 1: $1,000 fixed, two to three weeks</h2>
+<h2>The engagement</h2>
 
-<p><b>What Blackwell delivers.</b> Acceptance criteria attach here.</p>
-<ul>
-  <li>A patch spec for each iQ page: ready-to-paste structured data (rating from the real
-  ~4.0 retailer reviews, GTIN, description, shipping, returns, seller), the validator fix
-  list, FAQ copy answering the under-trees objection, and a visible-price recommendation.</li>
-  <li>A retirement spec for the discontinued models: strip their Product schema, date the
-  pages, point to the iQ successors.</li>
-  <li>The correction dossier: every source in the table above with the offending sentence
-  quoted, publisher contacts, drafted outreach letters, the YouTube seeding list, the
-  amplification list.</li>
-  <li>A reputation playbook: Trustpilot claim walkthrough with response templates, a BBB
-  response track, and an Amazon review-program spec aimed at Rufus&rsquo;s observed floor.</li>
-  <li>The re-benchmark: the six-engine battery plus Rufus, graded against the frozen June 2
-  truth table, delivered as a before/after deck.</li>
-</ul>
+<div class="eq">V = R &times; C &times; K &times; S &times; T</div>
+<div class="eqsub">Retrievability &middot; Comprehensibility &middot; Corroboration &middot; Salience &middot; Transactability, each 0 to 1</div>
+<p>The June 2 audit modeled visibility as the product of five gates, because a buyer
+reaches a product only when every one of them holds. Husqvarna measured
+0.86&nbsp;&times;&nbsp;0.68&nbsp;&times;&nbsp;0.42&nbsp;&times;&nbsp;0.38&nbsp;&times;&nbsp;0.30:
+strong retrieval doing no work because the three low factors dominate the product. The five
+scorecard dimensions map onto the factors directly, the content in this engagement targets
+corroboration, salience and transactability in that order of leverage, and every weekly
+audit re-measures all five.</p>
 
-<p><b>What Husqvarna executes.</b> CMS changes (we have no access to your properties),
-claiming the Trustpilot profile (verification runs through your domain), sending outreach
-and review units (your inventory, your channels), and Amazon listing work (your vendor
-account). We prepare all of it; your team ships it.</p>
+<p><b>Shape.</b> Fixed fee of $1,000, two to three weeks from countersignature. The fee is
+not per SKU: it covers however many products the feed contains. Work starts with the
+direct-to-consumer products and moves up the catalog from there. The deliverables are
+drafted content and markup, ready to ship as is, plus a weekly audit.</p>
 
-<p><b>What nobody can promise.</b> Whether PCWorld updates an article, whether a channel
-publishes a review, whether Reddit sentiment moves. We measure whether it happened. We
-don&rsquo;t sell that it will. That is why the re-benchmark is the deliverable: it shows what
-moved regardless of who moved it, and if a lever turns out to be dead, you&rsquo;ll know that
-too.</p>
+<p><b>Weekly audits.</b> Each week we re-run the audit in the same form as the June 2
+deliverable: the two-pass prompt battery (browsing off, then forced on) across ChatGPT,
+Claude, Gemini, Perplexity, Microsoft Copilot and Google AI Mode, graded against the truth
+table frozen from husqvarna.com on June 2 and scored on the same five dimensions:
+Discoverability, Quotability, Recommendability, Transactability and Reputation. Each weekly
+deck uses the audit format, so the weeks read side by side and movement is attributable to
+what shipped that week.</p>
 
-<p>Score-movement expectations assume the specs ship before the re-test date. Public Goods
-ran this same structure after their audit.</p>
+<p><b>Content.</b> Week one delivers the product-page updates in the format shown on the
+proposals pages, for the three iQ pages and the discontinued-model pages, with every
+fact-to-confirm flagged. When the product feed arrives, the same checks run across the
+catalog, direct-to-consumer products first. The reputation playbook ships in week one as
+well: a Trustpilot claim walkthrough with response templates, a BBB response track, and an
+Amazon review-program outline.</p>
 
-<p><b>Next step.</b> $1,000 fixed, scope above, specs and dossier delivered in week one,
-re-benchmark closes the engagement. We can start this week.</p>
+<p><b>Third-party sites.</b> We track the ranking pages, comparison sites, forums and video
+coverage the engines read. When coverage changes or misstates the product line, we suggest
+the specific fix. Suggestions only; what goes out under the brand&rsquo;s name is
+Husqvarna&rsquo;s call.</p>
+
+<p><b>Who does what.</b> We draft, research and measure. Husqvarna confirms product facts,
+ships the content, and claims its own review profiles. We have no access to the CMS or
+brand channels, by design.</p>
+
+<p><b>Acceptance.</b> The engagement is complete when the proposals and the playbook have
+been delivered and the weekly audits have run through the period, with the final audit
+read against June 2 as the before/after. Score movement depends on what ships between
+audits.</p>
 
 <div class="methodnote">
 Method note. Re-verification performed June 11, 2026: direct fetches of the three iQ product
 pages under six user agents with structured-data extraction; agent-endpoint checks; BBB pull
-on the entity registered to husqvarna.com/us; live Trustpilot read; four-prompt Rufus battery
-run manually with screenshots retained; source sweep across 18 ranking pages, comparison
-sites, Reddit (via mirror; dates approximate) and YouTube (view counts via public API). All
-grading references the truth table frozen from husqvarna.com on June 2, 2026.
+on the entity registered to husqvarna.com/us; live Trustpilot read; four-prompt Alexa for Shopping battery
+run manually with screenshots retained. All
+grading references the truth table frozen from husqvarna.com on June 2, 2026. Draft copy in
+this brief uses only facts from husqvarna.com product pages, their structured data and FAQs,
+and live Amazon listings; items marked for confirmation are not published claims.
 </div>
 </div>
 

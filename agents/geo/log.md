@@ -31,3 +31,12 @@ on capability-honest scope tiers.
 Open follow-ups: Rufus prompts 5–12 (Armaan, manual); seller-of-record
 capture on Amazon listings; if Phase 1 closes, codify the audit flow as
 skills/ai-visibility-audit/ per the charter.
+
+## 2026-06-11 — Follow-up meeting held (Armaan)
+
+Positive reception of the audit. Asks captured and shipped same day in the
+revised brief: Amazon testing detail, content-first proposals (worked
+trees-FAQ + description drafts), per-page PDP updates from public data,
+engagement terms. Husqvarna is sending a product feed with detailed PDPs
+across the catalog — next session should ingest it, run the page checks
+feed-wide, and extend the proposals. Rufus prompts 5-12 still open.

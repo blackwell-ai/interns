@@ -13,9 +13,9 @@ internal. Goal: close a $1,000 Phase 1.
 - Agent endpoints still 403. No checkout. Price exists only in JSON-LD.
 - Nothing on the product pages answers the under-trees objection.
 - 430X support page still serves Product schema; 450X/450XH still return 200.
-- Rufus (4 prompts, manual): iQ described correctly as wire-free, top pick on
+- Alexa for Shopping (4 prompts, manual): iQ described correctly as wire-free, top pick on
   the two-acre question, present in all four answers. Lost "best overall" to
-  Mammotion on reviews (4.4/87 vs 3.5/22). Rufus rarely recommends anything
+  Mammotion on reviews (4.4/87 vs 3.5/22). Alexa for Shopping rarely recommends anything
   under 4.0 stars; its median pick has ~3,000 reviews (Amalytix).
 - Corpus sweep: PCWorld, Reviewed, SlashGear, Lawn Love and BBC Gardeners'
   World all still test wired models or omit the brand. Mammotion's own blog
@@ -27,7 +27,7 @@ internal. Goal: close a $1,000 Phase 1.
 
 - Lead with the re-checks: every critical finding reproduced this morning,
   and the corrected BBB entity made the number worse, not better.
-- Rufus is the useful contrast: it reads their catalog and gets the product
+- Alexa for Shopping is the useful contrast: it reads their catalog and gets the product
   right. The open-web engines read PCWorld and Reddit and get it wrong. The
   product data is fine. The corpus is the problem, and the corpus is the
   scope.
@@ -39,11 +39,11 @@ internal. Goal: close a $1,000 Phase 1.
 
 - "We can do this ourselves." The schema work, yes, and the spec hands it to
   your team. The measurement harness is the part you can't reproduce: six
-  engines, two passes, frozen baseline, plus Rufus. Take the specs; we still
+  engines, two passes, frozen baseline, plus Alexa for Shopping. Take the specs; we still
   measure.
 - "$1k for what?" Point at the scope page. Fixed fee, fixed deliverables,
   named re-test date.
-- "Rufus already ranks us fine." Because it reads your catalog. Buyers start
+- "Alexa for Shopping already ranks us fine." Because it reads your catalog. Buyers start
   in ChatGPT and Google, which read the corpus. We close that gap.
 
 ## The ask

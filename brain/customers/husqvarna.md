@@ -57,8 +57,17 @@ follow-up meeting.
 - **Old models**: 430X URL now redirects to a "Parts, manuals and support"
   page marked discontinued but still serving a Product schema node; 450X/450XH
   URLs still return 200.
-- **Amazon Rufus (manual run by Armaan, 4 prompts)**: Husqvarna appeared in
+- **Follow-up meeting (June 11, Armaan)**: positive on the audit. They asked
+  for Amazon testing detail, content change proposals (their code changes move
+  slowly; content is the focus), specific PDP updates from public data for the
+  three iQ pages, and engagement terms in the document. **They are providing a
+  product feed with detailed PDPs across the catalog** — extends proposals
+  feed-wide and grounds the re-benchmark. Fee terms: the $1,000 covers however
+  many SKUs the feed contains (not per-SKU); work starts with the DTC products
+  and moves up the catalog. Brief revised accordingly
+  (agents/geo/husqvarna-followup-2026-06-11.pdf).
+- **Amazon Alexa for Shopping (manual run by Armaan, 4 prompts; the assistant formerly branded Rufus)**: Husqvarna appeared in
   all 4 answers, top pick on the 2-acre question; correctly described as
-  wire-free (catalog-grounded). Where Rufus expressed preference it cited
+  wire-free (catalog-grounded). Where the assistant expressed preference it cited
   reviews (Mammotion 4.4/87 "best overall" vs 440iQ 3.5/22). 430X surfaced as
   live option. LiDAR-under-trees heuristic repeated.

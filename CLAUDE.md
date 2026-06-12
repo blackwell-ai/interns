@@ -20,6 +20,17 @@ documents, not just the code.
    still read `credentials/.env` until the M4 credential rotation.
 4. Check `inbox/queue/` for tasks addressed to you (or unassigned tasks you can do).
 
+## Writing
+
+All prose produced in this repo follows `skills/humanizer/SKILL.md`: customer
+documents, briefs, outreach copy, drafted content proposals, brain entries.
+Apply it while writing, not as a cleanup pass. Hard constraints from the
+skill: no em or en dashes in final text, plain copulas over "serves as,"
+no inflated significance, no rule-of-three padding, no bold-header colon
+lists, sentence-case headings, concrete claims with named sources over vague
+attribution. Scan customer-facing deliverables for `—` and `–` before
+shipping; a hit means it is not done.
+
 ## Task queue protocol (`inbox/`)
 
 - Tasks are single markdown files. Use `inbox/TEMPLATE.md` for the format.

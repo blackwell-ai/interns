@@ -22,6 +22,11 @@ deliberately and date the edit.
 - **Passive recon tooling** — curl with bot user-agents for crawlability
   testing, schema validators, UCP/structured-feed probes for agentic-commerce
   readiness.
+- **Live-page mockups** — content samples for customers are built from the
+  real thing, never imitated: curl or /browse the live page, inject the
+  proposed content into the production DOM, screenshot the result. A proposal
+  shown in the customer's own page styling lands harder than any redrawn
+  mock, and it proves the change fits the page as it exists.
 - **The brain** — `brain/customers/<name>.md` for engagement context and
   history; `brain/company/targets.md` for who we serve.
 
