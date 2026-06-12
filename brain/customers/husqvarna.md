@@ -7,6 +7,8 @@ Last updated June 10, 2026. Source: founder-provided canonical context.
 
 - **Mandy Iswarienko** — mandy.iswarienko@husqvarnagroup.com (primary thread)
 - **Hector BautistaDon** — hector.bautistadon@husqvarnagroup.com
+- **Justin** (surname/email TBD) — sent the product feed June 12, 2026, with
+  scope questions on the follow-up brief
 
 ## Documents
 
@@ -65,9 +67,21 @@ follow-up meeting.
   feed-wide and grounds the re-benchmark. Fee terms: the $1,000 covers however
   many SKUs the feed contains (not per-SKU); work starts with the DTC products
   and moves up the catalog. Brief revised accordingly
-  (agents/geo/husqvarna-followup-2026-06-11.pdf).
+  (agents/geo/husqvarna/husqvarna-followup-2026-06-11.pdf).
+- **Product feed received (June 12)**: 1,254-product catalog export with PDP
+  fields (title, description, URL, category, price, per-star review counts) at
+  `agents/geo/husqvarna/husqvarna-product-feed-2026-06-11.csv`. Grounds the
+  feed-wide page checks and the proposal extension across the catalog.
 - **Amazon Alexa for Shopping (manual run by Armaan, 4 prompts; the assistant formerly branded Rufus)**: Husqvarna appeared in
   all 4 answers, top pick on the 2-acre question; correctly described as
   wire-free (catalog-grounded). Where the assistant expressed preference it cited
   reviews (Mammotion 4.4/87 "best overall" vs 440iQ 3.5/22). 430X surfaced as
   live option. LiDAR-under-trees heuristic repeated.
+- **Feed received June 12** (Justin's email): product feed with detailed PDPs
+  across the catalog. Their team added FAQs for Robotics & Chainsaws;
+  Trimmers & Blowers in progress. Justin asks: (1) what "as it would ship"
+  means, (2) confirm same depth across the full catalog, (3) whether we
+  provide 10+ FAQs per product elsewhere plus review existing FAQs as done
+  for the 440. Position in reply: review + gap-fill confirmed for every
+  product; FAQ count follows real buyer questions (roughly 8-12 on complex
+  products, fewer on simple ones), not a fixed quota.

@@ -4,7 +4,7 @@
 
 Customer: Husqvarna. Phase: post-audit follow-up (converting engineer
 critiques into Phase 1). Deliverable:
-`agents/geo/husqvarna-followup-2026-06-11.md`.
+`agents/geo/husqvarna/husqvarna-followup-2026-06-11.md`.
 
 Work done:
 - Designed 12-prompt Amazon Rufus battery; analyzed Armaan's manual run of
@@ -40,3 +40,13 @@ trees-FAQ + description drafts), per-page PDP updates from public data,
 engagement terms. Husqvarna is sending a product feed with detailed PDPs
 across the catalog — next session should ingest it, run the page checks
 feed-wide, and extend the proposals. Rufus prompts 5-12 still open.
+
+## 2026-06-12 — Product feed received; Husqvarna files reorganized
+
+The catalog feed arrived: 1,254 products with full PDP fields (title,
+description, URL, category, price, and per-star review counts). Filed at
+`agents/geo/husqvarna/husqvarna-product-feed-2026-06-11.csv`. Consolidated all
+Husqvarna GEO working files under `agents/geo/husqvarna/` (followup deck set,
+FAQ screenshots, and the feed); `AGENT.md` and this log stay at the geo root.
+Next session ingests the feed, runs the page checks feed-wide, and extends the
+PDP proposals across the catalog.
