@@ -22,8 +22,9 @@ documents, not just the code.
 
 ## Writing
 
-All prose produced in this repo follows `skills/humanizer/SKILL.md`: customer
-documents, briefs, outreach copy, drafted content proposals, brain entries.
+All communication produced in this repo follows `skills/humanizer/SKILL.md`,
+with no exceptions for medium: emails and customer replies, audits and briefs,
+outreach copy, drafted content proposals, brain entries.
 Apply it while writing, not as a cleanup pass. Hard constraints from the
 skill: no em or en dashes in final text, plain copulas over "serves as,"
 no inflated significance, no rule-of-three padding, no bold-header colon
