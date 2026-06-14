@@ -1,6 +1,10 @@
 # inbox/
 
-The task queue. Humans and agents drop work here; agents (and humans) pick it up.
+The git-tracked task fallback. The shared task hub is the Notion **Tasks**
+database (see `/CLAUDE.md` "Task hub" and
+`brain/decisions/2026-06-14-notion-task-hub.md`). Use `inbox/` when an agent runs
+headless or the Notion MCP is unavailable, then mirror the work into Notion at
+the next interactive session so the two stay in sync.
 
 ## Lifecycle
 

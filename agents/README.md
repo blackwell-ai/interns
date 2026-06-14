@@ -20,4 +20,6 @@ charter at any time.
 2. Add the agent to `brain/people/` as an employee.
 3. List any new credentials it needs in `credentials/.env`.
 4. Launch it with Claude Code from the repo root: it will read `/CLAUDE.md`,
-   then its own charter, then check `inbox/queue/`.
+   then its own charter, then check its tasks in the Notion **Tasks** hub (or
+   `inbox/queue/` when running headless). Add the agent as an option in the
+   Tasks database **Agent** field so work can be assigned to it.

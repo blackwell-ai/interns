@@ -18,7 +18,10 @@ documents, not just the code.
    login` once, then `toolbox auth connect <provider>` per integration (see
    `toolbox/TOOLBOX.md`). Transitional: legacy non-harness tools (gogcli)
    still read `credentials/.env` until the M4 credential rotation.
-4. Check `inbox/queue/` for tasks addressed to you (or unassigned tasks you can do).
+4. Check for tasks assigned to you. The shared hub is the Notion **Tasks**
+   database; if the Notion MCP is connected, look there for tasks where Agent is
+   your name (or that are unassigned). Running headless or without the MCP, fall
+   back to `inbox/queue/`. See "Task hub" below.
 
 ## Writing
 
@@ -32,17 +35,45 @@ lists, sentence-case headings, concrete claims with named sources over vague
 attribution. Scan customer-facing deliverables for `—` and `–` before
 shipping; a hit means it is not done.
 
-## Task queue protocol (`inbox/`)
+## Task hub (Notion + `inbox/`)
 
-- Tasks are single markdown files. Use `inbox/TEMPLATE.md` for the format.
-- **Claim** a task by moving it from `inbox/queue/` to `inbox/in-progress/` and
-  filling in the `claimed_by` and `claimed_at` fields. Never work a task that
-  another agent has claimed.
-- **Finish** by appending a `## Result` section to the task file and moving it to
-  `inbox/done/`. If you failed or are blocked, say so plainly in the result —
-  never report success that didn't happen.
-- If a task produces durable knowledge, write it into `brain/` and link it from
-  the task's result.
+Tasks live in two places that mirror each other. The Notion **Tasks** database
+is the shared, human-facing hub where everyone (people and agents) sees who is
+working on what. The repo `inbox/` is the git-tracked fallback for headless or
+scheduled runs where the Notion MCP is not authenticated.
+
+Notion Tasks database: https://app.notion.com/p/02f03570aa7e47d78e1b76e4ff3f7a12
+(data source `1f095b44-bfc7-441e-8d17-1d9cf91e0309`, under the Blackwell HQ page).
+Decision and full structure: `brain/decisions/2026-06-14-notion-task-hub.md`.
+
+Which one to use:
+
+- Interactive session with the Notion MCP connected: work in Notion. It is the
+  live source of truth for task state.
+- Headless, cron, or MCP unavailable: work in `inbox/` (below), then mirror the
+  change into Notion at the start of the next interactive session, so the two do
+  not drift.
+
+In Notion:
+
+- Humans own a task through the **Assignee** field. Agents own or execute a task
+  through the **Agent** field (Outreach, GEO, Researcher). A task can carry both
+  when a human owns it and an agent runs it.
+- **Claim** by setting Status to In progress and putting your name in Agent (or
+  Assignee). Never take over a task already In progress under someone else.
+- **Finish** by setting Status to Done and writing what happened as a comment on
+  the task. If you failed or are blocked, say so plainly. Never report success
+  that did not happen.
+- Durable knowledge still goes to `brain/`, linked from the task. Notion is the
+  coordination layer, not the knowledge store.
+
+In `inbox/` (fallback):
+
+- Tasks are single markdown files using `inbox/TEMPLATE.md`. Claim by moving from
+  `queue/` to `in-progress/` and filling `claimed_by` / `claimed_at`. Finish by
+  appending a `## Result` section and moving to `done/`.
+- Report failures and blockers honestly, and write durable knowledge into
+  `brain/` linked from the task result.
 
 ## Context weighting
 
