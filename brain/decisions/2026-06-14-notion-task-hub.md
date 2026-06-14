@@ -29,13 +29,21 @@ Notion users (Armaan, Samarjit, Ethan, Shamit), so humans can be assigned
 natively. The three agents (Outreach, GEO, Researcher) are not Notion users and
 are tracked through a select field.
 
-- Hub page: "Blackwell HQ" — https://app.notion.com/p/37fbea8c6fe78160af9ad1987ec39357
+- Hub page "Blackwell HQ" (shown as "HQ" once moved into the teamspace):
+  https://app.notion.com/p/37fbea8c6fe78160af9ad1987ec39357
 - Tasks database: https://app.notion.com/p/02f03570aa7e47d78e1b76e4ff3f7a12
-  (data source `1f095b44-bfc7-441e-8d17-1d9cf91e0309`)
-- Properties: Task (title), Status (Not started / In progress / Done), Assignee
-  (people, for humans), Agent (Outreach / GEO / Researcher), Priority, Area,
-  Customer, Due, Created.
-- Views: default table, Board by status, By person, By agent.
+  (data source `1f095b44-bfc7-441e-8d17-1d9cf91e0309`). Properties: Task, Status
+  (Not started / In progress / Done), Assignee (people, for humans), Agent
+  (Outreach / GEO / Researcher), Priority, Area, Customer (relation to the
+  Customers database), Due, Created. Views: default table, Board by status, By
+  person, By agent.
+- Customers database: https://app.notion.com/p/cae82edcbdf34f33a61a25799173e628
+  (data source `14c47d2c-0a1f-4244-b26c-f8b54625abf7`). Engagement tracker with
+  Stage, Type, Owner, Pilot fee, Benchmark, Assistant pilot, Primary contact,
+  Website, Brain file, Next step, and a two-way Tasks relation. Seeded with the
+  five grounded engagements (Husqvarna, Good Molecules, Public Goods, G&M Liquor,
+  Lundhags). Other roster names in `brain/customers/overview.md` get added once
+  status is confirmed. The Pipeline view groups by Stage.
 
 Ownership model: humans own a task through Assignee; agents own or execute
 through Agent; a task can carry both when a human owns it and an agent runs it.
@@ -58,10 +66,10 @@ the next interactive session so the two do not drift. Full protocol is in
   through the API, so it was created at the workspace root. Renaming the
   teamspace from the default personal name to "Blackwell" is worth doing at the
   same time.
-- Proposed next builds, not yet decided: a customer and engagement tracker
-  (related to Tasks) for pipeline and delivery state, a weekly batch tracker for
-  the YC cadence, and an agent standup feed so humans see agent work without
-  reading `agents/*/log.md`.
+- Customer and engagement tracker: built, see Structure above. Remaining
+  proposed builds, not yet decided: a weekly batch tracker for the YC cadence,
+  and an agent standup feed so humans see agent work without reading
+  `agents/*/log.md`.
 - Deliberately not built: a lead CRM (would duplicate Clay, see
   `brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`) and a knowledge
   base (would duplicate the repo brain).
