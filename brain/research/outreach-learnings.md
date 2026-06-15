@@ -2,6 +2,31 @@
 
 What has actually worked. The outreach agent reads and extends this file.
 
+## Outreach approach update (2026-06-15, Armaan)
+
+How we run cold outreach going forward. Mirrored to the Notion Tasks hub as a
+task for Samarjit (https://app.notion.com/p/380bea8c6fe781e6ab94dd6cbdf32c7f).
+
+- Source via Clay. Use Clay, the lead workbench, for sourcing and enrichment when
+  running interactively, not the headless web-harvest plus Hunter path. Clay only
+  runs in an interactive session (see
+  `brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`). The headless
+  `autonomous-outreach` Hunter path stays as the fallback for cron or MCP-down runs.
+- Multiple contacts per company. Pull several decision-makers per company, not just
+  one: founder or CEO, head of ecommerce, head of operations, head of marketing.
+  Different roles see different nodes of the value chain, which serves the
+  exploration, and it raises reach per account. The ledger still dedupes per person.
+- Broaden the ICP for the exploration phase. Do not restrict to DTC plus GEO. First
+  cohort: founder-led Shopify and physical-product brands, roughly $1M to $20M, in
+  inventory-heavy categories (apparel, food and CPG, beauty, outdoor and home),
+  founder reachable. Then widen across the value chain: small businesses, supply
+  chain, manufacturers, and marketing orgs (the `brain/company/targets.md` secondary
+  segments). See [[cpg-ecommerce-value-chain]] and [[gaps-from-laggards]] for the
+  reasoning; the founder-led under-staffed band is the sharpest first cohort.
+- Message discipline. Keep the proven "Stanford Student Question" discovery opener
+  for the first broadened cohort, then test an inventory-and-ops-angle subject as a
+  second variant against the same segment. Change one variable at a time.
+
 ## Giftly-era contacts are suppressed (2026-06-10)
 
 All prior outreach was extracted from `~/Documents/Giftly` (send logs:
