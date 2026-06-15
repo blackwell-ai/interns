@@ -2,6 +2,25 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-15: Worcester local outreach (3 hometown sends)
+
+- Approach: dropped the cold "Stanford Student / AI retail" framing for a hometown
+  angle, per Armaan. Sent individually and solo (no co-founders CC'd), plain text,
+  from the Dartmouth account, for a personal feel. New framing: CS students at
+  Dartmouth who grew up in Worcester, helping small businesses bring in new
+  customers and revenue online, including from people who now shop with AI tools
+  like ChatGPT. Ask: a quick call or a one-sentence reply.
+- Sent: 3, zero failures. Seed to Stem (seedtostem@gmail.com, msg
+  19ecc908749f29eb); Crompton Collective (cromptoncollective@gmail.com, msg
+  19ecc9098970da04); Worcester Public Market (info@worcesterpublicmarket.org, msg
+  19ecc90aebdfc32a). Each claimed in the Supabase suppression ledger before send
+  (reason tagged Worcester local outreach), so no flow can double-contact them.
+- Replies / meetings: pending. Check the Dartmouth inbox or run
+  `skills/handle-replies/`.
+- Note: first relationship-style local send, testing the hometown,
+  in-person-adjacent angle the June 10 advisor pushed (be local, be likable, talk
+  to small businesses). A reply here is a signal to try more Worcester locals.
+
 ## 2026-06-10 (evening) — fully-headless sourcing + 166-send run from Samarjit
 
 - **Approach (zero manual lead work):** built the `findemail` harness primitive
