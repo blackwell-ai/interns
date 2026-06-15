@@ -28,6 +28,7 @@ SUPA = os.environ["SUPABASE_URL"] + "/rest/v1/suppression"
 KEY = os.environ["SUPABASE_SECRET_KEY"]
 LOG = "/tmp/autonomous_send_log.csv"
 PACE = float(os.environ.get("PACE", "6"))
+TODAY = time.strftime("%Y-%m-%d")
 
 def supa(method, url, payload=None, prefer="return=minimal"):
     h = {"apikey": KEY, "Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "Prefer": prefer}
@@ -39,7 +40,7 @@ def supa(method, url, payload=None, prefer="return=minimal"):
 
 def claim(email, brand):
     return supa("POST", SUPA, [{"channel":"email","recipient":email,
-        "reason":f"CLAIMED autonomous-volume 2026-06-10: {brand}"}]) in (200,201)
+        "reason":f"CLAIMED autonomous-volume {TODAY}: {brand}"}]) in (200,201)
 
 def update_reason(email, reason):
     supa("PATCH", f"{SUPA}?channel=eq.email&recipient=eq.{urllib.parse.quote(email)}", {"reason":reason})
@@ -48,7 +49,7 @@ def body_for(first_name, brand):
     greeting = f"Hi {first_name}," if first_name else "Hi there,"
     return f"""{greeting}
 
-We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with hundred-million-dollar brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {brand} to understand what's actually hard about growing online.
+We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with $100M brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {brand} to understand what's actually hard about growing online.
 
 Would you be open to a quick 10-minute call?
 
@@ -69,7 +70,7 @@ def body_html_for(first_name, brand):
     b = html_escape(brand)
     return f"""<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#222;">
 <p>{greeting}</p>
-<p>We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with hundred-million-dollar brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {b} to understand what's actually hard about growing online.</p>
+<p>We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with $100M brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {b} to understand what's actually hard about growing online.</p>
 <p>Would you be open to a quick 10-minute call?</p>
 <p>If not, even a one-sentence reply on your biggest challenge right now would be a huge help.</p>
 <p>Thanks,<br>{html_escape(SENDER_NAME)}</p>
@@ -100,11 +101,11 @@ def process_row(r, counts, log):
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
     log.writerow([ts, email, brand, status, detail]);
     if status == "sent":
-        update_reason(email, f"contacted 2026-06-10: blackwell volume cold email ({brand}; msg {detail})")
+        update_reason(email, f"contacted {TODAY}: blackwell volume cold email ({brand}; msg {detail})")
         counts["sent"] += 1
         if counts["sent"] % 10 == 0: print(f"... {counts['sent']} sent", flush=True)
     else:
-        update_reason(email, f"send FAILED 2026-06-10 ({brand}): {detail[:100]}")
+        update_reason(email, f"send FAILED {TODAY} ({brand}): {detail[:100]}")
         counts["failed"] += 1
     time.sleep(PACE)
 

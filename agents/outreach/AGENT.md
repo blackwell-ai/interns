@@ -46,7 +46,7 @@ canonical cold-email flow** — input is a Clay lead export.
    as the flow's input list.
 4. Every email goes to a verified address. A per-lead personalization hook is
    no longer required: the current DTC opener uses social proof
-   (hundred-million-dollar brands like Public Goods and Good Molecules) instead,
+   ($100M brands like Public Goods and Good Molecules) instead,
    so `compose.render` runs with `personalize` off and keeps rows that have no
    hook. When a template does use a `{{personalization_hook}}`, still ground it
    in something real about the lead.

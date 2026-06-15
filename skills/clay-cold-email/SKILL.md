@@ -40,7 +40,7 @@ on headless Claude Code (no key needed).
 (Armaan): keep the Stanford/Dartmouth student framing, the 10-minute call ask,
 and the one-sentence fallback, but drop the AI-visibility and GEO focus. It now
 carries a light "AI tools for DTC brands" line and uses social proof
-(hundred-million-dollar brands like Public Goods and Good Molecules) in place of
+($100M brands like Public Goods and Good Molecules) in place of
 a per-lead personalization hook, so `personalize` is off (flow.yaml) and rows
 are not dropped for a missing hook. It opens to any decision-maker, not only
 founders. The prior AI-retail version opened Beautylish, Public Goods, and
