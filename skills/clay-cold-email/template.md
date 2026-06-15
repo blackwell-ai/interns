@@ -1,5 +1,5 @@
 ---
-subject: Stanford Student Question about {{company}}
+subject: Stanford Student Question About {{company}}
 ---
 Hi {{first_name}},
 

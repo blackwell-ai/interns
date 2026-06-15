@@ -23,7 +23,7 @@ _COFOUNDERS = {
 }
 CC = os.environ.get("SEND_CC") or ",".join(a for a in _COFOUNDERS if a != ACC)
 SENDER_NAME = os.environ.get("SENDER_NAME") or _COFOUNDERS.get(ACC, "Armaan")
-SUBJECT_TMPL = "Stanford Student Question about {brand}"
+SUBJECT_TMPL = "Stanford Student Question About {brand}"
 SUPA = os.environ["SUPABASE_URL"] + "/rest/v1/suppression"
 KEY = os.environ["SUPABASE_SECRET_KEY"]
 LOG = "/tmp/autonomous_send_log.csv"

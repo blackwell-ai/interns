@@ -27,6 +27,9 @@ runs the campaign; Armaan is running the current one.
 - Message discipline. Keep the proven "Stanford Student Question" discovery opener
   for the first broadened cohort, then test an inventory-and-ops-angle subject as a
   second variant against the same segment. Change one variable at a time.
+- Format. Send every email as rich text/HTML with a plaintext fallback, not plain
+  text only. send_fast.py already does this; the clay-cold-email path must send the
+  HTML body.
 
 ## Giftly-era contacts are suppressed (2026-06-10)
 
