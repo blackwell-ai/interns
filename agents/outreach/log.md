@@ -2,6 +2,30 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-15 (batch 3): Clay-sourced DTC, 29 sends
+
+- First run of the broadened Clay motion (DTC, $1M to $200M, inventory-heavy
+  categories, multiple decision-makers per company). Sourced via Clay
+  find-and-enrich-contacts-at-company across 11 brands, emails enriched by Clay,
+  deduped against the ledger. Copy: the new DTC discovery opener (subject "Stanford
+  Student Question About {brand}", "AI tools for DTC brands", social proof Public
+  Goods and Good Molecules), HTML with plaintext fallback, from Armaan's Dartmouth
+  account, co-founders CC'd. This batch used the "hundred-million-dollar brands"
+  wording; later batches switch to "$100M".
+- Sent: 29, zero failures. Skipped 4 already-contacted founders (andrew@graza.co,
+  jing@flybyjing.com, amy@tower28beauty.com, billy.may@brooklinen.com); the other
+  roles at those same companies were fresh and sent, which validates
+  multiple-contacts-per-company.
+- Brands and roles reached: Marine Layer (CMO, COO), Faherty (CEO, CCO, Dir
+  Ecommerce), Tracksmith (CEO, co-founder CEO, CFO, Head of Digital), Mizzen+Main
+  (CEO, CFO, Dir Ecommerce, Dir Ops), Graza (COO, COO/CFO), Fly By Jing (COO, CFO,
+  Head of Marketing), Bachan's (CEO, President), Tower 28 (CFO, Dir Ops), Kosas
+  (Founder, CMO, VP Ecommerce), Bearaby (CEO), Brooklinen (CMO, VP Ecommerce, CFO).
+- No email found: Bachan's COO, Kosas CFO. Tower 28 co-founder was still enriching
+  at send time.
+- Replies / meetings: pending. Run `skills/handle-replies/` over the Dartmouth inbox.
+- Lead list: `skills/autonomous-outreach/clay_queue_2026-06-15.csv`.
+
 ## 2026-06-15 (batch 2): Worcester locals, 4 more sends
 
 - Same hometown angle and template as batch 1, solo plain-text from the Dartmouth
