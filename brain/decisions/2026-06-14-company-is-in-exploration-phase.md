@@ -44,3 +44,17 @@ to have solved, then build toward it.
   is a founder and engineering task, flagged here because it gates the pipeline.
 - `brain/company/overview.md` is updated to lead with the exploration stance.
   This file is the reasoning behind that edit.
+
+## Scope clarification (June 15, 2026, Armaan)
+
+The exploration target is the entire CPG and e-commerce value chain, not GEO and
+not inventory management. Those are two nodes on the chain that moves a product
+from a factory to a person. Every node (sourcing, demand planning, master product
+data, syndication and feeds, storefront, point of sale, order management,
+logistics, payments, marketing, support, analytics) runs on software, involves
+parties who hand work to each other, and now faces the question of how AI changes
+it. Agents should learn each node in and out and hunt across all of them for the
+recurring, concrete, payable problem of helping a business adapt to AI. We keep
+building things for brands; we do not restrict that to GEO. The full map and the
+per-node service openings are in [[cpg-ecommerce-value-chain]]
+(`brain/research/cpg-ecommerce-value-chain.md`), which we drill into node by node.
