@@ -18,7 +18,7 @@ runs the campaign; Armaan is running the current one.
   Different roles see different nodes of the value chain, which serves the
   exploration, and it raises reach per account. The ledger still dedupes per person.
 - Broaden the ICP for the exploration phase. Do not restrict to DTC plus GEO. First
-  cohort: founder-led Shopify and physical-product brands, roughly $1M to $20M, in
+  cohort: DTC and physical-product brands, roughly $1M to $200M, Shopify and US,
   inventory-heavy categories (apparel, food and CPG, beauty, outdoor and home),
   founder reachable. Then widen across the value chain: small businesses, supply
   chain, manufacturers, and marketing orgs (the `brain/company/targets.md` secondary

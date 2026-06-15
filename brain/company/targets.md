@@ -25,7 +25,8 @@ the June 15 entry in [[outreach-learnings]] and [[gaps-from-laggards]]).
 
 Company filters:
 
-- Founder-led DTC and physical-product brands, roughly $1M to $20M revenue.
+- DTC and physical-product brands, roughly $1M to $200M revenue, founder-led
+  where reachable.
 - Inventory-heavy categories: apparel, food and CPG, beauty, outdoor, home.
 - On Shopify, US-based.
 - Exclude dropship and digital-only, the big well-staffed brands, and tiny
