@@ -41,5 +41,9 @@ These two are the only email accounts agents may touch.
 
 - Other founders' email accounts (Samarjit, Ethan, Shamit)
 - Discord, iMessage, Notes app, Slack
-- GitHub: `gh` is authed as armaanpriyadarshan locally; org access to
-  blackwell-ai pending
+- GitHub: repo access is established. On Ethan's machine `gh` and git are authed
+  as `ezhou0716`, which has admin on `blackwell-ai/interns` (verified June 14,
+  2026). Caveat: keep the `gh` credential helper ahead of `osxkeychain`, because a
+  stale keychain token can shadow it and cause a spurious 403 on push. Armaan's
+  machine was `gh`-authed as `armaanpriyadarshan` with org access reported pending
+  on June 10; that has not been re-verified.
