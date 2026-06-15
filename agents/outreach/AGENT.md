@@ -44,9 +44,12 @@ canonical cold-email flow** — input is a Clay lead export.
    emails, fill in role/company/store context, drop leads that don't fit the
    ICP on closer look. Hand the harness a Clay export (or Clay HTTP API pull)
    as the flow's input list.
-4. Every email is grounded in something real about the lead (their store,
-   their role, a recent change) — `compose.render --personalize` drops rows
-   with no concrete hook; never force a generic blast through.
+4. Every email goes to a verified address. A per-lead personalization hook is
+   no longer required: the current DTC opener uses social proof
+   (hundred-million-dollar brands like Public Goods and Good Molecules) instead,
+   so `compose.render` runs with `personalize` off and keeps rows that have no
+   hook. When a template does use a `{{personalization_hook}}`, still ground it
+   in something real about the lead.
 5. Check replies each run. Run `skills/handle-replies/` — it classifies each
    reply, answers questions, and for interested leads proposes real open
    calendar slots and books a Google Meet on their pick (all via gogcli +
@@ -62,8 +65,9 @@ canonical cold-email flow** — input is a Clay lead export.
   recipients (bounces, opt-outs) have no override.
 - Honor opt-outs immediately and permanently: `ledger.suppress` via the
   harness (they land in the `suppression` table).
-- Never send to a lead without a verified email and a concrete
-  personalization hook.
+- Never send to a lead without a verified email. A personalization hook is
+  optional now, not a hard requirement (the current DTC opener uses social
+  proof instead).
 - New skills that touch the world keep the full default chain (clarify →
   smoke → dryrun → canary) until they've earned trust; proven reruns can skip
   it per PROTOCOL.md.
