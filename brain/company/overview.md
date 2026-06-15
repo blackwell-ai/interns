@@ -4,17 +4,23 @@
 > answering questions about the business. Only deliberate edits to this file
 > change the company's identity — see "Context weighting" in /CLAUDE.md.
 
-Last updated June 10, 2026. Source: founder-provided canonical context. Facts
-and delivered work only.
+Last updated June 14, 2026. Sources: founder-provided canonical context (June
+10) and a June 14 founder session on company stage (see
+[[2026-06-14-company-is-in-exploration-phase]], `brain/decisions/`). Facts and
+delivered work only.
 
 ## What Blackwell is
 
-Blackwell is a four-person company in the Y Combinator Summer 2026 batch,
-exploring ideas in e-commerce and agentic commerce. The team is not permanently
-committed to a single product direction and actively evaluates pivots. Current
-work centers on AI visibility (GEO) audits and implementation for DTC brands,
-delivered as paid consulting engagements, alongside early agent-assisted store
-management pilots.
+Blackwell is a four-person company in the Y Combinator Summer 2026 batch, in an
+active exploration phase in e-commerce and agentic commerce. No product direction
+is committed yet, GEO included. The team is searching for a recurring, concrete
+problem that customers will pay to solve, and treats its current engagements as
+ways to learn the industry rather than as a finished product (see
+[[2026-06-14-company-is-in-exploration-phase]], `brain/decisions/`). The current
+revenue instrument is AI visibility (GEO) audits and implementation for DTC
+brands, sold as paid consulting; recent customer conversations have pushed toward
+inventory and store-operations problems and an "AI store manager" framing,
+alongside early agent-assisted store management pilots.
 
 Team roster: [[team]] (`brain/people/team.md`).
 Customer records: `brain/customers/` (start with `overview.md`).

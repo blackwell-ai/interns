@@ -28,10 +28,13 @@ this; the researcher agent weights relevance against it.
 - **Clay** — the lead workbench: sourcing, enrichment, and email lookup for
   all segments. Apollo and StoreLeads are **not used** (dropped 2026-06-10 —
   see `brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`)
-- **Freelancer marketplaces (Upwork, Fiverr)** — watch posted jobs as buying
-  signals: small businesses and brands posting for website builds, online
-  ordering, Shopify work, SEO/AI-visibility help are warm leads for the
-  small-business and e-commerce motions
+- **Freelancer marketplaces.** Upwork is the buyer-signal board. Small
+  businesses and brands posting for website builds, online ordering, Shopify
+  work, or SEO and AI-visibility help are warm leads for the small-business and
+  e-commerce motions. Fiverr used to be watched the same way, but it retired its
+  buyer-request board, so it no longer surfaces buyer signals and is useful only
+  for benchmarking competitor gig pricing. Saved Upwork searches are in
+  `brain/research/lead-signal-sources.md` (noted June 14, 2026)
 - **Agentic Commerce Consortium** — Slack + monthly meetings (relationship
   channel, not cold outreach)
 - **Any merchant-contact opportunity, online or in person** — farmers markets,

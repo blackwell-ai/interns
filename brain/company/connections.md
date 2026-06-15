@@ -1,6 +1,6 @@
 # Platform connections
 
-Last updated June 10, 2026. What agents can reach, through what, as which
+Last updated June 14, 2026. What agents can reach, through what, as which
 account. Update this whenever a connection is added, fixed, or revoked.
 
 Armaan's accounts and their roles (per Armaan, June 10, 2026):
@@ -23,6 +23,7 @@ These two are the only email accounts agents may touch.
 | Granola | MCP, https://mcp.granola.ai/mcp | armaanp4423@gmail.com (workspace: Armaan Priyadarshan) | ✅ Connected (verified June 10). Free tier: AI summaries/notes readable, verbatim transcripts paywalled. Speaker attribution in summaries can be scrambled — corroborate names before relying on them. |
 | Clay (clay.com, GTM/enrichment) | claude.ai connector (MCP, https://api.clay.com/v3/mcp) | armaanp4423@gmail.com (claude.ai account) | ✅ Connected June 10 via claude.ai directory. Note: do NOT add Clay directly with `claude mcp add` — Clay's OAuth rejects clients named like known platforms; the claude.ai connector is the only path. |
 | Supabase (hosted project `lvzvmqeynkwywodcqxkv`) | MCP (project-scoped, `.mcp.json`) + keys in `credentials/.env` (`SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY`) | Blackwell project | ✅ Connected + provisioned June 10: both harness migrations applied (6 tables, RLS on, ledger RPCs live) and both edge functions deployed (`oauth-connect` verify_jwt=off per config.toml, `token-refresh`). Remaining: set `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` via `supabase secrets set`, then `toolbox auth login` + `connect gmail`. |
+| Notion | MCP (project-scoped, `.mcp.json`, `https://mcp.notion.com/mcp`) | Per-person Notion workspace (each teammate authenticates their own) | ⏳ Configured June 14, 2026, OAuth pending. On first use, approve the `notion` server prompt, then run `/mcp` in Claude Code and complete Notion sign-in. Interactive connector, so absent in headless/cron runs. |
 
 ## Notes for agents
 
