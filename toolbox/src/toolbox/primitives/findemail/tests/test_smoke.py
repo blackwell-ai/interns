@@ -98,6 +98,52 @@ def test_find_exec_picks_decision_maker(tmp_path, monkeypatch):
 
 
 @respx.mock
+def test_find_exec_cache_skips_hunter(tmp_path, monkeypatch):
+    """A domain already in the cache is never re-queried (0 extra Hunter calls)."""
+    monkeypatch.setenv("TOOLBOX_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("TOOLBOX_TOKEN_HUNTER", "fake")
+    domains = tmp_path / "domains.csv"
+    domains.write_text("brand,domain\nCaraway,carawayhome.com\nNew,newbrand.com\n")
+    cache = tmp_path / "cache.jsonl"
+    # carawayhome is pre-cached; newbrand is not
+    cache.write_text('{"domain":"carawayhome.com","email":"jordan@carawayhome.com",'
+                     '"first_name":"Jordan","last_name":"Nathan","title":"CEO",'
+                     '"email_score":97,"email_status":"valid"}\n')
+    route = respx.get(HUNTER_DOMAIN).mock(return_value=Response(200, json={"data": {"emails": [
+        {"value": "ceo@newbrand.com", "first_name": "Ann", "last_name": "Doe",
+         "position": "Founder", "seniority": "executive", "confidence": 95,
+         "verification": {"status": "valid"}}]}}))
+    out = tmp_path / "contacts.csv"
+    result = runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out),
+                                 "--cache", str(cache)])
+    assert result.exit_code == 0, result.output
+    assert route.call_count == 1          # only newbrand hit Hunter; caraway came from cache
+    emails = {r.email for r in io.read_csv(out, models.Contact)}
+    assert emails == {"jordan@carawayhome.com", "ceo@newbrand.com"}
+    # newbrand is now appended to the cache for next time
+    assert "newbrand.com" in cache.read_text()
+
+
+@respx.mock
+def test_find_exec_thorough_uses_limit_25(tmp_path, monkeypatch):
+    monkeypatch.setenv("TOOLBOX_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("TOOLBOX_TOKEN_HUNTER", "fake")
+    domains = tmp_path / "domains.csv"
+    domains.write_text("brand,domain\nX,x.com\n")
+    captured = {}
+    def handler(req):
+        captured["url"] = str(req.url)
+        return Response(200, json={"data": {"emails": [
+            {"value": "f@x.com", "first_name": "F", "position": "Founder",
+             "seniority": "executive", "confidence": 90, "verification": {"status": "valid"}}]}})
+    respx.get(HUNTER_DOMAIN).mock(side_effect=handler)
+    out = tmp_path / "c.csv"
+    runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out), "--thorough"])
+    assert "limit=25" in captured["url"]
+    assert "seniority" not in captured["url"]  # thorough = no seniority filter
+
+
+@respx.mock
 def test_hunter_retries_429(candidates):
     tmp_path, c = candidates
     route = respx.get(HUNTER)

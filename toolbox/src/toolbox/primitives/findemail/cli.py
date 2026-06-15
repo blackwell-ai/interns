@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from pathlib import Path
 
 import httpx
 import typer
@@ -114,12 +115,20 @@ def _decision_maker_rank(position: str, seniority: str) -> int:
 
 
 @_transient
-async def _hunter_domain(client: httpx.AsyncClient, key: str, domain: str):
-    """Domain search → pick the most senior decision-maker + their email."""
-    r = await client.get(
-        "https://api.hunter.io/v2/domain-search",
-        params={"domain": domain, "api_key": key, "limit": 25, "type": "personal"},
-    )
+async def _hunter_domain(client: httpx.AsyncClient, key: str, domain: str,
+                         limit: int = 10, executives_only: bool = True):
+    """Domain search → pick the most senior decision-maker + their email.
+
+    Credit cost = ceil(emails_returned / 10): limit=10 → 1 credit, limit=25 → 3.
+    Default (limit=10 + seniority=executive) is the efficient setting — 1 credit
+    and the returned set is execs only. `--thorough` (limit=25, no seniority
+    filter) sees more emails so a lower-confidence FOUNDER isn't cut off, at 3
+    credits. See harness/learnings/05.
+    """
+    params = {"domain": domain, "api_key": key, "limit": limit, "type": "personal"}
+    if executives_only:
+        params["seniority"] = "executive"
+    r = await client.get("https://api.hunter.io/v2/domain-search", params=params)
     if r.status_code in (429,) or r.status_code >= 500:
         r.raise_for_status()
     if r.status_code != 200:
@@ -198,55 +207,98 @@ def find(
     typer.echo(f"findemail.find: {n}/{len(rows)} verified emails via {provider}")
 
 
+def _load_cache(path: str) -> dict[str, dict]:
+    """domain -> cached row (incl. misses, marked email_status='no_exec')."""
+    cache: dict[str, dict] = {}
+    if path and Path(path).exists():
+        for r in io.read_jsonl(path):
+            if r.get("domain"):
+                cache[r["domain"].lower()] = r
+    return cache
+
+
 @app.command("find-exec")
 def find_exec(
     in_: str = typer.Option(..., "--in", help="domains CSV: just `domain` (+ passthrough e.g. brand)"),
     out: str = typer.Option(..., "--out"),
     concurrency: int = typer.Option(5, "--concurrency", help="keep low: Hunter rate-limits above ~5 (see harness/learnings/03)"),
     min_score: int = typer.Option(80, "--min-score"),
+    per_domain: int = typer.Option(10, "--per-domain", help="emails fetched per domain; cost = ceil(n/10) credits"),
+    thorough: bool = typer.Option(False, "--thorough", help="limit=25, no seniority filter (3 credits) — better founder precision"),
+    cache: str = typer.Option("", "--cache", help="JSONL cache; skip Hunter for domains already seen (incl. misses)"),
 ):
     """domain -> the most senior decision-maker + their verified email (Hunter
-    domain-search). No founder name needed — Hunter finds the person. This is
-    the fully domain-only headless path: domains.csv -> contacts.csv."""
+    domain-search). No founder name needed — Hunter finds the person.
+
+    Credit-efficient by default: 1 Hunter credit/domain (limit=10, execs only).
+    `--thorough` spends 3/domain to avoid cutting off a lower-confidence founder.
+    `--cache` makes re-runs and a growing lead bank free (each domain queried
+    once, ever). See harness/learnings/05 for the cost model.
+    """
+    limit = 25 if thorough else per_domain
+    execs_only = not thorough
     rows = io.read_csv(in_, models.Row)
     key = auth.get_token("hunter")
+    cached = _load_cache(cache)
+    cache_hits = 0
 
-    async def main() -> list[models.Contact]:
+    async def main() -> tuple[list[models.Contact], list[dict]]:
         sem = asyncio.Semaphore(max(1, concurrency))
         found: list[models.Contact] = []
+        new_cache_rows: list[dict] = []
+        nonlocal cache_hits
+
         async with httpx.AsyncClient(timeout=60) as client:
             async def one(row: models.Row) -> None:
+                nonlocal cache_hits
                 domain = (getattr(row, "domain", "") or "").strip().lower()
                 if not domain:
-                    return
-                async with sem:
-                    res = await _hunter_domain(client, key, domain)
-                if not res:
-                    events.emit("findemail.no_exec", domain=domain)
-                    return
-                if res["email_score"] < min_score:
-                    events.emit("findemail.low_score", domain=domain, **res)
                     return
                 passthrough = {
                     k: v for k, v in row.model_dump().items()
                     if k not in ("email", "first_name", "last_name", "title")
                     and isinstance(v, str | int | float | bool)
                 }
+                if domain in cached:           # never re-pay Hunter for a known domain
+                    cache_hits += 1
+                    res = cached[domain]
+                else:
+                    async with sem:
+                        res = await _hunter_domain(client, key, domain, limit=limit,
+                                                   executives_only=execs_only)
+                    new_cache_rows.append({"domain": domain, **(res or {"email_status": "no_exec"})})
+                if not res or not res.get("email"):
+                    events.emit("findemail.no_exec", domain=domain)
+                    return
+                if int(res.get("email_score") or 0) < min_score:
+                    events.emit("findemail.low_score", domain=domain, **res)
+                    return
                 try:
-                    found.append(models.Contact(**{**passthrough, "domain": domain, **res}))
-                except ValueError as e:
+                    found.append(models.Contact(**{
+                        **passthrough, "domain": domain,
+                        "email": res["email"], "first_name": res.get("first_name", ""),
+                        "last_name": res.get("last_name", ""), "title": res.get("title", ""),
+                        "email_score": res.get("email_score", 0),
+                        "email_status": res.get("email_status", ""),
+                    }))
+                except (ValueError, KeyError) as e:
                     events.emit("findemail.bad_email", level="warn", reason=str(e))
                     return
                 events.emit("findemail.found", domain=domain, email=res["email"],
-                            title=res["title"], score=res["email_score"])
+                            title=res.get("title", ""), score=res.get("email_score", 0))
 
             await asyncio.gather(*(one(r) for r in rows))
-        return found
+        return found, new_cache_rows
 
-    contacts = asyncio.run(main())
+    contacts, new_cache_rows = asyncio.run(main())
+    if cache:
+        for rec in new_cache_rows:
+            io.append_jsonl(cache, rec)
     n = io.write_csv(out, contacts)
-    events.emit("findemail.done", provider="hunter-domain", input=len(rows), found=n)
-    typer.echo(f"findemail.find-exec: {n}/{len(rows)} decision-makers found")
+    events.emit("findemail.done", provider="hunter-domain", input=len(rows), found=n,
+                cache_hits=cache_hits, billed=len(new_cache_rows))
+    typer.echo(f"findemail.find-exec: {n}/{len(rows)} decision-makers found "
+               f"(cache hits: {cache_hits}, Hunter-queried: {len(rows) - cache_hits})")
 
 
 if __name__ == "__main__":

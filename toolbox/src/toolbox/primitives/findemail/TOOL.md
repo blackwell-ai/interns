@@ -23,6 +23,13 @@ No key in argv or the repo; fetched at runtime via core/auth.
 - **hunter** — `GET api.hunter.io/v2/email-finder` → email + score + verification.status (1 credit/call)
 - **findymail** — `POST app.findymail.com/api/search/name` → only returns verified/deliverable emails
 
+## find-exec credit efficiency (Hunter bills per result returned)
+- Default `--per-domain 10` + executive filter = **1 credit/domain**.
+- `--thorough` = limit 25, no seniority filter = **3 credits/domain**, but a
+  lower-confidence founder won't be cut off (founder-to-founder precision).
+- `--cache file.jsonl` = every domain billed **once, ever** (hits + misses
+  cached; re-runs and a growing lead bank are free). See harness/learnings/05.
+
 ## Composes with
 `domains.source` / web-sourced brand lists → findemail.find → verify.check →
 compose.render → gmail.send. This is the Clay-replacement sourcing path.

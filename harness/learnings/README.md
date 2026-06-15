@@ -8,6 +8,7 @@ linked first.
 - [02 — Lead enrichment: Clay isn't headless; Hunter is](02-enrichment-clay-vs-hunter.md)
 - [03 — Operational: the ledger is truth, restart-safety, and rate limits](03-operational-ledger-restart-rate-limits.md)
 - [04 — Make it 5 minutes: the reusable cold-email path](04-make-it-5-minutes.md)
+- [05 — Hunter credit efficiency: why 362 for 169, and the fix](05-hunter-credit-efficiency.md)
 
 ## The one-paragraph version
 

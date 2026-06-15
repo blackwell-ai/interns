@@ -21,13 +21,14 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 ROOT="$PWD"; DIR="skills/autonomous-outreach"
 
-FROM_KEY="samarjit"; DOMAINS="$DIR/lead_bank.csv"; MIN=72; PACE=8; DRY=""
+FROM_KEY="samarjit"; DOMAINS="$DIR/lead_bank.csv"; MIN=72; PACE=8; DRY=""; THOROUGH=""
 while [ $# -gt 0 ]; do case "$1" in
   --from) FROM_KEY="$2"; shift 2;;
   --domains) DOMAINS="$2"; shift 2;;
   --min-score) MIN="$2"; shift 2;;
   --pace) PACE="$2"; shift 2;;
   --dry) DRY=1; shift;;
+  --thorough) THOROUGH="--thorough"; shift;;   # 3 credits/domain, better founder precision
   *) echo "unknown arg: $1"; exit 2;;
 esac; done
 
@@ -48,9 +49,14 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 ENRICHED="$ROOT/$DIR/run_${STAMP}_enriched.csv"
 QUEUE="$ROOT/$DIR/run_${STAMP}_queue.csv"
 
-echo "1/3  enrich: find-exec over $(tail -n +2 "$DOMAINS_ABS" | wc -l | tr -d ' ') domains (concurrency 5, Hunter)"
+# Persistent enrichment cache: each domain costs a Hunter credit ONCE, ever.
+# Re-runs and the growing lead bank are then free. (gitignored — holds emails.)
+CACHE="$ROOT/$DIR/enrichment_cache.jsonl"
+echo "1/3  enrich: find-exec over $(tail -n +2 "$DOMAINS_ABS" | wc -l | tr -d ' ') domains"
+echo "     (1 Hunter credit/new domain; cached domains free.${THOROUGH:+  --thorough: 3/domain})"
 ( cd toolbox && TOOLBOX_RUN_DIR=/tmp uv run python -m toolbox.primitives.findemail.cli find-exec \
-    --in "$DOMAINS_ABS" --out "$ENRICHED" --min-score "$MIN" --concurrency 5 )
+    --in "$DOMAINS_ABS" --out "$ENRICHED" --min-score "$MIN" --concurrency 5 \
+    --cache "$CACHE" $THOROUGH )
 
 echo "2/3  filter -> send queue"
 python3 "$DIR/prep_queue.py" "$ENRICHED" "$QUEUE"
