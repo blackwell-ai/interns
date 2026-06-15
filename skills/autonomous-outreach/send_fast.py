@@ -49,7 +49,7 @@ def body_for(first_name, brand):
     greeting = f"Hi {first_name}," if first_name else "Hi there,"
     return f"""{greeting}
 
-We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with $100M brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {brand} to understand what's actually hard about growing online.
+We're Stanford/Dartmouth students building AI tools for DTC brands. We're working with $100M brands like Public Goods and Good Molecules to reach the 800 million people who now use ChatGPT every week. We've been talking to teams behind brands like {brand} to understand what's hard about growth.
 
 Would you be open to a quick 10-minute call?
 
@@ -70,7 +70,7 @@ def body_html_for(first_name, brand):
     b = html_escape(brand)
     return f"""<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#222;">
 <p>{greeting}</p>
-<p>We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with $100M brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {b} to understand what's actually hard about growing online.</p>
+<p>We're Stanford/Dartmouth students building AI tools for DTC brands. We're working with $100M brands like Public Goods and Good Molecules to reach the 800 million people who now use ChatGPT every week. We've been talking to teams behind brands like {b} to understand what's hard about growth.</p>
 <p>Would you be open to a quick 10-minute call?</p>
 <p>If not, even a one-sentence reply on your biggest challenge right now would be a huge help.</p>
 <p>Thanks,<br>{html_escape(SENDER_NAME)}</p>
