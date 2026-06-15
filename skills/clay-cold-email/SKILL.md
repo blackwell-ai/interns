@@ -30,19 +30,23 @@ on headless Claude Code (no key needed).
 
 ## Acceptance checks (graded by test.dryrun)
 
-- Every outbox row has a non-empty, lead-specific `{{personalization_hook}}`
-  that references something real about that store/person.
-- No placeholder text (`{{`, "Hi ,", empty company) survives rendering.
-- `from` is armaan.priyadarshan.29@dartmouth.edu — never the gmail account.
+- `{{company}}` and `{{first_name}}` are substituted in both subject and body,
+  with no placeholder text (`{{`, "Hi ,", empty company) surviving rendering.
+- `from` is armaan.priyadarshan.29@dartmouth.edu, never the gmail account.
 
 ## Template note
 
-`template.md` is the "Stanford Student Question" email — the exact template
-that opened Beautylish, Public Goods, and Husqvarna in May 2026
-(`brain/research/outreach-learnings.md`), with a personalization-hook slot
-added. Caveat from the learnings file: the student framing may age out now
-that the team is a YC company — revisit before large-scale reuse. One reply
-also landed in spam ("[ AREA1 SPAM ]"), so watch deliverability in replies.
+`template.md` is the "Stanford Student Question" opener. Updated June 15, 2026
+(Armaan): keep the Stanford/Dartmouth student framing, the 10-minute call ask,
+and the one-sentence fallback, but drop the AI-visibility and GEO focus. It now
+carries a light "AI tools for DTC brands" line and uses social proof
+(hundred-million-dollar brands like Public Goods and Good Molecules) in place of
+a per-lead personalization hook, so `personalize` is off (flow.yaml) and rows
+are not dropped for a missing hook. It opens to any decision-maker, not only
+founders. The prior AI-retail version opened Beautylish, Public Goods, and
+Husqvarna in May 2026 (`brain/research/outreach-learnings.md`); watch
+deliverability in replies, since one earlier reply landed in spam
+("[ AREA1 SPAM ]").
 
 ## Changelog
 

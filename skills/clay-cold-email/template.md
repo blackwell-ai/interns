@@ -1,15 +1,13 @@
 ---
-subject: Stanford Student Question - thoughts on AI retail tools
+subject: Stanford Student Question about {{company}}
 ---
 Hi {{first_name}},
 
-We're Stanford/Dartmouth students curious how {{company}} is thinking about AI, given 50 million people now shop with ChatGPT daily.
-
-{{personalization_hook}}
+We're Stanford/Dartmouth students building AI tools for DTC brands. We're already working with hundred-million-dollar brands like Public Goods and Good Molecules, and we've been talking with the teams behind brands like {{company}} to understand what's actually hard about growing online.
 
 Would you be open to a quick 10-minute call?
 
-If not, we would appreciate even a one-sentence response with your thoughts on how retailers are improving their visibility with AI.
+If not, even a one-sentence reply on your biggest challenge right now would be a huge help.
 
 Thanks,
 {{from_name}}
