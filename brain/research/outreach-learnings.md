@@ -4,8 +4,9 @@ What has actually worked. The outreach agent reads and extends this file.
 
 ## Outreach approach update (2026-06-15, Armaan)
 
-How we run cold outreach going forward. Mirrored to the Notion Tasks hub as a
-task for Samarjit (https://app.notion.com/p/380bea8c6fe781e6ab94dd6cbdf32c7f).
+How we run cold outreach going forward. Mirrored to the Notion Tasks hub
+(https://app.notion.com/p/380bea8c6fe781e6ab94dd6cbdf32c7f). Applies to whoever
+runs the campaign; Armaan is running the current one.
 
 - Source via Clay. Use Clay, the lead workbench, for sourcing and enrichment when
   running interactively, not the headless web-harvest plus Hunter path. Clay only
