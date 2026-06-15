@@ -2,6 +2,22 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-15 (batch 2): Worcester locals, 4 more sends
+
+- Same hometown angle and template as batch 1, solo plain-text from the Dartmouth
+  account, each claimed in the suppression ledger. Emails sourced and verified by
+  a browse sweep (see
+  `agents/outreach/playbooks/2026-06-15-worcester-local-outreach.md`).
+- Sent: 4, zero failures. Worcester Wares (jessica@worcesterwares.com, msg
+  19ecca8b623893bc); That's Entertainment (fitch@thatse.com, msg
+  19ecca8ca58174b3); Acoustic Java (info@acousticjava.com, msg 19ecca8dfd7a830c);
+  Crust Bakeshop (hello@crustbakeshop.com, msg 19ecca8f05dc9aa2).
+- Replies / meetings: pending. Check the Dartmouth inbox or run
+  `skills/handle-replies/`.
+- Worcester total today: 7 locals contacted (3 in batch 1, 4 here). Tier 2
+  (Wormtown, Redemption Rock, Birch Tree Bread, The Queen's Cups, and others) have
+  no public email and are walk-in or DM targets for the in-person motion.
+
 ## 2026-06-15: Worcester local outreach (3 hometown sends)
 
 - Approach: dropped the cold "Stanford Student / AI retail" framing for a hometown

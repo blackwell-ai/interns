@@ -13,7 +13,12 @@ emailable tier below is verified from each business's own site (visible address
 or mailto link), no guessed addresses. The rest are walk-in, DM, or contact-form
 targets, which fits the in-person hometown motion anyway.
 
-## Tier 1: emailable now (verified, net new)
+## Tier 1: sent 2026-06-15 (verified)
+
+All four below were sent 2026-06-15, zero failures, each claimed in the ledger.
+Messages: Worcester Wares 19ecca8b623893bc, That's Entertainment 19ecca8ca58174b3,
+Acoustic Java 19ecca8dfd7a830c, Crust Bakeshop 19ecca8f05dc9aa2.
+
 
 | Business | Email | What they are | Suggested line |
 |---|---|---|---|
