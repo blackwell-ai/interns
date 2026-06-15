@@ -17,6 +17,29 @@ this; the researcher agent weights relevance against it.
 3. **Small businesses** — local retail like [[gm-liquor]]: storefronts, online
    ordering, replacing legacy software (POS, inventory, vendor ordering).
 
+## Current cold-email cohort and roles (June 15, 2026)
+
+The first cohort for the broadened exploration outreach. Narrower than the full
+ICP above, chosen for reply velocity and fit with the no-developer-wall gap (see
+the June 15 entry in [[outreach-learnings]] and [[gaps-from-laggards]]).
+
+Company filters:
+
+- Founder-led DTC and physical-product brands, roughly $1M to $20M revenue.
+- Inventory-heavy categories: apparel, food and CPG, beauty, outdoor, home.
+- On Shopify, US-based.
+- Exclude dropship and digital-only, the big well-staffed brands, and tiny
+  no-budget shops. The suppression ledger auto-skips anyone already contacted.
+
+Reach several people per company, not just one. Roles to target:
+
+- C-suite: CEO or founder, CMO, COO, CFO.
+- Functional leaders, at the VP, Director, or Head of level: ecommerce,
+  marketing, digital, sales, operations, and AI or technology.
+
+Different roles see different nodes of the value chain, which serves the
+exploration and raises reach per account. The ledger still dedupes per person.
+
 ## Secondary segments
 
 - Supply chain
