@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Token leaderboard</title>
+<style>
+  :root {
+    --bg: #0d0e12;
+    --panel: #15171d;
+    --line: #23262f;
+    --ink: #e8eaf0;
+    --muted: #888f9e;
+    --accent: #6ea8fe;
+    --gold: #e3b341;
+    --bar: #2b3a55;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 26px; font-weight: 650; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 14px; max-width: 60ch; }
+  .controls { display: flex; gap: 6px; margin: 22px 0 10px; }
+  .controls button {
+    background: var(--panel); color: var(--muted); border: 1px solid var(--line);
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
+  }
+  .controls button[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); }
+  .board { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+  .row {
+    display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center;
+    padding: 16px 18px; border-top: 1px solid var(--line); position: relative;
+  }
+  .row:first-child { border-top: none; }
+  .row.lead { background: linear-gradient(90deg, rgba(110,168,254,0.06), transparent); }
+  .rank { font-variant-numeric: tabular-nums; font-weight: 650; color: var(--muted); font-size: 18px; text-align: center; }
+  .row.lead .rank { color: var(--gold); }
+  .who { min-width: 0; }
+  .name { font-weight: 600; font-size: 16px; }
+  .meta { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  .bartrack { height: 4px; background: var(--line); border-radius: 999px; margin-top: 9px; overflow: hidden; }
+  .barfill { height: 100%; background: var(--bar); border-radius: 999px; }
+  .row.lead .barfill { background: var(--accent); }
+  .big { text-align: right; }
+  .big .n { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 19px; letter-spacing: -0.01em; }
+  .big .u { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .state { color: var(--muted); padding: 40px 18px; text-align: center; }
+  .err { color: #e5704f; }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 22px; }
+  code { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Token leaderboard</h1>
+    <div class="sub">
+      How much each person is putting through Claude Code, ranked. We are all on
+      Claude Max 20x, a flat subscription, so this is usage and relative
+      intensity, not a bill. Pooled from each person's local logs.
+    </div>
+  </header>
+
+  <div class="controls" id="controls">
+    <button data-window="total_tokens" aria-pressed="true">All time</button>
+    <button data-window="tokens_30d" aria-pressed="false">Last 30 days</button>
+    <button data-window="tokens_7d" aria-pressed="false">Last 7 days</button>
+  </div>
+
+  <div class="board" id="board">
+    <div class="state">Loading…</div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+  // ---- CONFIG ---------------------------------------------------------------
+  // Point DATA_URL at the Supabase `leaderboard` view, or at a committed
+  // usage.json. For Supabase, also set SUPABASE_KEY to the anon key (a public
+  // client identifier; row-level security guards the data).
+  const DATA_URL = "https://lvzvmqeynkwywodcqxkv.supabase.co/rest/v1/leaderboard?select=*";
+  const SUPABASE_KEY = "sb_publishable_1JoxqzGv9B389cEVll6OPw_RMfwkWfO"; // publishable key (public client identifier; RLS guards data)
+  // ---------------------------------------------------------------------------
+
+  let activeWindow = "total_tokens";
+  let rows = [];
+
+  const fmt = (n) => {
+    const v = Number(n) || 0;
+    if (v >= 1e9) return (v / 1e9).toFixed(2) + "B";
+    if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+    if (v >= 1e3) return (v / 1e3).toFixed(1) + "K";
+    return String(v);
+  };
+
+  function render() {
+    const board = document.getElementById("board");
+    if (!rows.length) {
+      board.innerHTML = '<div class="state">No usage yet. Run the collector to populate the board.</div>';
+      return;
+    }
+    const sorted = [...rows].sort((a, b) => (b[activeWindow] || 0) - (a[activeWindow] || 0));
+    const max = Math.max(1, ...sorted.map((r) => Number(r[activeWindow]) || 0));
+    board.innerHTML = sorted.map((r, i) => {
+      const v = Number(r[activeWindow]) || 0;
+      const pct = Math.max(2, Math.round((v / max) * 100));
+      const drove = (Number(r.input_tokens) || 0) + (Number(r.output_tokens) || 0);
+      const meta = `${fmt(drove)} driven (in+out) · ${r.days_active || 0} days · last active ${r.last_active || "n/a"}`;
+      return `
+        <div class="row ${i === 0 ? "lead" : ""}">
+          <div class="rank">${i + 1}</div>
+          <div class="who">
+            <div class="name">${escapeHtml(r.person)}</div>
+            <div class="meta">${meta}</div>
+            <div class="bartrack"><div class="barfill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="big"><div class="n">${fmt(v)}</div><div class="u">tokens</div></div>
+        </div>`;
+    }).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  document.getElementById("controls").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    activeWindow = btn.dataset.window;
+    [...document.querySelectorAll("#controls button")].forEach((b) =>
+      b.setAttribute("aria-pressed", String(b === btn)));
+    render();
+  });
+
+  async function load() {
+    const board = document.getElementById("board");
+    const headers = {};
+    if (SUPABASE_KEY && /\/rest\/v1\//.test(DATA_URL)) {
+      headers.apikey = SUPABASE_KEY;
+      headers.Authorization = "Bearer " + SUPABASE_KEY;
+    }
+    try {
+      const res = await fetch(DATA_URL, { headers });
+      if (!res.ok) throw new Error(res.status + " " + (await res.text()).slice(0, 200));
+      rows = await res.json();
+      if (!Array.isArray(rows)) throw new Error("expected an array of rows");
+      render();
+      const who = rows.length === 1 ? "1 person" : rows.length + " people";
+      document.getElementById("foot").textContent =
+        who + " on the board. One member missing means they have not run the collector.";
+    } catch (err) {
+      board.innerHTML = '<div class="state err">Could not load data: ' + escapeHtml(err.message) + "</div>";
+      document.getElementById("foot").innerHTML =
+        'Set <code>DATA_URL</code> (and <code>SUPABASE_KEY</code> for Supabase) at the top of this file.';
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

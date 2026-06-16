@@ -9,3 +9,4 @@ One line per registered skill. `report.write` updates the last-run column.
 | handle-replies | Triage outreach replies; propose slots + book Google Meet calls | (script; gog cal+gmail+claude -p) | — |
 | researcher-watchlist-sweep | Watchlist sweep: fetch sources → LLM filter → file inbox tasks (non-outreach breadth proof) | fetch, llm, inbox | — |
 | humanizer | Writing standard for all repo prose; remove AI tells (binding via CLAUDE.md "Writing") | (none; style guide) | — |
+| token-leaderboard | Per-person Claude Code token usage via ccusage to Supabase, ranked board plus committed snapshot | (script; ccusage+supabase) | — |
