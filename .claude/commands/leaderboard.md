@@ -4,9 +4,10 @@ allowed-tools: Bash(node:*)
 ---
 
 Below is the current team token leaderboard (how much each person is putting
-through Claude Code, ranked, pooled from everyone's local logs via Supabase).
+through Claude Code over the last 7 days, ranked, pooled from everyone's local
+logs via Supabase). It first refreshes your own usage, so your number is live.
 
-!`node skills/token-leaderboard/leaderboard.mjs --once`
+!`node skills/token-leaderboard/leaderboard.mjs --once --window 7d --refresh`
 
 Show the board above to the user in a fenced code block, exactly as produced,
 with no edits. Add at most one short line if anything stands out. The full

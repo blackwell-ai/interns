@@ -68,7 +68,13 @@ To view the board, either open `token-leaderboard.html` (set `DATA_URL` and
 Run from the repo, it reads `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` out of
 `credentials/.env`, so it needs no setup. It is interactive on a TTY (keys:
 `a`/`3`/`7` window, `r` refresh, `q` quit) and prints once when piped or given
-`--once`.
+`--once`. Flags: `--window all|30d|7d` sets the starting window; `--refresh`
+first pushes this machine's own latest usage to Supabase (needs
+`LEADERBOARD_PERSON`) so the runner's number is current before the board draws.
+
+The `/leaderboard` Claude Code slash command runs
+`leaderboard.mjs --once --window 7d --refresh`, so typing `/leaderboard` shows
+the last-7-days board with your own usage freshly pushed.
 
 ## Automation (daily)
 

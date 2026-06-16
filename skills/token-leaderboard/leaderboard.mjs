@@ -12,12 +12,23 @@
 // it just works with no setup.
 
 import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 const argv = process.argv.slice(2)
 const ONCE = argv.includes('--once') || !process.stdout.isTTY
 const COLOR = process.stdout.isTTY
+// --refresh: push this machine's own latest usage to Supabase before showing
+// the board, so the runner's numbers are current. --window sets the starting
+// window (all | 30d | 7d).
+const REFRESH = argv.includes('--refresh')
+const WIN_ALIASES = { all: 0, alltime: 0, total: 0, '30d': 1, '30': 1, month: 1, '7d': 2, '7': 2, week: 2 }
+function parseWindow() {
+  const i = argv.indexOf('--window')
+  const v = i !== -1 && argv[i + 1] ? argv[i + 1].toLowerCase() : ''
+  return v in WIN_ALIASES ? WIN_ALIASES[v] : 0
+}
 
 // --- config ----------------------------------------------------------------
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../')
@@ -41,13 +52,31 @@ const WINDOWS = [
   { key: 'tokens_30d', label: '30 days' },
   { key: 'tokens_7d', label: '7 days' },
 ]
-let windowIdx = 0
+let windowIdx = parseWindow()
 let rows = []
 let lastError = ''
 let lastUpdated = ''
 let loading = false
+let selfRefresh = ''
 
 const headers = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+
+// Push this machine's own usage to Supabase (today and the last 7 days, so the
+// 7d window stays current). Synchronous: it blocks until the upsert completes,
+// which is the point — the board that renders next includes it.
+function refreshOwnUsage() {
+  const PERSON = (process.env.PERSON || process.env.LEADERBOARD_PERSON || fromEnvFile('LEADERBOARD_PERSON')).trim()
+  if (!PERSON) { selfRefresh = 'self-refresh skipped (set LEADERBOARD_PERSON)'; return }
+  const d = new Date(); d.setDate(d.getDate() - 7)
+  const since = d.toLocaleDateString('en-CA').replace(/-/g, '')
+  const collector = resolve(dirname(fileURLToPath(import.meta.url)), 'collect-usage.mjs')
+  const r = spawnSync(process.execPath, [collector, '--since', since, '--no-snapshot'], {
+    env: { ...process.env, PERSON, SUPABASE_URL, SUPABASE_KEY }, encoding: 'utf8',
+  })
+  if (r.status === 0) selfRefresh = 'refreshed ' + PERSON
+  else if (/no daily rows/.test(r.stderr || '')) selfRefresh = 'no recent usage for ' + PERSON
+  else selfRefresh = 'self-refresh failed'
+}
 
 async function load() {
   loading = true
@@ -121,7 +150,7 @@ function buildLines() {
   const count = rows.length === 1 ? '1 person' : rows.length + ' people'
   const status = lastError
     ? c(E.red, 'error: ' + lastError)
-    : c(E.gray, count + ' · updated ' + (lastUpdated || '...') + (loading ? ' · refreshing' : ''))
+    : c(E.gray, count + ' · updated ' + (lastUpdated || '...') + (selfRefresh ? ' · ' + selfRefresh : '') + (loading ? ' · refreshing' : ''))
   lines.push(' ' + status)
   return lines
 }
@@ -142,6 +171,7 @@ function quit(code = 0) {
 
 async function main() {
   if (ONCE) {
+    if (REFRESH) refreshOwnUsage()
     await load()
     process.stdout.write(buildLines().join('\n') + '\n')
     return
@@ -155,10 +185,11 @@ async function main() {
     else if (k === 'a' || k === '1') { windowIdx = 0; render() }
     else if (k === '3') { windowIdx = 1; render() }
     else if (k === '7') { windowIdx = 2; render() }
-    else if (k === 'r') load()
+    else if (k === 'r') { if (REFRESH) refreshOwnUsage(); load() }
   })
   process.stdout.on('resize', render)
   process.on('SIGINT', () => quit(0))
+  if (REFRESH) refreshOwnUsage()
   await load()
   setInterval(load, 30000)
 }
