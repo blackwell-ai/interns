@@ -25,6 +25,9 @@ Source: https://github.com/ryoppippi/ccusage.
 - `token-leaderboard.html` (this dir): the interactive board. Set its `DATA_URL`
   to the Supabase `leaderboard` view (and `SUPABASE_KEY` to the anon key), or to
   a committed `usage.json`.
+- `cron.sh` (this dir): the daily runner and installer. Sources
+  `credentials/.env`, runs the collector, and registers the schedule. See
+  Automation below.
 - `brain/metrics/LEADERBOARD.md`: the committed snapshot, regenerated on each
   collector run, so the durable record lives in the repo even though the live
   board is interactive.
@@ -56,6 +59,49 @@ first check on a new machine), `--no-snapshot` skips the markdown re-render,
 
 To view the board, open `token-leaderboard.html` after setting `DATA_URL` and
 `SUPABASE_KEY` at the top of the file.
+
+## Automation (daily)
+
+`cron.sh` is the daily runner. It has two roles:
+
+- Feeder (default, every teammate): pushes this machine's usage to Supabase.
+  No git and no working-tree changes, so it is safe on any machine, including
+  one with unrelated work in progress.
+- Canonical (`--push`, one machine): also regenerates, commits, and pushes
+  `brain/metrics/LEADERBOARD.md`. It only writes that one shared file when the
+  tree is otherwise clean, so a background run never commits over work in
+  progress. Only one machine should take this role.
+
+Install the daily 23:00 job (idempotent, safe to re-run). It uses `crontab`
+where present and falls back to a systemd user timer on machines without cron
+(for example Arch):
+
+    skills/token-leaderboard/cron.sh --install          # feeder
+    skills/token-leaderboard/cron.sh --install --push   # canonical snapshot host
+
+On a systemd machine, confirm with `systemctl --user list-timers
+token-leaderboard.timer`. For it to run while logged out, linger must be on
+(`sudo loginctl enable-linger <user>`). Other flags: `--dry` (run ccusage and
+print mapped rows, write nothing), `--since YYYYMMDD`.
+
+## Onboarding a teammate (any agent can do this)
+
+Every person shows up on the board only if their machine runs the feeder. An
+agent can set this up end to end for its human:
+
+1. Confirm `node` (v18+) is available and the repo is cloned.
+2. Confirm `credentials/.env` has `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`
+   (distributed out-of-band, the same file the other automations read).
+3. Add the person's board name, using the first name from
+   `brain/people/team.md` (Armaan, Samarjit, Ethan, Shamit) so labels stay
+   consistent:
+
+       printf 'LEADERBOARD_PERSON=<First>\n' >> credentials/.env
+
+4. Verify wiring with `skills/token-leaderboard/cron.sh --dry` (writes nothing).
+5. Seed and schedule: run `skills/token-leaderboard/cron.sh` once to push
+   history, then `skills/token-leaderboard/cron.sh --install` for the daily
+   feeder. Leave `--push` to the single canonical host.
 
 ## Outputs
 
