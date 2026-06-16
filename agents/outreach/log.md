@@ -2,6 +2,40 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-15 (Clay DTC campaign): 154 sends, zero failures
+
+Broadened Clay DTC motion, run interactively by Armaan. Method: source DTC and
+physical-product brands ($1M to $200M, inventory-heavy categories) via Clay
+find-and-enrich-contacts-at-company, pull multiple decision-makers per company
+(C-suite plus ecommerce, marketing, operations, digital), enrich emails,
+MX-verify (wave 5 onward), dedup against the suppression ledger, and send the new
+DTC opener (subject "Stanford Student Question About {brand}", $100M social proof
+plus the 800M ChatGPT reach line) as HTML from the Dartmouth account, co-founders
+CC'd.
+
+- Sent: 154 total, zero failures. Breakdown: batch 1 (29, see entry below), wave 2
+  (32), waves 3+4 (42), wave 5 (24, MX-verified), Armaan's manual adds (6, plus
+  Leslie at Kettle & Fire), part 1 of the halted "100 push" (21, MX-verified).
+  Every batch auto-skipped already-contacted people via the ledger.
+- Brands reached (~55): Marine Layer, Faherty, Tracksmith, Mizzen+Main, Graza, Fly
+  By Jing, Bachan's, Tower 28, Kosas, Bearaby, Brooklinen, Chubbies, True Classic,
+  Summersalt, Thursday Boots, OLIPOP, Spindrift, Chamberlain Coffee, Parachute,
+  Made In, Starface, Outdoor Voices, birddogs, Fair Harbor, Partake, immi, Coyuchi,
+  Buffy, East Fork, MERIT, Saie, Crown Affair, Public Rec, Outerknown, Koio, Hero
+  Cosmetics, OSEA, Ghia, GOODLES, BLK & Bold, Material, Wild One, Rhoback, UNTUCKit,
+  Johnnie-O, State and Liberty, Birdwell, Atoms, Sarah Flint, Birdies, Westman
+  Atelier, Topicals, Act+Acre, Live Tinted, Kettle & Fire, Oats Overnight,
+  Splits59, Set Active, M.Gemi, Sanzo, Recess, Banza, Fishwife, Magic Mind, Cozy
+  Earth, Varley, plus Who What Wear (manual).
+- Data-quality lesson (from Armaan): Clay's company data lags (stale revenue bands,
+  founders listed at their next venture, one closed company surfaced), made worse by
+  sourcing brand names from memory and reaching for obscure ones. Fix going forward:
+  source from curated lists, starting with the committed
+  `skills/autonomous-outreach/lead_bank.csv` (224 vetted companies), pull fresh
+  roles per company, dedup, keep MX verification. Do not free-recall brands.
+- Replies and meetings: pending. Run `skills/handle-replies/` over the Dartmouth
+  inbox. Watch bounces given the day's cold volume.
+
 ## 2026-06-15 (batch 3): Clay-sourced DTC, 29 sends
 
 - First run of the broadened Clay motion (DTC, $1M to $200M, inventory-heavy
