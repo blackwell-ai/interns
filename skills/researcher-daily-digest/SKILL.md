@@ -63,6 +63,28 @@ tasks. The other two channels are handled by the outer cron agent, on purpose:
 
 See `agents/researcher/AGENT.md` ("Daily digest") for the cron wiring.
 
+## Operations (machine-local; not reproducible from the repo alone)
+
+The schedule and the X/Bookface logins live on Armaan's machine, not in git.
+
+- **Schedule**: a systemd user timer, `~/.config/systemd/user/
+  researcher-digest.{service,timer}` (OnCalendar `Mon..Fri 08:00`,
+  `Persistent=true`), `ExecStart=` this folder's `cron.sh`, plus
+  `loginctl enable-linger armaan`. Rebuild: write those two unit files,
+  `systemctl --user daemon-reload`, `systemctl --user enable --now
+  researcher-digest.timer`. Logs: `runs/cron-digest.log` + `journalctl --user
+  -u researcher-digest.service`.
+- **Secrets** (`credentials/.env`, gitignored): `TOOLBOX_TOKEN_DISCORD` (Discord
+  account token, a self-bot) and `GOG_KEYRING_PASSWORD` (gog email). Reddit + HN
+  need none.
+- **X + Bookface auth** is the browse daemon's saved state `research` (cookies
+  imported from Firefox: X via `.x.com` cookies, Bookface via `.ycombinator.com`
+  SSO incl. `_sso.key`). These EXPIRE. When X or Bookface go missing from the
+  digest, re-auth: extract the cookies from Firefox's `cookies.sqlite`
+  (`expiry` is in ms, divide by 1000), `browse cookie-import <json>` per domain
+  (must be on that domain first), then `browse state save research`. Until
+  re-authed those two drop out gracefully; Reddit + HN + Discord still send.
+
 ## Acceptance checks
 
 - Each item explains the concrete problem the poster hit or the development
@@ -78,3 +100,4 @@ See `agents/researcher/AGENT.md` ("Daily digest") for the cron wiring.
 - 2026-06-16 06:54 UTC: run `researcher-daily-digest-20260616T064531Z-731166` — 0 sent, 0 skipped, 0 failed
 - 2026-06-16 15:10 UTC: run `researcher-daily-digest-20260616T150016Z-a9dc51` — 0 sent, 0 skipped, 0 failed
 - 2026-06-16 17:56 UTC: run `researcher-daily-digest-20260616T172102Z-86f009` — 0 sent, 0 skipped, 0 failed
+- 2026-06-16 18:40 UTC: run `researcher-daily-digest-20260616T180613Z-66097d` — 0 sent, 0 skipped, 0 failed
