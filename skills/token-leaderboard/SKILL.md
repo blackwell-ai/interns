@@ -25,6 +25,9 @@ Source: https://github.com/ryoppippi/ccusage.
 - `token-leaderboard.html` (this dir): the interactive board. Set its `DATA_URL`
   to the Supabase `leaderboard` view (and `SUPABASE_KEY` to the anon key), or to
   a committed `usage.json`.
+- `leaderboard.mjs` (this dir): a terminal view, in the spirit of `/usage`.
+  Zero deps, reads the live `leaderboard` view, auto-refreshes, and takes keys
+  to switch window (`a`/`3`/`7`), refresh (`r`), and quit (`q`). See below.
 - `cron.sh` (this dir): the daily runner and installer. Sources
   `credentials/.env`, runs the collector, and registers the schedule. See
   Automation below.
@@ -57,8 +60,15 @@ first check on a new machine), `--no-snapshot` skips the markdown re-render,
 `--snapshot <path>` overrides where the snapshot is written. Any other flags
 (for example `--until`) pass straight through to ccusage.
 
-To view the board, open `token-leaderboard.html` after setting `DATA_URL` and
-`SUPABASE_KEY` at the top of the file.
+To view the board, either open `token-leaderboard.html` (set `DATA_URL` and
+`SUPABASE_KEY` at the top of the file first) or run the terminal view:
+
+    node skills/token-leaderboard/leaderboard.mjs
+
+Run from the repo, it reads `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` out of
+`credentials/.env`, so it needs no setup. It is interactive on a TTY (keys:
+`a`/`3`/`7` window, `r` refresh, `q` quit) and prints once when piped or given
+`--once`.
 
 ## Automation (daily)
 
