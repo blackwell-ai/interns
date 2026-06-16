@@ -4,8 +4,8 @@ created: 2026-06-15
 created_by: Armaan
 assignee: Shamit
 priority: normal
-claimed_by:
-claimed_at:
+claimed_by: Shamit
+claimed_at: 2026-06-16
 ---
 
 ## Task
@@ -26,3 +26,13 @@ use `--push`; that role is Armaan's machine only.
 
 Shamit shows on the board: `select * from leaderboard` returns a row for
 Shamit, and `cron.sh --install` reports the daily job is scheduled.
+
+## Result
+
+Created `credentials/.env` from `.env.example`, added `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY`, and `LEADERBOARD_PERSON=Shamit`. Verified with
+`cron.sh --dry`, then ran `cron.sh` once (upserted 16 days of history to
+Supabase) and `cron.sh --install` (daily cron at 23:00, no `--push`).
+
+Verified: `leaderboard.mjs --once --window 30d` shows Shamit at rank 2 (52.1M
+tokens, 628.5K driven, 16 days). `crontab -l` confirms the job is registered.
