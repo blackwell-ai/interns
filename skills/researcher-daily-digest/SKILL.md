@@ -13,7 +13,7 @@ filtered digest.
 
 ## Sources
 
-All four fold into one `items.jsonl`, so the filter and digest treat them alike.
+All five fold into one `items.jsonl`, so the filter and digest treat them alike.
 
 - Reddit: r/ecommerce, r/shopify, r/ai_agents, r/solopreneur, r/smallbusiness,
   via the public `.rss` Atom feed (no key). Works from a residential IP only and
@@ -27,6 +27,10 @@ All four fold into one `items.jsonl`, so the filter and digest treat them alike.
 - X/Twitter: handles + searches in `twitter-targets.csv`, via the `twitter-search`
   browse browser-skill (`steps/twitter.py`, best-effort: never fails the run).
   Needs the browse daemon logged in to X on the cron machine.
+- YC Bookface: the home feed, via the `bookface-feed` browse skill
+  (`steps/bookface.py`, best-effort). Auth is the YC SSO session in the daemon.
+  CONFIDENTIAL: YC-private content; the operator chose to include it in the
+  committed + emailed digest (see the decision doc).
 
 ## Inputs
 
@@ -41,11 +45,12 @@ All four fold into one `items.jsonl`, so the filter and digest treat them alike.
 2. `extract.items`: explode each listing into one record per post/story.
 3. `discord.fetch --append`: append Discord messages (bots/chatter filtered).
 4. `python steps/twitter.py`: append X tweets, best-effort (browser daemon).
-5. `llm.filter`: strict per-item relevance + a 1-2 sentence summary each (batched).
-6. `llm.digest`: synthesize the themed digest, append a `## Sources indexed`
+5. `python steps/bookface.py`: append YC Bookface posts, best-effort (SSO session).
+6. `llm.filter`: strict per-item relevance + a 1-2 sentence summary each (batched).
+7. `llm.digest`: synthesize the themed digest, append a `## Sources indexed`
    coverage list, write a dated copy to `brain/research/digests/<date>.md`.
-7. `inbox.file`: file each cleared item as an `inbox/queue/` task for a human.
-8. `report.write`: run report plus changelog.
+8. `inbox.file`: file each cleared item as an `inbox/queue/` task for a human.
+9. `report.write`: run report plus changelog.
 
 ## Delivery
 
@@ -72,3 +77,4 @@ See `agents/researcher/AGENT.md` ("Daily digest") for the cron wiring.
 - 2026-06-16 04:24 UTC: run `researcher-daily-digest-20260616T042058Z-f78538` — 0 sent, 0 skipped, 0 failed
 - 2026-06-16 06:54 UTC: run `researcher-daily-digest-20260616T064531Z-731166` — 0 sent, 0 skipped, 0 failed
 - 2026-06-16 15:10 UTC: run `researcher-daily-digest-20260616T150016Z-a9dc51` — 0 sent, 0 skipped, 0 failed
+- 2026-06-16 17:56 UTC: run `researcher-daily-digest-20260616T172102Z-86f009` — 0 sent, 0 skipped, 0 failed

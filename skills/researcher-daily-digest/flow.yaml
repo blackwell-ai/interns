@@ -16,6 +16,9 @@ steps:
   # X/Twitter (browser daemon, best-effort: never fails the run). Appends too.
   # Needs the browse daemon logged in to X on this machine.
   - python: {python: steps/twitter.py, targets: "{{twitter_targets}}"}
+  # Bookface (YC, browser daemon via SSO session, best-effort). Appends too.
+  # YC-confidential; included per the operator's decision. Never fails the run.
+  - python: {python: steps/bookface.py}
   # batch 25: judge ~25 posts per LLM call, not one call per post (a daily
   # sweep is ~170+ items, which one-at-a-time would take 20+ minutes).
   - llm.filter: {in: items.jsonl, out: relevant.jsonl, criteria: "{{relevance_bar}}", field: text, batch: 25}
