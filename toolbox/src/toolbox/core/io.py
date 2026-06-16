@@ -93,6 +93,11 @@ def append_jsonl(path: str | Path, record: dict) -> None:
         os.fsync(f.fileno())
 
 
+def write_text(path: str | Path, text: str) -> None:
+    """Atomically write a text artifact (e.g. a rendered report or digest)."""
+    _atomic_write_text(Path(path), text)
+
+
 def write_json(path: str | Path, obj: object) -> None:
     _atomic_write_text(Path(path), json.dumps(obj, indent=2, ensure_ascii=False, default=str))
 

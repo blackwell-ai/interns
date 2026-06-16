@@ -1,0 +1,31 @@
+# sources_csv: a CSV with `url` (and optional `label`) columns. Default: the
+# checked-in snapshot of the researcher watchlist's headless sources (Reddit +
+# Hacker News). Keep sources.csv in sync with agents/researcher/watchlist.md.
+sources_csv: "{{skill_dir}}/sources.csv"
+
+# discord_csv: guild_id,channel_id,label of the Discord channels to read (via
+# the API + TOOLBOX_TOKEN_DISCORD). twitter_targets: type,value (handle|query)
+# for the X browser sweep. Both fold into the same items.jsonl.
+discord_csv: "{{skill_dir}}/discord-channels.csv"
+twitter_targets: "{{skill_dir}}/twitter-targets.csv"
+
+# relevance_bar: the filter handed to llm.filter. The team is brainstorming, so
+# the bar is "would a founder exploring this space find it interesting?", NOT
+# "does it map onto what we have already built." Wider aperture, but still
+# bounded to commerce + AI agents so it does not turn into generic tech news.
+relevance_bar: >-
+  Surface interesting problems and developments in and around agentic commerce,
+  AI shopping, e-commerce and DTC, merchant and storefront tooling, small-
+  business retail tech, and AI search visibility. The bar is "would a founder
+  exploring this space find it interesting?", not "does it map onto what we have
+  already built." Keep two kinds of item.
+  (1) PROBLEMS: a real problem or frustration someone describes (a merchant,
+  operator, builder, or shopper) with AI or agent traffic, AI search
+  visibility, storefronts, online ordering, product data, payments, or related
+  tooling.
+  (2) DEVELOPMENTS: launches, competitor moves, new tools, protocols, research,
+  or shifts in how people buy and sell with AI.
+  Drop routine chatter, basic support questions, and generic tech news with no
+  tie to commerce or AI agents.
+  The bar: would a founder act on this or want it in brain/research/? A
+  generic "I started a store" post or routine support question fails.

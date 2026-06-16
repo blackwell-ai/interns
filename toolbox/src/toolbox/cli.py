@@ -35,7 +35,7 @@ def auth_whoami():
 
 @auth_app.command("connect")
 def auth_connect(
-    provider: str = typer.Argument(help="gmail | clay | anthropic"),
+    provider: str = typer.Argument(help="gmail | clay | anthropic | reddit"),
     org_shared: bool = typer.Option(False, help="Share this key with the whole org (team keys)."),
 ):
     """Connect an integration to YOUR account (spec §8)."""
@@ -50,6 +50,9 @@ def auth_connect(
 
         webbrowser.open(url)
     else:
+        if provider == "reddit":
+            typer.echo("Create an app at https://www.reddit.com/prefs/apps (type: web app or script).")
+            typer.echo("Paste the secret as  client_id:client_secret  (read-only, app-only access).")
         key = typer.prompt(f"{provider} API key", hide_input=True)
         auth.connect_api_key(provider, key, org_shared=org_shared)
         typer.echo(f"Stored {provider} key (org_shared={org_shared}).")

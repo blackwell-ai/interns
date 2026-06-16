@@ -11,7 +11,23 @@ Armaan's accounts and their roles (per Armaan, June 10, 2026):
 - **armaanp4423@gmail.com** — YC communications. Also the claude.ai account
   (what the claude.ai MCP connectors authenticate as).
 
-These two are the only email accounts agents may touch.
+These two are the only email accounts agents may *send from* / authenticate as.
+
+## Founding team (digest + internal recipients)
+
+The four co-founders, their personal inboxes (where they read internal mail, so
+the addresses the researcher daily digest is sent to) and their `.edu` sending
+addresses used for outreach. Recorded June 15, 2026, per Armaan.
+
+| Founder | Personal inbox (digest recipient) | Outreach sending address |
+|---|---|---|
+| Armaan | armaanp4423@gmail.com | armaan.priyadarshan.29@dartmouth.edu |
+| Samarjit | samarjitd391@gmail.com | samarjit.deshmukh.29@dartmouth.edu |
+| Shamit | shamit.dsouza@gmail.com | shamitd@stanford.edu |
+| Ethan | ezhou1923@gmail.com | ethanpzhou@berkeley.edu |
+
+Sending *to* these is fine; they are recipients, not accounts agents authenticate
+as. The digest cron emails this list from Armaan's Dartmouth account.
 
 | Platform | Method | Account | Status (June 10, 2026) |
 |---|---|---|---|
@@ -39,7 +55,9 @@ These two are the only email accounts agents may touch.
 
 ## Not yet connected (from the founding notes' "necessary context" list)
 
-- Other founders' email accounts (Samarjit, Ethan, Shamit)
+- Other founders' email accounts as send-from integrations (their inboxes are
+  now recorded above as digest recipients, but agents still only send from
+  Armaan's accounts)
 - Discord, iMessage, Notes app, Slack
 - GitHub: repo access is established. On Ethan's machine `gh` and git are authed
   as `ezhou0716`, which has admin on `blackwell-ai/interns` (verified June 14,
