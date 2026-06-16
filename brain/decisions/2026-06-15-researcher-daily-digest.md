@@ -25,6 +25,14 @@ and chose to proceed with his personal account. The token is stored as
 `discord.fetch` is read-only (GET /channels/<id>/messages), drops bot and
 chatter messages, and degrades gracefully on restricted channels (403).
 
+YC Bookface, confidentiality note (decided June 16, 2026): the digest also reads
+the Bookface home feed via the `bookface-feed` browse skill, authenticated by
+the YC SSO cookies in the browse daemon (no separate login). Bookface content is
+YC-private, and the digest is committed to the GitHub repo and emailed to the
+team. Armaan was told this plainly and chose to fold Bookface in like any other
+source (full digest). It is read-only and best-effort (a lost SSO session just
+drops Bookface from that day's run).
+
 The flow is `fetch → extract → llm.filter → llm.digest → inbox.file → report`.
 It writes a dated digest to `brain/research/digests/<date>.md`, files an inbox
 task per action item, and the cron wrapper (`skills/researcher-daily-digest/
