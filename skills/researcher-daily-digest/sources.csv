@@ -1,0 +1,9 @@
+url,label
+https://www.reddit.com/r/ecommerce,r/ecommerce — DTC operators on AI visibility / agent traffic
+https://www.reddit.com/r/shopify,r/shopify — merchants on the platform our customers run on
+https://www.reddit.com/r/ai_agents,r/ai_agents — agentic-commerce developments and competitor launches
+https://www.reddit.com/r/solopreneur,r/solopreneur — solo founders running stores, tooling and visibility pain
+https://www.reddit.com/r/smallbusiness,r/smallbusiness — local merchants and small retail: storefront, online ordering, POS pain
+https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30,Hacker News front page
+https://hn.algolia.com/api/v1/search_by_date?query=agentic%20commerce&tags=story&hitsPerPage=20,HN — "agentic commerce"
+https://hn.algolia.com/api/v1/search_by_date?query=AI%20shopping&tags=story&hitsPerPage=20,HN — "AI shopping"

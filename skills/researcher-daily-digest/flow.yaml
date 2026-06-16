@@ -1,0 +1,32 @@
+# Researcher daily digest: the external-signal radar as a headless flow.
+# fetch sources → explode into per-post items → filter hard → synthesize a
+# digest (written into the brain) → file action items as inbox tasks → report.
+# Read-only in the outside world (researcher charter): no send-class steps, so
+# no ledger involvement. Email + Notion delivery happen in the outer cron agent,
+# not here (see SKILL.md "Delivery").
+steps:
+  # concurrency 1: Reddit rate-limits concurrent anonymous RSS reads, so fetch
+  # sources one at a time. max_chars is high so full Reddit RSS feeds
+  # (~60-150KB) survive intact; truncated XML will not parse.
+  - fetch.urls: {in: "{{sources_csv}}", out: pages.jsonl, concurrency: 1, limit: 25, max_chars: 300000}
+  - extract.items: {in: pages.jsonl, out: items.jsonl}
+  # Discord (API, headless-safe) appends into the same items.jsonl. Self-bot
+  # token (TOOLBOX_TOKEN_DISCORD); skips itself if the token is dead.
+  - discord.fetch: {in: "{{discord_csv}}", out: items.jsonl, limit: 50, append: true}
+  # X/Twitter (browser daemon, best-effort: never fails the run). Appends too.
+  # Needs the browse daemon logged in to X on this machine.
+  - python: {python: steps/twitter.py, targets: "{{twitter_targets}}"}
+  # batch 25: judge ~25 posts per LLM call, not one call per post (a daily
+  # sweep is ~170+ items, which one-at-a-time would take 20+ minutes).
+  - llm.filter: {in: items.jsonl, out: relevant.jsonl, criteria: "{{relevance_bar}}", field: text, batch: 25}
+  - llm.digest:
+      in: relevant.jsonl
+      out: digest.md
+      brain_dir: "{{repo_root}}/brain/research/digests"
+      reviewed_from: items.jsonl
+  - inbox.file:
+      in: relevant.jsonl
+      source: researcher-agent (daily digest)
+      assign_to: human
+      title_field: summary
+  - report.write: {}

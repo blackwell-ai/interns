@@ -12,6 +12,8 @@ dependencies = [
     "anthropic>=0.40",
     "ruamel.yaml>=0.18",
     "dnspython>=2.6",
+    "markdown-it-py>=3",
+    "linkify-it-py>=2",
 ]
 
 [dependency-groups]
