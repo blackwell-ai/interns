@@ -21,8 +21,12 @@
 # Credentials in credentials/.env (gitignored) cover gog email + the Discord
 # token. Reddit needs no key.
 #
-# Schedule weekday mornings (crontab -e):
-#   0 8 * * 1-5  /home/armaan/Documents/interns/skills/researcher-daily-digest/cron.sh
+# SCHEDULED via a systemd USER timer (Arch has no cron daemon), installed on
+# Armaan's machine at ~/.config/systemd/user/researcher-digest.{service,timer}
+# (OnCalendar=Mon..Fri 08:00, Persistent=true), with `loginctl enable-linger
+# armaan` so it runs while logged out. Manage: `systemctl --user {start,
+# disable --now} researcher-digest.timer`. See SKILL.md "Operations" to rebuild.
+# (If moving to a cron host instead:  0 8 * * 1-5  <abs path to this script>)
 #
 # Flags:
 #   --dry        run the sweep + build the digest, but do not commit or email
