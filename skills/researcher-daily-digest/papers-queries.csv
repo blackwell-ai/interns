@@ -1,0 +1,7 @@
+query,label
+"all:""agentic commerce""",agentic commerce
+"all:""shopping agent"" OR all:""AI shopping""",AI shopping agents
+abs:agent AND abs:shopping,shopping agents
+abs:agent AND (abs:retail OR abs:ecommerce OR abs:merchant OR abs:checkout),retail agents
+"all:""large language model"" AND all:""e-commerce""",LLMs in e-commerce
+"abs:""web agent"" OR abs:""browser agent""",web/browser agents

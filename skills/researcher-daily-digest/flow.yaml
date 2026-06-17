@@ -19,6 +19,9 @@ steps:
   # Bookface (YC, browser daemon via SSO session, best-effort). Appends too.
   # YC-confidential; included per the operator's decision. Never fails the run.
   - python: {python: steps/bookface.py}
+  # New papers (arXiv Atom API, no auth, best-effort). Appends recent relevant
+  # papers, deduped against prior digests so the same paper never repeats.
+  - python: {python: steps/papers.py, queries: "{{papers_queries}}", days: "{{papers_days}}", max: "{{papers_max}}", brain_digests: "{{repo_root}}/brain/research/digests"}
   # batch 25: judge ~25 posts per LLM call, not one call per post (a daily
   # sweep is ~170+ items, which one-at-a-time would take 20+ minutes).
   - llm.filter: {in: items.jsonl, out: relevant.jsonl, criteria: "{{relevance_bar}}", field: text, batch: 25}

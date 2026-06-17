@@ -9,6 +9,14 @@ sources_csv: "{{skill_dir}}/sources.csv"
 discord_csv: "{{skill_dir}}/discord-channels.csv"
 twitter_targets: "{{skill_dir}}/twitter-targets.csv"
 
+# papers_queries: arXiv search_query expressions (one per row, `query`,`label`)
+# for the new-papers sweep. papers_days: how many days back to keep a paper
+# (4 covers a Monday weekend gap). papers_max: cap on papers per run; dedup
+# against prior digests keeps the same paper from repeating day to day.
+papers_queries: "{{skill_dir}}/papers-queries.csv"
+papers_days: 4
+papers_max: 10
+
 # relevance_bar: the filter handed to llm.filter. The team is brainstorming, so
 # the bar is "would a founder exploring this space find it interesting?", NOT
 # "does it map onto what we have already built." Wider aperture, but still

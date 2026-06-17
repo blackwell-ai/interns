@@ -184,11 +184,17 @@ def digest(
     # Keep the prompt compact: the fields that matter for synthesis.
     # Cite the source we found it on (source + url), not the link it points to,
     # so Hacker News and the subreddits are attributed, not the destination site.
-    compact = [
-        {"source": r.get("source") or r.get("label"), "title": r.get("title"),
-         "why": r.get("reason") or r.get("summary"), "url": r.get("url")}
-        for r in items
-    ]
+    def _row(r):
+        d = {"source": r.get("source") or r.get("label"), "title": r.get("title"),
+             "why": r.get("reason") or r.get("summary"), "url": r.get("url")}
+        # Papers (arXiv) carry their abstract so the digest can summarize the
+        # paper itself, not just the filter's one-line relevance note.
+        if r.get("kind") == "paper" or d["source"] == "arXiv":
+            d["kind"] = "paper"
+            d["abstract"] = (r.get("text") or "")[:600]
+        return d
+
+    compact = [_row(r) for r in items]
 
     if not compact:
         md = (f"# Researcher digest, {day}\n\n"
@@ -203,11 +209,16 @@ def digest(
             "<one or two plain sentences on the day's signal>\n\n"
             "## Problems and complaints\n"
             "## Ideas and opportunities\n"
-            "## Competitor and market moves\n\n"
+            "## Competitor and market moves\n"
+            "## Papers\n\n"
             "Each bullet: explain the problem the person hit or the development itself, "
             "in plain concrete terms (do not force a tie to the team's own work), then "
             "`Source: <source> <url>` taken verbatim from the item. Every bullet must "
             "end with that Source line. Put each item under the single best heading. "
+            "Items with kind 'paper' are new research papers: put every one under "
+            "## Papers and nowhere else, each formatted as `**Paper title** - a one to "
+            "two sentence plain summary of what the paper does and why it is interesting`, "
+            "then the `Source: arXiv <url>` line. Summarize from the item's abstract. "
             "End with a one-line `Reviewed N, surfaced M` footer.\n\n"
             "Items (JSON):\n" + json.dumps(compact, ensure_ascii=False)
         )

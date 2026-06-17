@@ -46,7 +46,10 @@ Sources by phase:
   residential machine. Reddit's `.json` is IP-blocked and its API now needs
   pre-approval (Responsible Builder Policy, Nov 2025), so RSS is the key-free
   path. It is best-effort: Reddit rate-limits anonymous reads, and a throttled
-  subreddit is logged as an error rather than crashing the run.
+  subreddit is logged as an error rather than crashing the run. arXiv papers
+  also run in Phase 1 (the public Atom API, no key, best-effort): recent papers
+  matching the watchlist queries, deduped against prior digests so the same
+  paper never repeats, surfaced under their own Papers heading in the digest.
 - Phase 2 (planned, computer use): Twitter/X and Discord, which have no clean
   read API. They need a logged-in browser session via the gstack `/browse`
   skill, so they run as an assisted sweep, not the headless cron. Specific

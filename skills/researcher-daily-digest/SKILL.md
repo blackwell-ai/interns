@@ -13,7 +13,7 @@ filtered digest.
 
 ## Sources
 
-All five fold into one `items.jsonl`, so the filter and digest treat them alike.
+All six fold into one `items.jsonl`, so the filter and digest treat them alike.
 
 - Reddit: r/ecommerce, r/shopify, r/ai_agents, r/solopreneur, r/smallbusiness,
   via the public `.rss` Atom feed (no key). Works from a residential IP only and
@@ -31,12 +31,20 @@ All five fold into one `items.jsonl`, so the filter and digest treat them alike.
   (`steps/bookface.py`, best-effort). Auth is the YC SSO session in the daemon.
   CONFIDENTIAL: YC-private content; the operator chose to include it in the
   committed + emailed digest (see the decision doc).
+- arXiv: recent papers matching the queries in `papers-queries.csv`, via the
+  public Atom API (`steps/papers.py`, no auth, best-effort). Keeps papers
+  submitted in the last `papers_days` days and drops any arXiv id already
+  surfaced in a prior brain digest, so the same paper never repeats. The digest
+  renders these under their own `## Papers` heading with a short summary each.
 
 ## Inputs
 
 - `sources_csv`: Reddit + HN CSV (`url`, optional `label`). Default `sources.csv`.
 - `discord_csv`: `guild_id,channel_id,label`. Default `discord-channels.csv`.
 - `twitter_targets`: `type,value` (handle|query). Default `twitter-targets.csv`.
+- `papers_queries`: `query,label` of arXiv `search_query` expressions. Default
+  `papers-queries.csv`. `papers_days` (default 4) is the recency window;
+  `papers_max` (default 10) caps how many papers a run can surface.
 - `relevance_bar`: the plain-English filter handed to `llm.filter`.
 
 ## Steps
@@ -46,11 +54,14 @@ All five fold into one `items.jsonl`, so the filter and digest treat them alike.
 3. `discord.fetch --append`: append Discord messages (bots/chatter filtered).
 4. `python steps/twitter.py`: append X tweets, best-effort (browser daemon).
 5. `python steps/bookface.py`: append YC Bookface posts, best-effort (SSO session).
-6. `llm.filter`: strict per-item relevance + a 1-2 sentence summary each (batched).
-7. `llm.digest`: synthesize the themed digest, append a `## Sources indexed`
-   coverage list, write a dated copy to `brain/research/digests/<date>.md`.
-8. `inbox.file`: file each cleared item as an `inbox/queue/` task for a human.
-9. `report.write`: run report plus changelog.
+6. `python steps/papers.py`: append recent arXiv papers, best-effort (no auth),
+   deduped against prior digests.
+7. `llm.filter`: strict per-item relevance + a 1-2 sentence summary each (batched).
+8. `llm.digest`: synthesize the themed digest (Problems / Ideas / Competitor and
+   market moves / Papers), append a `## Sources indexed` coverage list, write a
+   dated copy to `brain/research/digests/<date>.md`.
+9. `inbox.file`: file each cleared item as an `inbox/queue/` task for a human.
+10. `report.write`: run report plus changelog.
 
 ## Delivery
 
@@ -101,3 +112,5 @@ The schedule and the X/Bookface logins live on Armaan's machine, not in git.
 - 2026-06-16 15:10 UTC: run `researcher-daily-digest-20260616T150016Z-a9dc51` — 0 sent, 0 skipped, 0 failed
 - 2026-06-16 17:56 UTC: run `researcher-daily-digest-20260616T172102Z-86f009` — 0 sent, 0 skipped, 0 failed
 - 2026-06-16 18:40 UTC: run `researcher-daily-digest-20260616T180613Z-66097d` — 0 sent, 0 skipped, 0 failed
+- 2026-06-17 16:47 UTC: run `researcher-daily-digest-20260617T161930Z-615851` — 0 sent, 0 skipped, 0 failed
+- 2026-06-17 17:47 UTC: run `researcher-daily-digest-20260617T170703Z-248799` — 0 sent, 0 skipped, 0 failed
