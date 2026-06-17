@@ -1,6 +1,6 @@
 ---
-title: "Examines fundamental market shift where AI agents are winning commerce transacti"
-created: 2026-06-16
+title: "Market sentiment signal: Western AI agents positioned to dominate commerce, refl"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-Examines fundamental market shift where AI agents are winning commerce transactions and reshaping how shoppers buy.
+Market sentiment signal: Western AI agents positioned to dominate commerce, reflecting a shift in how industry views agentic commerce inevitability.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -19,4 +19,4 @@ Examines fundamental market shift where AI agents are winning commerce transacti
 - **author**: vektormemory
 - **score**: 1
 - **ts**: 2026-05-24T11:18:24Z
-- **summary**: Examines fundamental market shift where AI agents are winning commerce transactions and reshaping how shoppers buy.
+- **summary**: Market sentiment signal: Western AI agents positioned to dominate commerce, reflecting a shift in how industry views agentic commerce inevitability.

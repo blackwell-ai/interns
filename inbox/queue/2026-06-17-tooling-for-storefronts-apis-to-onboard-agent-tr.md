@@ -1,6 +1,6 @@
 ---
-title: "Practical how-to for merchants preparing websites/APIs for agentic commerce—acti"
-created: 2026-06-16
+title: "Tooling for storefronts/APIs to onboard agent traffic in minimal setup—merchant/"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-Practical how-to for merchants preparing websites/APIs for agentic commerce—actionable tactics for becoming visible/accessible to shopping agents.
+Tooling for storefronts/APIs to onboard agent traffic in minimal setup—merchant/storefront tooling for agentic commerce readiness.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -20,4 +20,4 @@ Practical how-to for merchants preparing websites/APIs for agentic commerce—ac
 - **score**: 2
 - **comments**: 2
 - **ts**: 2026-04-30T11:53:50Z
-- **summary**: Practical how-to for merchants preparing websites/APIs for agentic commerce—actionable tactics for becoming visible/accessible to shopping agents.
+- **summary**: Tooling for storefronts/APIs to onboard agent traffic in minimal setup—merchant/storefront tooling for agentic commerce readiness.

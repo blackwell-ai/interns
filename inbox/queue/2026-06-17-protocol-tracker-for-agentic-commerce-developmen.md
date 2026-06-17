@@ -1,6 +1,6 @@
 ---
-title: "Protocol tracker explicitly monitoring agentic commerce standards and emerging p"
-created: 2026-06-16
+title: "Protocol tracker for agentic commerce developments—infrastructure for monitoring"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-Protocol tracker explicitly monitoring agentic commerce standards and emerging protocols—foundational infrastructure tracking for the space.
+Protocol tracker for agentic commerce developments—infrastructure for monitoring protocol launches and adoption across the emerging space.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -20,4 +20,4 @@ Protocol tracker explicitly monitoring agentic commerce standards and emerging p
 - **score**: 1
 - **comments**: 1
 - **ts**: 2026-05-18T19:30:13Z
-- **summary**: Protocol tracker explicitly monitoring agentic commerce standards and emerging protocols—foundational infrastructure tracking for the space.
+- **summary**: Protocol tracker for agentic commerce developments—infrastructure for monitoring protocol launches and adoption across the emerging space.

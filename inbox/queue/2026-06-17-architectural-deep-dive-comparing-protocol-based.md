@@ -1,6 +1,6 @@
 ---
-title: "Core architectural comparison (protocols vs. browser-based) for agentic commerce"
-created: 2026-06-16
+title: "Architectural deep-dive comparing protocol-based vs. browser-based approaches to"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-Core architectural comparison (protocols vs. browser-based) for agentic commerce—foundational design decisions on how agents interact with stores.
+Architectural deep-dive comparing protocol-based vs. browser-based approaches to agentic commerce—foundational design decision for the space.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -20,4 +20,4 @@ Core architectural comparison (protocols vs. browser-based) for agentic commerce
 - **score**: 1
 - **comments**: 1
 - **ts**: 2026-04-30T13:22:58Z
-- **summary**: Core architectural comparison (protocols vs. browser-based) for agentic commerce—foundational design decisions on how agents interact with stores.
+- **summary**: Architectural deep-dive comparing protocol-based vs. browser-based approaches to agentic commerce—foundational design decision for the space.

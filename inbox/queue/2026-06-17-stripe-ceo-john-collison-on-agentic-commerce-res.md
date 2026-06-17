@@ -1,6 +1,6 @@
 ---
-title: "Stripe's leadership positioning agentic commerce as the next internet-reshaping "
-created: 2026-06-16
+title: "Stripe CEO John Collison on agentic commerce reshaping the internet—signals majo"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-Stripe's leadership positioning agentic commerce as the next internet-reshaping wave—major infrastructure player committing to the shift.
+Stripe CEO John Collison on agentic commerce reshaping the internet—signals major payments infrastructure alignment and commitment to agent-driven commerce.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -19,4 +19,4 @@ Stripe's leadership positioning agentic commerce as the next internet-reshaping 
 - **author**: mooreds
 - **score**: 2
 - **ts**: 2026-05-23T21:55:17Z
-- **summary**: Stripe's leadership positioning agentic commerce as the next internet-reshaping wave—major infrastructure player committing to the shift.
+- **summary**: Stripe CEO John Collison on agentic commerce reshaping the internet—signals major payments infrastructure alignment and commitment to agent-driven commerce.

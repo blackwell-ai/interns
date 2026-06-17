@@ -1,6 +1,6 @@
 ---
-title: "Market signal that agentic commerce has arrived; Consensus 2026 reflects the shi"
-created: 2026-06-16
+title: "Industry consensus signal: agentic commerce has emerged as a major category (Con"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-Market signal that agentic commerce has arrived; Consensus 2026 reflects the shift in how e-commerce is being reshaped by agent-driven shopping.
+Industry consensus signal: agentic commerce has emerged as a major category (Consensus 2026 coverage), marking mainstream legitimacy shift.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -19,4 +19,4 @@ Market signal that agentic commerce has arrived; Consensus 2026 reflects the shi
 - **author**: CyberSapper
 - **score**: 1
 - **ts**: 2026-04-29T15:30:32Z
-- **summary**: Market signal that agentic commerce has arrived; Consensus 2026 reflects the shift in how e-commerce is being reshaped by agent-driven shopping.
+- **summary**: Industry consensus signal: agentic commerce has emerged as a major category (Consensus 2026 coverage), marking mainstream legitimacy shift.

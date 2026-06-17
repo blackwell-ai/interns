@@ -1,6 +1,6 @@
 ---
-title: "High-velocity agentic commerce settlement infrastructure—new tooling for process"
-created: 2026-06-16
+title: "X402 batch settlement infrastructure for high-velocity agentic commerce, address"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-High-velocity agentic commerce settlement infrastructure—new tooling for processing agent-driven transactions at scale.
+X402 batch settlement infrastructure for high-velocity agentic commerce, addressing settlement at agent-scale transaction volumes.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -19,4 +19,4 @@ High-velocity agentic commerce settlement infrastructure—new tooling for proce
 - **author**: alexreysa
 - **score**: 6
 - **ts**: 2026-06-03T13:52:30Z
-- **summary**: High-velocity agentic commerce settlement infrastructure—new tooling for processing agent-driven transactions at scale.
+- **summary**: X402 batch settlement infrastructure for high-velocity agentic commerce, addressing settlement at agent-scale transaction volumes.

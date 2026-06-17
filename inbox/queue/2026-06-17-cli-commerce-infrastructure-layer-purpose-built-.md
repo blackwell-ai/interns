@@ -1,6 +1,6 @@
 ---
-title: "CLI Market is commerce infrastructure explicitly designed for AI agents to condu"
-created: 2026-06-16
+title: "CLI commerce infrastructure layer purpose-built for AI agents to execute transac"
+created: 2026-06-17
 created_by: researcher-agent (daily digest)
 assigned_to: human
 claimed_by:
@@ -9,7 +9,7 @@ claimed_at:
 
 ## Task
 
-CLI Market is commerce infrastructure explicitly designed for AI agents to conduct transactions—a new tool enabling agentic commerce.
+CLI commerce infrastructure layer purpose-built for AI agents to execute transactions—direct tooling for the agentic commerce stack.
 
 - **source**: Hacker News
 - **label**: HN — "agentic commerce"
@@ -19,4 +19,4 @@ CLI Market is commerce infrastructure explicitly designed for AI agents to condu
 - **author**: cli-market
 - **score**: 1
 - **ts**: 2026-06-09T15:59:10Z
-- **summary**: CLI Market is commerce infrastructure explicitly designed for AI agents to conduct transactions—a new tool enabling agentic commerce.
+- **summary**: CLI commerce infrastructure layer purpose-built for AI agents to execute transactions—direct tooling for the agentic commerce stack.
