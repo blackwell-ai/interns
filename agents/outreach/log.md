@@ -2,6 +2,88 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-17: pure-Clay retry blocked, Clay-search + Prospeo hybrid, 20 sent
+
+Re-ran cold email "pure Clay" (sourcing and email both through the Clay
+connector) per Armaan, then looped autonomously. Clay's email path is still
+down: 5 of 5 known-good founders came back "None Found" (Graza CEO and COO,
+OLIPOP two co-founders plus a VP and CFO), the same provider outage as June
+15-16, including addresses already in our ledger. Clay contact search still
+works and is free. Prospeo recovered (its June 16 daily rate-limit reset; 76
+credits, a verified email on the first probe), so I fell back to the documented
+hybrid: Clay search for names, Prospeo for verified emails.
+
+- Sourced fresh: deduped the 224-domain lead bank against the live ledger (4,703
+  contacts across 3,008 domains); 46 net-new companies remained. Clay-searched
+  all 46 over two waves and kept the ones with current decision-makers. The
+  known DTC universe is saturated, so most of the 46 were too small, acquired,
+  or had founders who had moved on (Omsom, Ami Cole, Leesa, Starface, Yellow
+  Beauty, Pulp Pantry, Disco had no indexed contacts, and so on). Did not
+  free-recall any brands.
+- Enriched (Prospeo, seed-confirm, 25s pace): 16 reveals charged across four
+  waves, 60 credits left.
+- Sent: 20, zero failures, from the Dartmouth account, co-founders CC'd, proven
+  DTC opener. Wave 1: HexClad (Daniel Winer CEO 19ed6b89c846aae8, Cole Mecray
+  19ed6b8c270996b2), Dieux (Charlotte Palermino 19ed6b8e75d4e4a0, Joyce de Lemos
+  19ed6b90b6de31f4, Ryan Scott CEO 19ed6b930493a049), Taika (Michael Eyal Sharon
+  CEO 19ed6b9555bfee41). Wave 2: Pool Day (Mitch Meyer CEO 19ed6f13774648af,
+  Emilee 19ed6f15dc508043), The Novogratz (Cortney Novogratz 19ed6f1806f94053,
+  Robert Novogratz 19ed6f1a7a1e4b96). Wave 3 (competitor-salvage, see below):
+  Ebb Ocean Club (Alyson Lord CEO 19ed71e8593dcba8), Original Sunshine (David
+  Cohen CEO 19ed71ea8416d164). Wave 4 (curated web-research list, see below):
+  SAUZ (Winston Alfieri 19ed730b1368e0c5, Troy Bonde CEO 19ed730d6738b690),
+  Mid-Day Squares (Nick Saltarelli 19ed730fa1bfbe46, Jake Karls 19ed73120f872b01),
+  Legendary Foods (Michael Veni 19ed731458474b77, Oliver Mindur CEO
+  19ed73168df06bf4, Ron Penna 19ed7318e5d1432d), Clio Snacks (John McGuckin CEO
+  19ed731b292ea809).
+- Skipped 1 as already-contacted: greg@juneshine.co was already in the ledger.
+  The no-double-contact gate worked.
+- Quality cut before send, repeated lesson: the enrich script extends a
+  pattern onto the input/website domain even when the only verified seed is on a
+  different corporate domain. Saw it twice (greg@juneshine.co not .com;
+  Novogratz verified on thenovogratz.com not the website shopthenovogratz.com).
+  Fix applied by hand: keep verified addresses plus same-domain pattern
+  extensions only; drop wrong-domain guesses. Worth fixing in prospeo_enrich.py
+  so it extends on the verified seed's domain, not the input domain.
+- Replies and meetings: pending. Run skills/handle-replies/ over the Dartmouth
+  inbox; watch bounces on the same-domain pattern-built addresses
+  (cole@hexclad.com, ryan@dieuxskin.com, emilee@poolday.com).
+- Wave 3, competitor discovery: after the lead bank drained, tried Clay's
+  "Company Competitors" data point on four indie seeds (Dieux, Taika, Gorgie,
+  Obvi) to refill the bank. All four returned state=error, so Clay's competitor
+  enrichment is down too, not just email. Salvaged 3 adjacent DTC founders from
+  the find-and-enrich-company related-people data instead (Ebb Ocean Club, Dream
+  Pops, Original Sunshine; BERO was already in the ledger). Of the 3, Prospeo
+  verified 2 (Dream Pops' founder no-match), both sent. Lesson: Clay's whole
+  enrichment side (email and competitors) is degraded right now; only its contact
+  search works. Competitor discovery via Clay is not a usable refill source until
+  it recovers.
+- Wave 4, curated web-research refill: after the lead bank drained, built a fresh
+  curated list myself instead of free-recalling. Method: WebSearch + WebFetch over
+  published brand lists (Pear Commerce "top CPG brands to watch", Failory consumer-
+  goods startups), extract real brands with domains, dedup against the ledger.
+  Of 26 candidates, 13 were already contacted (ledger is deep), 13 fresh; 7 had
+  current decision-makers in Clay; 4 yielded verified Prospeo emails -> 8 sent.
+  This is the repeatable refill source while Clay's enrichment is down. Many more
+  lists remain (Numerator, Clean Beauty Awards, foodnavigator funding roundups).
+- Wave 5 and diminishing returns: pulled two more lists (Startup Savant DTC,
+  Fundraise Insider funded consumer goods). Of 8 candidates only 3 were fresh,
+  and of those only Noob had Clay contacts, and Prospeo could not find emails for
+  Noob's founders (NO_MATCH). Wave 5 = 0 sends. Pattern: the ledger is deep
+  enough (3,176 domains) that famous and mid-size list brands are mostly already
+  contacted, while the still-fresh ones are often too new or too small for
+  Prospeo email coverage. The Pear Commerce "emerging CPG" tier was the sweet
+  spot (old enough for email coverage, not yet contacted); recently-funded
+  seed-stage brands were too new.
+- Loop status: paused on diminishing returns, not credits or cap (60 Prospeo
+  credits left). Today landed 20 verified sends across 11 fresh companies via the
+  hybrid plus curated web research. To push more volume efficiently: target the
+  "established emerging" tier ($5M-50M, 3-7 years old) from trade sources
+  (BevNET/NOSH, Inc 5000 CPG), wait for Clay's enrichment to recover (unlocks
+  scale), or top up Origami (the June 16 engine that did 440 in a night).
+- Files: clay_names_2026-06-17*.csv (inputs), prospeo_out_2026-06-17*.csv
+  (enriched), clay_send_2026-06-17*.csv (sent).
+
 ## 2026-06-16 (evening) — taste-data round 2: 200 more, sent from Samarjit
 
 - **Goal:** 200 more on the same 4 ICPs (50 each), no overlap with the afternoon's

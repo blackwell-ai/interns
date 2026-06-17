@@ -2,6 +2,33 @@
 
 What has actually worked. The outreach agent reads and extends this file.
 
+## Email-engine status (2026-06-17)
+
+- Clay's email enrichment is still down, three days on. Re-probed June 17: 5 of
+  5 known-good founders returned "None Found" (Graza CEO and COO, OLIPOP two
+  co-founders plus a VP and CFO), including addresses already in our ledger. So
+  this is a sustained provider outage on Clay's waterfall, not a transient blip
+  or our setup. Clay's contact search is unaffected and stays free (no Email data
+  point requested). Treat "pure Clay" cold email as unavailable until a probe on
+  a known-good founder returns a real address. Full diagnosis:
+  `brain/decisions/2026-06-16-prospeo-email-engine.md`.
+- It is not only email: Clay's "Company Competitors" data point also returned
+  state=error on June 17 across four seeds (Dieux, Taika, Gorgie, Obvi). Clay's
+  whole enrichment side is degraded, while its contact search is fine. So
+  competitor or lookalike discovery via Clay is not a usable way to refill the
+  lead bank right now; refill from a curated external list until it recovers.
+- Prospeo's free-tier block is a daily request cap, confirmed: the June 16 block
+  cleared on its own by June 17, and a verified email came back on the first
+  probe with credits intact. So pace Prospeo runs at 25s or more and a tripped
+  block recovers next day, it is not a permanent ban.
+- Dedup a brand by both its website TLD and its corporate mail TLD. June 17:
+  greg@juneshine.co was already in the ledger and correctly skipped, even though
+  juneshine.com (the website) read as a fresh domain. The verified mail domain
+  can differ from the website, so company-level dedup on the website domain alone
+  misses prior contacts. Prospeo returns the real verified domain, so check it
+  against the ledger before constructing or extending pattern addresses on the
+  website domain.
+
 ## Outreach approach update (2026-06-15, Armaan)
 
 How we run cold outreach going forward. Mirrored to the Notion Tasks hub
