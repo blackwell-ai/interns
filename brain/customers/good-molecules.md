@@ -30,6 +30,63 @@ Last updated June 10, 2026. Source: founder-provided canonical context.
 - Bing reached the brand but reported the shipping policy as the product price,
   which became its own finding
 
+## Before-benchmark recon, June 17, 2026 (first weekly check-in)
+
+Source: passive recon (curl with crawler user-agents) the morning of the first
+weekly call, after the customer reported two changes: initial WAF rule edits and
+server-side structured data. Memo:
+[../../agents/geo/good-molecules/before-benchmark-recon-2026-06-17.md](../../agents/geo/good-molecules/before-benchmark-recon-2026-06-17.md).
+
+Both changes verified live:
+
+- **WAF, fixed for the major assistants.** GPTBot, OAI-SearchBot, ChatGPT-User,
+  ClaudeBot, Claude-User, and PerplexityBot now return 200 (all blocked at audit).
+  This is the audit's headline Critical finding, now remediated. Caveats:
+  Perplexity-User (live fetch) still 405; spoofed Googlebot/Bingbot return 405
+  (likely correct WAF behavior against unverified strings, but confirm the
+  *verified* search crawlers still pass, since search-index surfaces were the
+  brand's one working channel at audit).
+- **Server-side structured data, present.** PDPs now serve JSON-LD in raw HTML:
+  Product + Brand, Offer (price, priceCurrency USD, availability InStock),
+  AggregateRating. Fixes Critical Finding 02 (Claude could not pull prices, fell
+  back to Amazon). Canonical PDP resolves to a size-specific URL (niacinamide
+  serum -> 30ml at $6.00), which also addresses the 12ml/30ml price-confusion
+  finding.
+- **Bonus, not reported by customer:** a rich llms.txt is now live (overview, best
+  sellers, shipping, category map, full catalog with prices).
+
+Still open: llms-full.txt (404), agents.md (404), /.well-known/ agentic endpoints
+(404), sitemap.xml (404), plus the off-site/recommendability work. The customer
+pre-remediated the two heaviest findings before a clean baseline, so the useful
+"before" to measure our remaining work against is the live state today. The real
+before benchmark is still the live engine battery (headed browser, by hand) against
+the frozen truth table, not yet run.
+
+### Server-side structured-data evaluation (same day, kickoff prep)
+
+Full teardown across 10 PDPs + homepage + a category page (curl, allowlisted UA,
+raw HTML). Kickoff brief:
+[../../agents/geo/good-molecules/kickoff-week1-2026-06-17.md](../../agents/geo/good-molecules/kickoff-week1-2026-06-17.md).
+Schema is real and server-rendered (claim confirmed) but minimum-viable and uniform
+catalog-wide, so fixes are template-level.
+
+Live and correct: Product (name with size, image, description, brand), Offer (price,
+priceCurrency USD, availability InStock, itemCondition NewCondition), AggregateRating
+(real ratingValue + reviewCount), an OnlineStore node on every page.
+
+Gaps (ranked): (1) no product identifiers (sku/gtin/mpn), the join key engines use
+to reconcile the brand page with Amazon/Ulta/Target, the root of the audit's
+price-substitution finding; (2) no variant/ProductGroup modeling of sizes (residual
+price-confusion); (3) Offer missing shippingDetails, hasMerchantReturnPolicy,
+priceValidUntil, url, despite the data existing in llms.txt; (4) no Review objects,
+only AggregateRating; (5) homepage entity schema thin (no sameAs/contactPoint/WebSite
+SearchAction); (6) no BreadcrumbList, no collection ItemList, only og:site_name meta;
+(7) sitemap.xml 404, llms-full/agents.md/.well-known still 404, no FAQPage. Week-one
+plan and a before/after worked example (niacinamide serum) are in the kickoff brief.
+
+Dependencies on the customer: GTIN/UPC + SKU per product, return-policy text, review
+feed access, platform deploy + sitemap generation.
+
 ## Initial pitch call — May 21, 2026 ("Website structure review")
 
 Source: Granola notes, filed June 10, 2026. **Caveat: Granola's speaker labels

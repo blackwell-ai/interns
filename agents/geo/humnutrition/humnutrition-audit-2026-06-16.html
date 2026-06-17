@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HUM Nutrition AI Visibility Audit</title>
+<style>
+  @page {
+    size: letter;
+    margin: 1.05in 0.95in 0.95in 0.95in;
+    @bottom-left { content: "Blackwell Enterprises"; font: 7.5pt Helvetica, Arial, sans-serif; color: #8a8a8a; }
+    @bottom-right { content: "HUM Nutrition AI Visibility Audit \00b7 " counter(page); font: 7.5pt Helvetica, Arial, sans-serif; color: #8a8a8a; }
+  }
+  @page :first {
+    @bottom-left { content: none; }
+    @bottom-right { content: none; }
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 10pt; }
+  body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; line-height: 1.5; margin: 0; }
+  .eyebrow { font-size: 8.5pt; letter-spacing: 0.22em; text-transform: uppercase; color: #6e6e6e; margin: 1.2in 0 0.45in 0; }
+  h1.title { font-size: 26pt; line-height: 1.15; margin: 0 0 0.4in 0; letter-spacing: -0.01em; }
+  .lede { font-size: 11pt; line-height: 1.65; color: #222; max-width: 5.9in; }
+  .coverfoot { font-size: 9pt; color: #555; margin-top: 1.5in; line-height: 1.6; }
+  .coverfoot .cfrow { margin: 3pt 0; }
+  .coverfoot .cflabel { font-weight: bold; color: #1a1a1a; margin-right: 6pt; }
+  h2 { font-size: 15.5pt; margin: 0 0 4pt 0; padding-bottom: 6pt; border-bottom: 0.75pt solid #cfcfcf; page-break-after: avoid; }
+  h3 { font-size: 10.5pt; margin: 14pt 0 4pt 0; page-break-after: avoid; }
+  .section { page-break-before: always; }
+  p { margin: 7pt 0; }
+  ul { margin: 6pt 0 10pt 0; padding-left: 14pt; }
+  li { margin: 4pt 0; }
+  .badge { display: inline-block; font-size: 7pt; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; padding: 2pt 6pt; border-radius: 2pt; margin-right: 7pt; vertical-align: 12%; }
+  .b-critical { background: #9b1c1c; }
+  .b-high     { background: #946300; }
+  .b-medium   { background: #555555; }
+  .b-strength { background: #1d5c34; }
+  .finding { margin: 13pt 0; page-break-inside: avoid; }
+  .finding .fh { font-weight: bold; font-size: 10.5pt; margin-bottom: 3pt; }
+  .finding p { margin: 3pt 0; color: #2a2a2a; }
+  table { border-collapse: collapse; width: 100%; margin: 10pt 0 14pt 0; font-size: 9pt; }
+  th { text-align: left; font-size: 7.5pt; letter-spacing: 0.1em; text-transform: uppercase; color: #777; font-weight: normal; padding: 0 10pt 5pt 0; border-bottom: 0.75pt solid #cfcfcf; }
+  td { padding: 6pt 10pt 6pt 0; border-bottom: 0.5pt solid #e3e3e3; vertical-align: top; }
+  tr:last-child td { border-bottom: 0.75pt solid #cfcfcf; }
+  tr { page-break-inside: avoid; }
+  td.num { white-space: nowrap; }
+  .good { color: #1d5c34; font-weight: bold; }
+  .bad  { color: #9b1c1c; font-weight: bold; }
+  .warn { color: #946300; font-weight: bold; }
+  .draftbox { border: 0.75pt solid #cfcfcf; background: #f7f7f7; padding: 10pt 14pt; margin: 10pt 0; font-size: 9.5pt; line-height: 1.6; page-break-inside: avoid; }
+  .draftbox .dl { font-size: 7.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: #777; margin-bottom: 5pt; }
+  .methodnote { font-size: 8.5pt; color: #777; line-height: 1.55; margin-top: 22pt; }
+  /* score callout */
+  .scorewrap { display: flex; align-items: stretch; border-left: 3pt solid #946300; background: #faf6ee; margin: 14pt 0 4pt 0; page-break-inside: avoid; }
+  .scorebig { font-size: 34pt; font-weight: bold; color: #946300; padding: 14pt 20pt; line-height: 1; align-self: center; text-align: center; }
+  .scorebig .den { font-size: 9pt; color: #8a7a55; font-weight: normal; display: block; margin-top: 6pt; letter-spacing: 0.02em; }
+  .scoretext { font-size: 9pt; color: #43423f; padding: 12pt 14pt 12pt 0; line-height: 1.55; align-self: center; }
+  /* scorecard bars */
+  .sc { width: 100%; font-size: 9pt; }
+  .sc th { padding-bottom: 6pt; }
+  .sc td { padding: 8pt 10pt 8pt 0; vertical-align: top; }
+  .dim { font-weight: bold; width: 1.55in; }
+  .track { background: #e7e7e7; height: 7pt; width: 1.7in; border-radius: 1pt; position: relative; margin-bottom: 4pt; }
+  .fill { height: 7pt; border-radius: 1pt; }
+  .f-green { background: #1d5c34; }
+  .f-amber { background: #b5840f; }
+  .f-red   { background: #9b1c1c; }
+  .scoreval { font-weight: bold; font-size: 9.5pt; }
+  pre.code { font-family: "DejaVu Sans Mono", monospace; font-size: 7.6pt; line-height: 1.5;
+    background: #f7f7f7; border: 0.75pt solid #cfcfcf; padding: 9pt 12pt; margin: 8pt 0 4pt 0;
+    white-space: pre-wrap; page-break-inside: avoid; }
+  .codecap { font-size: 8.5pt; color: #666; margin: 2pt 0 12pt 0; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="eyebrow">AI Visibility Audit</div>
+<h1 class="title">HUM Nutrition</h1>
+<p class="lede">
+HUM does the hard part right. Its site is open to the AI assistants, and its
+product pages carry clean, machine-readable data, so when a shopper names HUM,
+ChatGPT, Perplexity, Google, and Copilot all read humnutrition.com and get the
+price and ingredients right. The gap is the question one step earlier. Ask any
+of them for the best collagen or hair supplement and HUM does not come up. The
+answer is built from third-party roundups that leave HUM out, and the brand is
+absent from the moment a shopper is deciding what to buy. This audit shows where
+that happens and what closes it.
+</p>
+<div class="coverfoot">
+  <div class="cfrow"><span class="cflabel">Prepared by</span>Blackwell Enterprises</div>
+  <div class="cfrow"><span class="cflabel">Team</span>Armaan Priyadarshan (Dartmouth), Samarjit Deshmukh (Dartmouth), Ethan Zhou (UC Berkeley), Shamit D&rsquo;Souza (Stanford)</div>
+  <div class="cfrow"><span class="cflabel">Date</span>June 16, 2026</div>
+  <div class="cfrow"><span class="cflabel">Contact</span>armaan.priyadarshan.29@dartmouth.edu</div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+<h2>Summary</h2>
+<p>
+HUM Nutrition is in good shape on the parts of AI visibility most brands fail.
+It lets the AI assistants' crawlers through. GPTBot, the OpenAI and Perplexity
+search bots, ClaudeBot, and the rest all reach the site and receive the full
+page. The product pages are rendered on the server and carry well-formed
+structured data: product, price, in-stock status, return policy, an aggregate
+rating, and the page FAQs, all in the raw HTML before any JavaScript runs. So a
+crawler that does not run JavaScript still reads everything it needs.
+</p>
+<p>
+The effect shows up when you ask the engines directly. Asked the price and
+ingredients of Collagen Love, ChatGPT, Perplexity, Copilot, and Google all
+answered $40 with the correct formula and cited HUM's own site. The facts are
+right and the brand is the source. That is the win, and it is the half of AI
+visibility that takes engineering to fix when it is broken. Here it is already
+working.
+</p>
+<p>
+The loss is recommendability. When the shopper asks by category instead of by
+name, HUM disappears. Across every engine tested, "best collagen supplement"
+and "best hair supplement" returned Vital Proteins, Sports Research, California
+Gold Nutrition, Nutrafol, and others, and never HUM. The engines build those
+answers from editorial roundups (Rolling Stone, GNC, Health, iHerb) that do not
+list HUM, so the brand is missing at the exact moment a buyer is choosing.
+</p>
+
+<div class="scorewrap">
+  <div class="scorebig">D<span class="den">66 / 100</span></div>
+  <div class="scoretext">
+    Composite across the five dimensions in this audit, measuring the AI channel.
+    The number is held down by one dimension, recommendability, not by the
+    foundation. The schema and crawler access that usually need a rebuild are
+    already working. Closing the gap is corpus and visibility work.
+  </div>
+</div>
+
+<h3>The main points</h3>
+<ul>
+  <li>The site is readable and the facts are right. On a direct question, every
+    engine tested returned the correct price and ingredients, and most cited
+    humnutrition.com as the source.</li>
+  <li>The brand is missing from category answers. "Best collagen supplement"
+    omitted HUM on Perplexity, Google AI Overviews, Google AI Mode, ChatGPT,
+    Copilot, and Claude. Gemini refused the question on safety grounds. The
+    answers that do appear come from roundups that do not include HUM.</li>
+  <li>The engines penalize the capsule format. ChatGPT told the user to "choose
+    powder over gummies or capsules," and Google framed capsules as underdosed
+    against powders. HUM's collagen is a capsule, so the frame works against it.</li>
+  <li>One crawler is blocked. Bingbot gets a hard 403 at the firewall while the AI
+    crawlers are allowed. The practical harm is smaller than it looks, since
+    Copilot still reached the brand, but it is a closed door that was opened on
+    purpose.</li>
+  <li>Nothing is built for shopping agents. No llms.txt, no agent files, no
+    commerce protocol. The product data is clean, so this is a gap to close before
+    agent checkout matters, not a fire.</li>
+  <li>Reputation is mixed and the engines reflect it. On-site reviews are strong
+    and deep, Trustpilot sits at 1.8, and the assistants land on "legit, but not
+    essential."</li>
+</ul>
+</div>
+
+<!-- SCORECARD -->
+<div class="section">
+<h2>Scorecard</h2>
+<p>We scored HUM on five dimensions of AI visibility, each from 0 to 100, using the
+evidence gathered for this audit. The composite is the average.</p>
+
+<table class="sc">
+  <thead><tr><th class="dim">Dimension</th><th>Score</th><th>What it measures</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td><div class="track"><div class="fill f-green" style="width:1.275in"></div></div><span class="scoreval">75</span></td>
+      <td>Entity presence, agent discovery files, AI crawler access</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td><div class="track"><div class="fill f-green" style="width:1.445in"></div></div><span class="scoreval">85</span></td>
+      <td>Machine-readable schema depth, accuracy, structured policies</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td><div class="track"><div class="fill f-red" style="width:0.80in"></div></div><span class="scoreval">47</span></td>
+      <td>Inclusion and framing in AI category recommendations</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td><div class="track"><div class="fill f-amber" style="width:0.935in"></div></div><span class="scoreval">55</span></td>
+      <td>Agent-commerce protocols, agent-readable pricing, first-party agent checkout</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td><div class="track"><div class="fill f-amber" style="width:1.156in"></div></div><span class="scoreval">68</span></td>
+      <td>Sentiment in the AI training and retrieval corpus, reviews, safety</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>How to read the spread</h3>
+<p>
+The two high scores and the one low score tell the whole story. Quotability and
+discoverability are strong because the brand did the technical work: the crawlers
+are let in and the page data is clean and server-rendered. Recommendability is
+the outlier at 47, and it is dragging the composite down on its own. That gap is
+not a site problem. The page reads fine. It is that the third-party corpus the
+engines lean on for category answers does not include HUM. Transactability and
+reputation sit in the middle, each for a single clear reason: no agent-commerce
+surfaces exist yet, and the third-party reputation signals the engines read are
+weaker than the brand's own reviews.
+</p>
+<div class="draftbox">
+By the same five-dimension measure, HUM's standing in classic Google Search would
+score well into the A range. The site is fully indexed, the product pages return
+rich results with price, stock, and rating, and the brand ranks for its own terms.
+The website works. What this audit measures is the newer channel, where being
+readable is necessary but no longer enough on its own.
+</div>
+</div>
+
+<!-- FINDINGS -->
+<div class="section">
+<h2>Findings, worst first</h2>
+
+<div class="finding">
+<p><span class="badge b-high">High</span><span class="fh">01&nbsp;&nbsp;The brand is absent from AI category recommendations</span></p>
+<p>This is where the brand loses the most. Asked for the best collagen supplement, every
+engine that answered returned a list and none of them named HUM. Perplexity returned
+California Gold Nutrition, Vital Proteins, and Transparent Labs. ChatGPT returned Sports
+Research, Momentous, and BUBS Naturals. Copilot returned Sports Research, Ancient Nutrition,
+and Momentous. Claude returned Transparent Labs, Nutricost, and CollagenUP. Google AI
+Overviews and AI Mode returned Vital Proteins and California Gold Nutrition. Gemini refused
+the question on safety grounds and recommended nothing. The hair query went the same way,
+with Nutrafol and Viviscal named and HUM absent. HUM sells a collagen product rated 4.5
+across about 200 reviews and a hair product with more than 1,200 reviews, and on a discovery
+question a shopper never hears either name.</p>
+<div class="draftbox">
+<div class="dl">Evidence</div>
+Six engines that give recommendations, one query. "Best collagen supplement to buy in 2026"
+named at least a dozen competitors across the engines and never returned HUM Collagen Love.
+The answers cited Rolling Stone, Fortune, GNC, Health, and iHerb roundups, none of which list
+HUM. Gemini, the seventh, declined to recommend supplements at all.
+</div>
+</div>
+
+<div class="finding">
+<p><span class="badge b-high">High</span><span class="fh">02&nbsp;&nbsp;The engines penalize the capsule format</span></p>
+<p>The category answers do not just omit HUM, they carry a frame that argues against
+it. ChatGPT's buying rules told the user to "choose powder over gummies or capsules
+because you can realistically get a full 10 to 20 g serving." Google's overview said
+a capsule "delivers a much smaller dose of collagen compared to powder-based
+supplements, which provide much higher yields for a similar price." HUM's Collagen
+Love is a three-capsule dose, so the engines' default rule of thumb reads it as
+underdosed before the formula is even considered. The brand has a real answer to
+this (it pairs collagen with vitamin C, hyaluronic acid, and other actives rather
+than competing on grams) but that answer is not reaching the model.</p>
+<div class="draftbox">
+<div class="dl">ChatGPT, verbatim</div>
+"A few buying rules: choose powder over gummies or capsules because you can
+realistically get a full 10 to 20 g serving; choose hydrolyzed collagen peptides."
+</div>
+</div>
+
+<div class="finding">
+<p><span class="badge b-medium">Medium</span><span class="fh">03&nbsp;&nbsp;Bingbot is blocked at the firewall</span></p>
+<p>HUM's Cloudflare firewall returns a hard 403 to Bingbot on every path, on both the
+apex and www, while it lets every AI assistant crawler through. There are no AI rules
+in robots.txt, so this is a deliberate firewall action aimed at Bing specifically. The
+expected casualty is Microsoft Copilot, which is fed by the Bing index. In testing,
+the harm was smaller than the block implies: Copilot still answered HUM's price and
+ingredients correctly and cited the official site, apparently from cache or a path that
+is not Bingbot. Still, this is a closed door that was opened on purpose, it puts Bing
+web results and freshness at risk, and reopening it costs nothing.</p>
+<div class="draftbox">
+<div class="dl">Evidence</div>
+Requests that differed only in the user-agent returned 200 for a browser and for GPTBot,
+and a Cloudflare-served 403 for bingbot, repeatably.
+</div>
+</div>
+
+<div class="finding">
+<p><span class="badge b-medium">Medium</span><span class="fh">04&nbsp;&nbsp;Nothing is built for shopping agents</span></p>
+<p>None of the surfaces an AI shopping agent looks for exist on the site. There is no
+llms.txt or agents file, nothing under /.well-known (no commerce protocol, no agent
+card, no plugin manifest), and no MCP endpoint or agent checkout. An agent that wanted
+to buy HUM would have to go to a retailer, and the sale and the customer go with it.
+The product data itself is clean and agent-readable, which is the hard part, so this is
+a gap to close before agent checkout becomes common, not a fire today.</p>
+<div class="draftbox">
+<div class="dl">Evidence</div>
+/llms.txt, /agents.md, /.well-known/ucp, /.well-known/agent.json, and
+/.well-known/ai-plugin.json all return 404.
+</div>
+</div>
+
+<div class="finding">
+<p><span class="badge b-medium">Medium</span><span class="fh">05&nbsp;&nbsp;The third-party reputation the engines read is weaker than the brand's own</span></p>
+<p>HUM's on-site reviews are strong and deep, with ratings from 4.2 to 4.75 and several
+products past a thousand reviews. The signals the engines reach for tell a softer story.
+Trustpilot sits at 1.8 out of 5 across 72 reviews, and the BBB profile is rated A- but
+not accredited. When asked whether HUM is worth it, Perplexity drew on Trustpilot, the
+BBB, Medical News Today, and the Chicago Tribune and landed on "legit yes, essential no,"
+praising the testing and clean-label certifications while flagging price and the
+subscription model. The brand does not control this corpus, and right now it skews more
+negative than the first-party reviews do.</p>
+<div class="draftbox">
+<div class="dl">Evidence</div>
+Trustpilot aggregate rating 1.8 / 5 over 72 reviews on the claimed profile; BBB A-,
+not accredited; on-site catalog ratings 4.2 to 4.75.
+</div>
+</div>
+
+<div class="finding">
+<p><span class="badge b-strength">Strength</span><span class="fh">06&nbsp;&nbsp;The site is fully readable and accurately quoted</span></p>
+<p>This is the foundation, and it is solid. The AI assistants' crawlers are allowed
+through the firewall, the product pages are server-rendered, and the structured data is
+canonical and complete. The result is that on a direct question the engines read the
+brand's own page and get it right. ChatGPT returned the full Collagen Love ingredient
+table to the milligram and cited HUM. Perplexity, Copilot, and Google all returned the
+correct $40 price and the subscribe price, and cited the official site. The brand is the
+source of its own facts, which is exactly where most brands fall down and HUM does not.</p>
+<div class="draftbox">
+<div class="dl">Evidence</div>
+Raw product HTML carries a well-formed Product node with Offer (price $40, in stock,
+return policy), AggregateRating, and FAQPage, using the canonical https schema.org
+context. Google, ChatGPT, Perplexity, and Copilot each returned the price correctly.
+</div>
+</div>
+</div>
+
+<!-- SECTION 1: AGENTIC COMMERCE -->
+<div class="section">
+<h2>1. Agentic-commerce files and protocols</h2>
+<p>We checked each file and protocol an AI agent uses to find, read, and buy from a store.
+The product data an agent needs is present and clean. The discovery and checkout surfaces
+around it are not built yet.</p>
+
+<table>
+  <thead><tr><th>Surface</th><th>Purpose</th><th>Status on the brand's site</th></tr></thead>
+  <tbody>
+    <tr><td>AI crawler access</td><td>Let assistant bots read the site</td><td class="good">Open. GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, PerplexityBot all 200</td></tr>
+    <tr><td>WAF crawler policy</td><td>Firewall access control</td><td class="bad">403 for Bingbot at the Cloudflare edge</td></tr>
+    <tr><td>robots.txt AI rules</td><td>Standard crawler opt-out</td><td class="warn">None. Only funnel and account paths disallowed</td></tr>
+    <tr><td>Product JSON-LD in source</td><td>Machine-readable product</td><td class="good">Present, server-rendered, well-formed</td></tr>
+    <tr><td>Offer, price, return policy</td><td>Agent-readable commerce data</td><td class="good">Present (price, in stock, priceValidUntil, returns)</td></tr>
+    <tr><td>OpenGraph product meta</td><td>Hints for parsers</td><td class="good">Present in source</td></tr>
+    <tr><td>llms.txt, llms-full.txt</td><td>Guide written for LLMs</td><td class="bad">Absent</td></tr>
+    <tr><td>agents.md</td><td>Instructions for agents</td><td class="bad">Absent</td></tr>
+    <tr><td>/.well-known/ucp</td><td>Commerce protocol endpoint</td><td class="bad">Absent</td></tr>
+    <tr><td>/.well-known/agent.json</td><td>Agent identity card</td><td class="bad">Absent</td></tr>
+    <tr><td>/.well-known/ai-plugin.json</td><td>Plugin manifest</td><td class="bad">Absent</td></tr>
+    <tr><td>MCP endpoint</td><td>Agent tool interface</td><td class="bad">Absent</td></tr>
+    <tr><td>ACP (OpenAI, Stripe), AP2 (Google)</td><td>Agent checkout and payment mandates</td><td class="bad">Not set up</td></tr>
+  </tbody>
+</table>
+<p>The split is clean. The top of the table, the data an agent reads, is green. The bottom,
+the surfaces an agent uses to discover and transact, is missing. Because the product data is
+already clean, building the missing surfaces is additive work, not a rebuild, and it gets the
+brand ready before ChatGPT and Perplexity checkout become the default path.</p>
+</div>
+
+<!-- SECTION 2: ENGINES -->
+<div class="section">
+<h2>2. How the brand appears in answer engines</h2>
+<p>We put the same questions to each engine and recorded the answer, the sources, whether the
+price and ingredient claims were right, and whether the brand appeared in category answers. The
+results split along one line: HUM does well when named and vanishes when the question is by
+category.</p>
+
+<table>
+  <thead><tr><th>Engine</th><th>Reads HUM's site</th><th>Facts right when named</th><th>In category answers</th><th>Where the answer comes from</th></tr></thead>
+  <tbody>
+    <tr><td>Perplexity</td><td class="good">Yes, cites it</td><td class="good">Yes</td><td class="bad">No</td><td>brand site, Trustpilot, MNT, roundups</td></tr>
+    <tr><td>Google AI Overviews</td><td class="good">Yes, cites it</td><td class="good">Yes</td><td class="bad">No</td><td>brand site, Amazon, Rolling Stone, GNC</td></tr>
+    <tr><td>Google AI Mode</td><td class="good">Yes</td><td class="good">Yes</td><td class="bad">No</td><td>Health, Rolling Stone</td></tr>
+    <tr><td>ChatGPT (search on)</td><td class="good">Yes, cites it</td><td class="good">Yes</td><td class="bad">No</td><td>brand site, brand pages, PMC, FDA</td></tr>
+    <tr><td>Microsoft Copilot</td><td class="good">Yes, cites it</td><td class="good">Yes</td><td class="bad">No</td><td>brand site, Amazon, NIH label database</td></tr>
+    <tr><td>Claude (search on)</td><td class="warn">Facts via retailers</td><td class="good">Yes</td><td class="bad">No</td><td>Fortune, Rolling Stone, Grove, Amazon</td></tr>
+    <tr><td>Gemini</td><td class="good">Yes, cites it</td><td class="good">Yes</td><td class="warn">Refuses, safety filter</td><td>brand site (declines to recommend supplements)</td></tr>
+    <tr><td>Amazon Rufus</td><td>Not captured</td><td>Not captured</td><td>Not captured</td><td>Human-only, Amazon blocks crawlers</td></tr>
+  </tbody>
+</table>
+<p>The table is uniform in a telling way. Every engine that gives a recommendation reads the
+brand's own page and gets the facts right, and every one of them leaves the brand out of category
+recommendations. That rules out the usual suspects. It is not a crawler block, since the page is
+read. It is not bad data, since the facts are right. It is that the answer to "what should I buy"
+is assembled from roundups and comparison content where HUM is not present. Two engines are worth
+a separate note. Claude got the facts right but cited retailers (Grove, Amazon) rather than HUM's
+own page, even though it is allowed to crawl the site. Gemini refused the category question
+outright on safety grounds, so for supplements it is not a recommendation surface at all.</p>
+
+<h3>HUM against the field</h3>
+<p>On the collagen question the recurring winners were Vital Proteins, Sports Research, California
+Gold Nutrition, Ancient Nutrition, and Momentous. Most are powders, and the engines' shared rule
+of thumb favors powders by gram count, which is the frame that pushes HUM's capsule out of
+contention. The brand cannot argue its own case in these answers, not because its page is
+unreadable, but because the page is never the source the engine is summarizing. Getting HUM into
+that source material is the work of the next phase.</p>
+</div>
+
+<!-- SECTION 3: TRUTH TABLE -->
+<div class="section">
+<h2>3. What is true, and what confuses the engines</h2>
+<p>We built a verified table of the brand's products and prices from the rendered pages and the
+product schema, then checked the engine claims against it. The facts are simple and the engines
+get them right when they read the page. The confusion is upstream, in how the category is framed.</p>
+
+<table>
+  <thead><tr><th>Product</th><th>Price</th><th>What it is for</th><th>Rating</th></tr></thead>
+  <tbody>
+    <tr><td>Collagen Love</td><td class="num">$40</td><td>Skin firmness and elasticity, collagen with vitamin C and hyaluronic acid</td><td class="num">4.53 / 198</td></tr>
+    <tr><td>Daily Cleanse</td><td class="num">$27</td><td>Skin clarity and detox support</td><td class="num">4.59 / 2,493</td></tr>
+    <tr><td>Flatter Me</td><td class="num">$27</td><td>Digestive enzymes for bloating</td><td class="num">4.49 / 2,869</td></tr>
+    <tr><td>Hair Strong Gummies</td><td class="num">$26</td><td>Hair strength, biotin and folic acid</td><td class="num">4.61 / 1,219</td></tr>
+    <tr><td>Private Party</td><td class="num">$27</td><td>Vaginal probiotic</td><td class="num">4.72 / 1,892</td></tr>
+    <tr><td>Gut Instinct</td><td class="num">$27</td><td>Daily probiotic</td><td class="num">4.62 / 1,207</td></tr>
+    <tr><td>Mighty Night</td><td class="num">$40</td><td>Overnight skin and sleep support</td><td class="num">4.75 / 693</td></tr>
+    <tr><td>Skin Squad Pre+Probiotic</td><td class="num">$40</td><td>Clear skin, pre and probiotic</td><td class="num">4.71 / 690</td></tr>
+  </tbody>
+</table>
+<p class="codecap">Prices and ratings from the brand's own product schema, frozen before any engine
+was queried. The full catalog of 37 products is in the working file; prices run $12 to $60.</p>
+
+<h3>What confuses the engines</h3>
+<ul>
+  <li>Some products carry a newer name on an older URL. Moody Bird now reads as Hormone Balance,
+    Hair Sweet Hair as Hair Strong Gummies, Glow Sweet Glow as Hyaluronic Glow Gummies. An engine
+    that learned the old name from a third-party source may not connect it to the current page.</li>
+  <li>The collagen dose is given in milligrams of a blend, while the products the engines
+    recommend are powders measured in grams. Read without context, the brand looks underdosed,
+    even though it is a different kind of product.</li>
+  <li>With the brand's page rarely used as the category source, the engines learn HUM mostly from
+    retailer listings, Trustpilot, and roundups, and some of that is out of date or incomplete.</li>
+</ul>
+</div>
+
+<!-- SECTION 4: REPUTATION -->
+<div class="section">
+<h2>4. What people say online</h2>
+<p>This is the material the engines take in about the brand, and it is split. The first-party
+reviews are strong, the third-party signals are weaker, and the engines weigh the third-party
+ones because that is what they can reach and trust as independent.</p>
+
+<h3>On-site reviews</h3>
+<p>Deep and positive. Ratings run 4.2 to 4.75 across the catalog, and the most-reviewed products
+clear a thousand reviews each, with Flatter Me near 2,900 and Daily Cleanse near 2,500. This is a
+real asset, and it is well-marked up in schema, so the engines see it on a direct query.</p>
+
+<h3>Trustpilot, BBB, and editorial</h3>
+<p>The independent signals are softer. Trustpilot sits at 1.8 out of 5 over 72 reviews, the usual
+low-volume, negative-skewed pattern for a direct-to-consumer brand, on a profile the brand has
+claimed. The BBB profile is rated A- but not accredited. Medical News Today and the Chicago
+Tribune cover the brand on its testing and clean-label credentials, which is favorable. The
+engines blend these into a balanced verdict.</p>
+
+<div class="draftbox">
+When asked whether HUM is worth it, Perplexity answered "legit yes, essential no." It credited the
+triple-testing, the Clean Label Project certification, and the third-party testing, and flagged
+the price and the subscription model. That is a fair read of the corpus as it stands, and it is
+the corpus, not the product, that sets the ceiling.
+</div>
+</div>
+
+<!-- WHAT TO DO -->
+<div class="section">
+<h2>What to do</h2>
+<p>The technical foundation is already in place, so the work points at the corpus and the missing
+surfaces rather than a rebuild. In order of impact:</p>
+
+<h3>Get HUM into the category sources the engines read</h3>
+<p>This is the highest-leverage move and it maps directly to the lowest score. The engines build
+category answers from roundups and comparison content (Rolling Stone, GNC, Health, iHerb, and the
+beauty press), and HUM is missing from them. We can produce the target list, the gap analysis of
+which roundups rank for which queries, and outreach-ready briefs and product data for each. The
+publishers decide whether to add the brand, so this is influence rather than a switch we flip, but
+it is the work that moves recommendability.</p>
+
+<h3>Answer the capsule-versus-powder frame on the page and in the corpus</h3>
+<p>The engines default to grams of collagen and read a capsule as underdosed. HUM's case is that it
+pairs collagen with vitamin C, hyaluronic acid, and other actives for a different goal. Put that
+comparison in the product page copy and the FAQ schema, in plain terms the model can quote, and
+seed it into the comparison content. The goal is for the engine to have the brand's own framing
+available when it reaches for the powder rule of thumb.</p>
+
+<h3>Reopen Bingbot at the firewall</h3>
+<p>Let bingbot through the Cloudflare rule. If the intent was to block training crawlers, that
+belongs in robots.txt, not a firewall block on the search index. This is a small change the brand's
+team makes, it protects Bing web results and Copilot freshness, and it costs nothing.</p>
+
+<h3>Publish the AI guide files and decide the agent-commerce stance</h3>
+<p>Add llms.txt and an agents file with the brand's own product and policy information, so the
+assistants have a clean source the brand wrote. Then decide whether to expose a commerce protocol
+surface now or let agent sales run through retailers for the moment. Either way, the product data is
+already agent-readable, so the brand is not shut out when agent checkout arrives.</p>
+
+<h3>Strengthen the third-party reputation signals</h3>
+<p>The on-site reviews are strong; the gap is the independent sources the engines trust. Work the
+claimed Trustpilot profile to lift the volume and the average, since the engines read it directly,
+and keep the testing and certification story present in the press the engines cite.</p>
+
+<h3>How this gets measured</h3>
+<p>Every item above is testable, which is the point. The same seven-engine battery that produced
+this audit, run before and after the work, shows exactly what moved. The schema and crawler fixes
+are specs we hand the brand's team. The corpus and reputation work is influence we drive, though
+publishers and reviewers decide what they publish. The before-and-after re-benchmark is the proof,
+and it is the part that is hard to reproduce without this measurement harness. That is how a focused
+engagement from here would be scoped and graded.</p>
+
+<p class="methodnote">Method: passive recon and a product truth table were frozen from the brand's
+own site before any engine was queried. Crawler access was tested with named user-agents. The live
+engine battery ran in a headed browser across Perplexity, Google AI Overviews, Google AI Mode,
+ChatGPT, Microsoft Copilot, Claude, and Gemini on June 16, 2026. Amazon Rufus is human-only (Amazon
+blocks crawlers) and was not run. Scores are graded against the frozen truth table. This is a draft
+for internal review.</p>
+</div>
+
+</body>
+</html>
