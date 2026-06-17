@@ -37,6 +37,13 @@ uv run toolbox fork <src> <dst>
    primitives claim the recipient (`core/ledger.py` → `claim_contact` RPC →
    UNIQUE constraint) *before* acting. Lives inside the primitive + the
    database, so no generated flow can compose it away.
+   **Two-table caveat:** harness send-class primitives record to `contacted`,
+   but the standalone volume sender (`skills/autonomous-outreach/send_fast.py`)
+   runs on the service key and records to `suppression` instead (it can't set
+   `auth.uid()` for `contacted.sent_by`). So contact history is split across
+   both tables. To dedup a list, call the `check_contact` RPC (it unions both)
+   or query both tables — never `contacted` alone. See
+   `harness/learnings/07-ledger-split-contacted-vs-suppression.md`.
 4. **Concurrency built in.** Network primitives take `--concurrency N` and
    fan out by default. No internal throttles or caps. Transient errors
    (429/5xx/connection) retry with exponential backoff; **hard quota errors

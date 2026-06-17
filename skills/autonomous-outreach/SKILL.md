@@ -32,6 +32,25 @@ over time. Clay CSV exports also still work as input.
 `credentials/.env` for the suppression/ledger writes. The personalization hook
 runs on headless Claude Code.
 
+## Dedup: this sender records to `suppression`, NOT `contacted` (read this)
+
+This script runs on the Supabase **service key**, which has no `auth.uid()`, so
+it cannot write the `contacted` table (its `sent_by` requires a logged-in user).
+Instead it uses the `suppression` table's primary key as its atomic dedup +
+contact record. **Consequence: the people this sender has emailed live in
+`suppression`, and `contacted` may be empty even after thousands of sends.**
+
+So when you build or vet a list, **do not** dedup by querying `contacted` alone —
+it will read as fresh when it isn't. Use one of:
+- the `check_contact(channel, recipient)` RPC — it unions BOTH tables (returns
+  `suppressed` / `contacted` / `new`) and the service key can call it; or
+- query BOTH `contacted` AND `suppression`.
+
+Dedup at **sourcing** time (before enrichment spend), not just at send time, and
+treat any reused/pre-enriched lead file as already-contacted until checked — it
+is usually a prior run's output. Full post-mortem:
+`harness/learnings/07-ledger-split-contacted-vs-suppression.md`.
+
 ## How it runs
 
     # env: SUPABASE_URL, SUPABASE_SECRET_KEY, GOG_KEYRING_PASSWORD

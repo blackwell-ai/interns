@@ -18,8 +18,13 @@ supabase/.branches/
 # Local credentials — never committed (secrets distributed out-of-band)
 credentials/.env
 
-# Outreach run scratch (lead emails / send logs stay local)
+# Outreach run scratch (lead emails / send logs stay local).
+# The *.csv rule only catches the top folder, so name the per-campaign
+# subfolders and the enrichment cache explicitly. Lead emails never get pushed.
 skills/autonomous-outreach/*.csv
+skills/autonomous-outreach/agentic-ads/
+skills/autonomous-outreach/taste-data/
+skills/autonomous-outreach/enrichment_cache.jsonl
 /tmp/
 !skills/autonomous-outreach/lead_bank.csv
 .gstack/

@@ -2,6 +2,58 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-16 (afternoon) — 200-send taste-data run from Samarjit (4 buyer categories)
+
+- **Goal:** 200 named people who benefit from product-quality / taste data, 50
+  each across subscription/curation, retail buyers, brand incubators, and
+  recommendation/affiliate media, on a new "Stanford Student Question - Thoughts
+  on Product Quality Data" template.
+- **Sourcing (named-individual fan-out, per learnings/06):** 16 web-research
+  agents (4 per category) -> 529 unique candidates with a source URL each ->
+  `findemail.find --min-score 0` -> 401 found -> filtered to score >=70 ->
+  ledger-deduped (5 already-contacted dropped) -> best 50/category. Score floor
+  81, median 96. 401 Hunter credits. Detail:
+  `brain/research/2026-06-16-taste-data-outreach-list.md`.
+- **Sent: 200**, **0 failures**, from samarjit.deshmukh.29@dartmouth.edu,
+  co-founders CC'd, paced 8s. 4-email canary (one per segment) confirmed delivery
+  first. One template with a benefit sentence tailored per segment; intro
+  "building in the ecommerce space"; "$500 million" kept.
+- **Deliverable + sender:** `skills/autonomous-outreach/taste-data/`
+  (master_200.csv, four per-segment files, send_taste_data.py).
+- **Same-day volume:** Samarjit sent 138 (morning DTC) + 200 (this) = 338 today,
+  within the 1,000/day ceiling set by the user.
+- **Replies/bounces:** check the Dartmouth inbox over the next days.
+
+## 2026-06-16 (UTC) — 138-send DTC run from Samarjit (web-sourced long-tail brands)
+
+- **Goal:** another 500 new brand emails on the proven "Stanford Student
+  Question" retailer template, from **samarjit.deshmukh.29@dartmouth.edu**.
+  Landed at **138** this cycle. 500 was not reachable on the current Hunter
+  Starter budget at the observed yield (see
+  `harness/learnings/08-hunter-yield-curated-vs-websourced.md`).
+- **Sourcing (free, no spend):** `domains.source` (claude-CLI web search) over 33
+  DTC segments, 1,191 raw rows, deduped and marketplace-filtered to **1,068 fresh
+  brand domains** not already in the 224-domain lead bank.
+- **Enrichment:** `findemail.find-exec` (Hunter Domain Search) over the first 800
+  fresh domains. Only **149 returned an exec (18.6%)**, 140 survived the
+  invalid/generic/no-name filter. 800 Hunter credits spent (728/2,000 used after,
+  ~1,272 left this cycle).
+- **Sent: 138**, **0 failures**. A 3-email canary (Manscaped, Olaplex, Headblade)
+  confirmed delivery first, then the remainder. 2 of the 140 were already in
+  suppression and correctly skipped. HTML template with plaintext fallback,
+  co-founders CC'd, paced 8s, ledger-deduped.
+- **Decision (Samarjit):** send the 140 in hand rather than drain the Hunter
+  budget chasing 500 (cycle ceiling was ~360 at 18% yield). Other paths offered:
+  re-source toward larger/funded brands for higher yield, or upgrade Hunter.
+- **Brands include:** Manscaped, Olaplex, Oars + Alps, Brickell, Tiege Hanley,
+  SKIMS, Savage X Fenty, Organic Basics, Le Creuset, Made In, OXO, Staub, and ~125
+  more across grooming, haircare, cosmetics, apparel, and home.
+- **Reserve:** the 1,068 web-sourced domains are saved to
+  `skills/autonomous-outreach/dtc_web_sourced_1068.csv` (268 not yet enriched).
+  `enrichment_cache.jsonl` now holds the 800 queried domains, so re-runs are free.
+- **Replies/bounces:** check the Dartmouth inbox over the next days (`gmail.replies`,
+  `gmail.bounces`).
+
 ## 2026-06-15 (Clay DTC campaign): 154 sends, zero failures
 
 Broadened Clay DTC motion, run interactively by Armaan. Method: source DTC and
