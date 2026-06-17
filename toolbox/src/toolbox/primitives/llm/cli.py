@@ -218,7 +218,8 @@ def digest(
             "Items with kind 'paper' are new research papers: put every one under "
             "## Papers and nowhere else, each formatted as `**Paper title** - a one to "
             "two sentence plain summary of what the paper does and why it is interesting`, "
-            "then the `Source: arXiv <url>` line. Summarize from the item's abstract. "
+            "then the `Source: <source> <url>` line taken verbatim from the item (the "
+            "source may be arXiv, HF Papers, or alphaXiv). Summarize from the item's abstract. "
             "End with a one-line `Reviewed N, surfaced M` footer.\n\n"
             "Items (JSON):\n" + json.dumps(compact, ensure_ascii=False)
         )

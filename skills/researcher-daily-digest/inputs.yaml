@@ -10,12 +10,23 @@ discord_csv: "{{skill_dir}}/discord-channels.csv"
 twitter_targets: "{{skill_dir}}/twitter-targets.csv"
 
 # papers_queries: arXiv search_query expressions (one per row, `query`,`label`)
-# for the new-papers sweep. papers_days: how many days back to keep a paper
-# (4 covers a Monday weekend gap). papers_max: cap on papers per run; dedup
-# against prior digests keeps the same paper from repeating day to day.
+# for the query-matched arXiv sweep. papers_days: how many days back to keep an
+# arXiv paper, and how many daily Hugging Face lists to walk (4 covers a Monday
+# weekend gap). papers_max: cap on arXiv papers per run. A shared dedup against
+# prior digests keeps the same paper from repeating day to day or across sources.
 papers_queries: "{{skill_dir}}/papers-queries.csv"
 papers_days: 4
 papers_max: 10
+
+# Trending-paper feeds folded into the same Papers section (both key-free).
+# papers_hf_max: cap on Hugging Face daily_papers (the curated "trending today"
+# set). papers_alphaxiv_max: cap on alphaXiv's Hot feed. papers_alphaxiv_interval:
+# the alphaXiv window, one of "3 Days" | "7 Days" | "30 Days" | "90 Days" |
+# "All time". These feeds get NO publication-date cutoff (a paper trending now
+# may be older); dedup alone stops repeats.
+papers_hf_max: 6
+papers_alphaxiv_max: 6
+papers_alphaxiv_interval: "7 Days"
 
 # relevance_bar: the filter handed to llm.filter. The team is brainstorming, so
 # the bar is "would a founder exploring this space find it interesting?", NOT

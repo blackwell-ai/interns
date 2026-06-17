@@ -59,6 +59,28 @@ The Algolia API (no auth): front page plus standing queries for "agentic
 commerce" and "AI shopping". Catches launches, protocol news, and competitor
 moves the day they hit the front page.
 
+### Papers
+
+One step (`steps/papers.py`) pulls three key-free providers into a single Papers
+section, deduped on arXiv id so a paper surfaced by more than one never repeats:
+
+- **arXiv** — recent papers matching the queries in
+  `skills/researcher-daily-digest/papers-queries.csv` (the commerce/agent terms).
+  Query-targeted and recency-bounded; this is the precision source. Tune by
+  editing that CSV.
+- **Hugging Face Papers** (huggingface.co/papers) — the community-curated
+  "trending today" set via the public `daily_papers` API. Broad AI, no recency
+  cutoff (a paper trending now may be older); dedup stops repeats. Added by
+  Armaan, June 17, 2026.
+- **alphaXiv** (alphaxiv.org) — the community Hot feed over a rolling window
+  (default 7 days). Surfaces what researchers are discussing, including native
+  posts not on arXiv. Added by Armaan, June 17, 2026.
+
+Caps and the alphaXiv window live in `skills/researcher-daily-digest/inputs.yaml`
+(`papers_hf_max`, `papers_alphaxiv_max`, `papers_alphaxiv_interval`). HF and
+alphaXiv are broad AI, not commerce-filtered at the source; the digest's
+`llm.filter` applies the relevance bar afterward.
+
 ## Computer-use sources (phase 2, in progress)
 
 No clean read API, so these need a logged-in browser session via the gstack
