@@ -8,12 +8,12 @@ brain infrastructure, not an outreach feature.
 
 Forked in spirit from `researcher-watchlist-sweep`, which filed whole-page
 blobs as inbox tasks. This skill differs by: per-post granularity (`extract`),
-a synthesized digest (`llm.digest`), and four source types folded into one
+a synthesized digest (`llm.digest`), and many source types folded into one
 filtered digest.
 
 ## Sources
 
-All six fold into one `items.jsonl`, so the filter and digest treat them alike.
+They all fold into one `items.jsonl`, so the filter and digest treat them alike.
 
 - Reddit: r/ecommerce, r/shopify, r/ai_agents, r/solopreneur, r/smallbusiness,
   via the public `.rss` Atom feed (no key). Works from a residential IP only and
@@ -31,11 +31,23 @@ All six fold into one `items.jsonl`, so the filter and digest treat them alike.
   (`steps/bookface.py`, best-effort). Auth is the YC SSO session in the daemon.
   CONFIDENTIAL: YC-private content; the operator chose to include it in the
   committed + emailed digest (see the decision doc).
-- arXiv: recent papers matching the queries in `papers-queries.csv`, via the
-  public Atom API (`steps/papers.py`, no auth, best-effort). Keeps papers
-  submitted in the last `papers_days` days and drops any arXiv id already
-  surfaced in a prior brain digest, so the same paper never repeats. The digest
-  renders these under their own `## Papers` heading with a short summary each.
+- Papers: one step (`steps/papers.py`, all key-free, best-effort) pulls from
+  three providers and renders them under one `## Papers` heading.
+  - arXiv: recent papers matching the queries in `papers-queries.csv`, via the
+    public Atom API. Query-targeted to our space; kept only if submitted in the
+    last `papers_days` days. This is the precision source.
+  - Hugging Face Papers: the public `daily_papers` JSON API (the community
+    "trending today" set, broad AI). Walks back `papers_days` daily lists to
+    cover the weekend gap.
+  - alphaXiv: the public Hot feed (`/papers/v3/feed`) over
+    `papers_alphaxiv_interval`. The community trending/discussion signal; it
+    includes native posts that are not on arXiv.
+  HF and alphaXiv are "what is hot now" feeds, so they get no publication-date
+  cutoff (a paper trending today may be older). Repetition is stopped instead by
+  one shared dedup, keyed on the bare arXiv id (alphaXiv native posts on their
+  slug): the same paper surfaced by more than one provider, or already in a prior
+  brain digest, appears once and never repeats. Tie-break order is arXiv > HF >
+  alphaXiv. Each keeps its own source label for attribution.
 
 ## Inputs
 
@@ -43,8 +55,12 @@ All six fold into one `items.jsonl`, so the filter and digest treat them alike.
 - `discord_csv`: `guild_id,channel_id,label`. Default `discord-channels.csv`.
 - `twitter_targets`: `type,value` (handle|query). Default `twitter-targets.csv`.
 - `papers_queries`: `query,label` of arXiv `search_query` expressions. Default
-  `papers-queries.csv`. `papers_days` (default 4) is the recency window;
-  `papers_max` (default 10) caps how many papers a run can surface.
+  `papers-queries.csv`. `papers_days` (default 4) is the arXiv recency window and
+  the number of Hugging Face daily lists to walk; `papers_max` (default 10) caps
+  arXiv papers per run. `papers_hf_max` (default 6) and `papers_alphaxiv_max`
+  (default 6) cap the two trending feeds; `papers_alphaxiv_interval` (default
+  "7 Days") is the alphaXiv window ("3 Days" | "7 Days" | "30 Days" | "90 Days"
+  | "All time").
 - `relevance_bar`: the plain-English filter handed to `llm.filter`.
 
 ## Steps
@@ -54,19 +70,24 @@ All six fold into one `items.jsonl`, so the filter and digest treat them alike.
 3. `discord.fetch --append`: append Discord messages (bots/chatter filtered).
 4. `python steps/twitter.py`: append X tweets, best-effort (browser daemon).
 5. `python steps/bookface.py`: append YC Bookface posts, best-effort (SSO session).
-6. `python steps/papers.py`: append recent arXiv papers, best-effort (no auth),
-   deduped against prior digests.
+6. `python steps/papers.py`: append papers from arXiv (query-matched), Hugging
+   Face daily (trending), and alphaXiv Hot (trending), best-effort (no auth),
+   one shared dedup against prior digests and across providers.
 7. `llm.filter`: strict per-item relevance + a 1-2 sentence summary each (batched).
 8. `llm.digest`: synthesize the themed digest (Problems / Ideas / Competitor and
    market moves / Papers), append a `## Sources indexed` coverage list, write a
    dated copy to `brain/research/digests/<date>.md`.
-9. `inbox.file`: file each cleared item as an `inbox/queue/` task for a human.
-10. `report.write`: run report plus changelog.
+9. `report.write`: run report plus changelog.
+
+The flow used to file each cleared item as an `inbox/queue/` task (`inbox.file`),
+but that flooded the queue with dozens of items a day. Removed 2026-06-17: the
+dated brain digest is the record; the cron agent still delivers it by email and
+Notion (below).
 
 ## Delivery
 
-The flow produces the durable artifacts: the dated brain digest and the inbox
-tasks. The other two channels are handled by the outer cron agent, on purpose:
+The flow produces the durable artifact: the dated brain digest. The other two
+channels are handled by the outer cron agent, on purpose:
 
 - Notion + team email use the cron agent's MCP (Notion, Gmail). They do NOT use
   the `gmail.send` primitive, whose outreach ledger would suppress a repeat
