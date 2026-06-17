@@ -12,3 +12,4 @@ One line per registered skill. `report.write` updates the last-run column.
 | token-leaderboard | Per-person Claude Code token usage via ccusage to Supabase, ranked board plus committed snapshot | (script; ccusage+supabase) | — |
 | researcher-daily-digest | Weekday external-signal radar: fetch Reddit + HN → per-post items → filter → synthesize a brain digest + inbox tasks (cron via cron.sh) | fetch, extract, llm, inbox | 2026-06-16 (`researcher-daily-digest-20260616T150016Z-a9dc51`) |
 | granola-export | Export Granola meeting notes to context/samarjit-granola/ (keychain decrypt + Granola API) | (script; node + macOS keychain + granola API) | 2026-06-16 |
+| outreach-counter | Team email send counts (daily/weekly/total) derived from the ledger; writes agents/outreach/send-counts.md | (script; supabase) | 2026-06-17 |

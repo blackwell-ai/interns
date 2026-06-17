@@ -130,6 +130,20 @@ def main(path):
         else:
             idle = 0
     print(f"SUMMARY sent={counts['sent']} skipped={counts['skipped']} failed={counts['failed']}", flush=True)
+    _refresh_counts()
+
+def _refresh_counts():
+    """Refresh the team send-count file (derived from the ledger)."""
+    try:
+        from pathlib import Path as _P
+        r = _P(__file__).resolve()
+        while r != r.parent and not (r/"skills"/"outreach-counter"/"counter.py").exists():
+            r = r.parent
+        c = r/"skills"/"outreach-counter"/"counter.py"
+        if c.exists():
+            subprocess.run([sys.executable, str(c)], timeout=120)
+    except Exception as e:
+        print(f"(send-count refresh skipped: {e})", flush=True)
 
 if __name__ == "__main__":
     main(sys.argv[1])

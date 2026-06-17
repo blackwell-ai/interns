@@ -25,6 +25,27 @@ files. Columns: email, first_name, last_name, title, org, domain, segment,
 subarea, why_relevant, source_url, email_score, email_status. The `why_relevant`
 column is a ready-made per-contact personalization hook.
 
+## Round 2 (2026-06-16): 200 more, same 50/50/50/50 split
+
+A second batch of 200, zero overlap with the first. Built credit-efficiently by
+reusing the round-1 verified reserve (round 1 verified 378 but sent only 200, so
+173 verified, never-sent people remained) and topping up with fresh sourcing only
+where a segment was short of 50.
+
+- Reserve used: 115 (subscription 12, retail 22, incubators 50, reco 31).
+- Newly sourced: 85, via 7 top-up research agents over companies not touched in
+  round 1 (174 new candidates -> `findemail.find` -> 113 found -> filtered/deduped).
+- Ledger-deduped against the current ledger (now includes the round-1 sent 200);
+  0 overlap with the sent 200. Score floor 80, median 83, 0 invalid.
+- Cost: 113 Hunter credits (vs 401 in round 1), because the reserve was free.
+  Searches at 1,242 / 2,000 used after.
+- Deliverable: `skills/autonomous-outreach/taste-data/master_200_round2.csv` (+
+  four per-segment `_round2` files). `round3_reserve.csv` (86) holds the still-fresh
+  surplus for a future batch.
+- **Sent 2026-06-16: all 200, 0 failures**, from samarjit.deshmukh.29@dartmouth.edu,
+  co-founders CC'd, same `send_taste_data.py` and per-segment template, 4-email
+  canary first. Brought Samarjit to 538 sends for the day.
+
 ## Method (named-individual sourcing, per learnings/06)
 
 - **16 web-research agents** (4 per category, one per sub-segment) each returned

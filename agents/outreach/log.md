@@ -2,6 +2,26 @@
 
 Dated run summaries (sourced / sent / replies / meetings), newest first.
 
+## 2026-06-16 (evening) — taste-data round 2: 200 more, sent from Samarjit
+
+- **Goal:** 200 more on the same 4 ICPs (50 each), no overlap with the afternoon's
+  200. Same "Stanford Student Question - Thoughts on Product Quality Data" template.
+- **Built credit-efficiently:** reused the round-1 verified reserve (round 1
+  verified 378, sent 200, so ~173 verified people were never sent) + 85 freshly
+  sourced via 7 top-up agents over companies not touched in round 1. 174 new
+  candidates -> `findemail.find` -> 113 found. Only **113 Hunter credits** (vs 401
+  in round 1); searches at 1,242/2,000 after.
+- **Sent: 200**, **0 failures**, from samarjit.deshmukh.29@dartmouth.edu,
+  co-founders CC'd, paced 8s, ledger-deduped (0 overlap with the 200 sent earlier).
+  4-email canary (one per segment) first. Score floor 80, median 83.
+- **New companies include:** Curlbox, Beauty Heroes, Emma & Chloe, Hy-Vee, Natural
+  Grocers, Pet Supplies Plus, TreeHouse Foods, Men's Health, PCWorld, and more.
+- **Deliverable:** `skills/autonomous-outreach/taste-data/master_200_round2.csv` (+
+  per-segment `_round2` files). `round3_reserve.csv` holds 86 still-fresh verified
+  contacts for a future batch.
+- **Same-day volume:** Samarjit now at 138 + 200 + 200 = 538 today, within the
+  1,000/day ceiling.
+
 ## 2026-06-16 (afternoon) — 200-send taste-data run from Samarjit (4 buyer categories)
 
 - **Goal:** 200 named people who benefit from product-quality / taste data, 50
