@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Hoodie, graphite, front">
+  <rect width="600" height="600" fill="#EDE9E0"/>
+  <g>
+    <!-- hood -->
+    <path d="M235 120 C260 80 340 80 365 120 L345 165 L255 165 Z" fill="#1F2226" stroke="#15171A" stroke-width="3"/>
+    <!-- body -->
+    <path d="M180 165
+             C200 150 240 150 255 165
+             L345 165 C360 150 400 150 420 165
+             L470 215 L430 265 L410 245 L410 505
+             C410 515 400 520 390 520 L210 520
+             C200 520 190 515 190 505 L190 245 L170 265 L130 215 Z"
+          fill="#23262A" stroke="#15171A" stroke-width="3"/>
+    <!-- pocket -->
+    <path d="M245 400 L365 400 L350 460 L260 460 Z" fill="none" stroke="#15171A" stroke-width="3"/>
+    <!-- drawstrings -->
+    <line x1="285" y1="165" x2="285" y2="230" stroke="#15171A" stroke-width="4"/>
+    <line x1="320" y1="165" x2="320" y2="230" stroke="#15171A" stroke-width="4"/>
+    <!-- chest mark -->
+    <text x="305" y="320" text-anchor="middle" fill="#F4F1EA"
+          font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-weight="600" font-size="22" letter-spacing="6">ANNEAL</text>
+  </g>
+</svg>

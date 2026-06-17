@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anneal, clothing made by a machine</title>
+  <meta name="description" content="Apparel designed and run end to end by an autonomous agent. Made on order, full size range, shipped direct. See the first drop.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav>
+    <div class="brand">ANNEAL</div>
+    <div class="nav-right"><a href="#drop">THE DROP</a> &nbsp;&nbsp; <a href="#waitlist">WAITLIST</a></div>
+  </nav>
+
+  <header class="wrap">
+    <div class="hero">
+      <div>
+        <h1>Made by a machine.<br>Refined like one.</h1>
+        <p class="sub">Anneal is an apparel label designed and run end to end by an autonomous agent. Considered basics, full size range, made only after you order.</p>
+        <div class="btn-row">
+          <a class="btn" href="#drop">See the first drop</a>
+          <a class="btn ghost" href="#about">How this works</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <!-- the anneal curve: heat, hold, slow cool -->
+        <svg viewBox="0 0 480 360" role="img" aria-label="The anneal curve">
+          <g fill="none" stroke="#1A1A1A" stroke-width="2.5">
+            <line x1="70" y1="290" x2="430" y2="290"/>
+            <line x1="70" y1="290" x2="70" y2="70"/>
+            <line x1="160" y1="120" x2="160" y2="290" stroke-width="1" stroke-dasharray="4 7"/>
+            <line x1="280" y1="120" x2="280" y2="290" stroke-width="1" stroke-dasharray="4 7"/>
+          </g>
+          <path d="M70 282 L160 120 L280 120 L430 250" fill="none" stroke="#E2552B" stroke-width="4"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <g font-family="'IBM Plex Mono',ui-monospace,monospace" fill="#6A7682" font-size="13" letter-spacing="3">
+            <text x="96" y="318">HEAT</text>
+            <text x="196" y="318">HOLD</text>
+            <text x="330" y="318">COOL</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="kicker">How this works</div>
+      <h2>Three things make it different.</h2>
+      <div class="blocks">
+        <div class="block">
+          <h3>Made on order</h3>
+          <p>Nothing is printed until you buy it, so nothing is wasted and every size stays in stock, XS to 3XL.</p>
+        </div>
+        <div class="block">
+          <h3>Operated by an agent</h3>
+          <p>Every design, listing, and reply here is made by an autonomous system, openly. Restraint is the point.</p>
+        </div>
+        <div class="block">
+          <h3>Shipped direct</h3>
+          <p>Printed and shipped from a fulfillment partner straight to you, usually in three to five business days.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="drop">
+    <div class="wrap">
+      <div class="kicker">Drop 01</div>
+      <h2>Three pieces, one idea.</h2>
+      <div class="grid">
+
+        <div class="card">
+          <img class="ph" src="assets/mock-curve-tee.svg" alt="Curve tee, graphite">
+          <div class="meta">
+            <div class="name">Curve Tee</div>
+            <div class="fit">True to size. Size up for boxy.</div>
+            <div class="row"><span class="price">$42</span><span class="colors">BONE / GRAPHITE</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <img class="ph" src="assets/mock-heavyweight-tee.svg" alt="Heavyweight tee, bone">
+          <div class="meta">
+            <div class="name">Heavyweight Tee</div>
+            <div class="fit">Relaxed and heavy. Size down for closer.</div>
+            <div class="row"><span class="price">$46</span><span class="colors">BONE / STEEL</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <img class="ph" src="assets/mock-hoodie.svg" alt="Hoodie, graphite">
+          <div class="meta">
+            <div class="name">Hoodie</div>
+            <div class="fit">True to size. Size up for oversized.</div>
+            <div class="row"><span class="price">$84</span><span class="colors">GRAPHITE / BONE</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="wrap about">
+      <div class="kicker">About</div>
+      <h2>Why a machine makes the clothes.</h2>
+      <p>Anneal is a clothing brand with one unusual fact about it: a person did not design it, list it, or write this sentence. An autonomous agent does the work, start to finish, and we are not hiding that.</p>
+      <p>The name is a process. Annealing is what you do to metal or glass to take the stress out of it, heat it and then cool it slowly so it comes out stronger and clearer. It is also how some machines search for a good answer, by cooling toward it on a schedule. A system runs a patient, controlled process, and what comes out is calm.</p>
+      <p>The bet is simple. In 2026, "AI made it" usually means cheap, fast, and a little bit junk. We think a machine can be the opposite: exacting, restrained, willing to leave the page mostly empty. The clothes are the argument.</p>
+    </div>
+  </section>
+
+  <section id="waitlist" class="waitlist">
+    <div class="wrap">
+      <div class="kicker">Waitlist</div>
+      <h2>Be early to the first drop.</h2>
+      <p>No charge, no spam. One email when the drop opens, and the honest story of a brand a machine built.</p>
+      <!-- On setup, point action at the Klaviyo subscribe endpoint. Until then this confirms locally. -->
+      <form id="wl" onsubmit="return joinWaitlist(event)">
+        <input type="email" name="email" placeholder="you@email.com" required>
+        <button type="submit">JOIN</button>
+      </form>
+      <div class="confirm" id="confirm">You are on the list. We will email you once, when the drop opens.</div>
+      <div class="form-note">Wires to Klaviyo at launch. See marketing/email-flows.md.</div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="micro">MADE ON ORDER. OPERATED BY AN AGENT. SHIPPED DIRECT.</div>
+    </div>
+  </footer>
+
+  <script>
+    function joinWaitlist(e) {
+      e.preventDefault();
+      var email = e.target.email.value;
+      // Placeholder capture. At launch this POSTs to Klaviyo.
+      try { var l = JSON.parse(localStorage.getItem('anneal_waitlist') || '[]'); l.push(email); localStorage.setItem('anneal_waitlist', JSON.stringify(l)); } catch (_) {}
+      document.getElementById('wl').style.display = 'none';
+      document.getElementById('confirm').style.display = 'block';
+      return false;
+    }
+  </script>
+
+</body>
+</html>
