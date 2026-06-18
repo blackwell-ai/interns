@@ -45,7 +45,7 @@ fi
 
 LOG="$ROOT/runs/cron-campaign.log"; mkdir -p "$ROOT/runs"
 {
-  echo "=== campaign-reply-scan $(date -Is) ==="
+  echo "=== campaign-reply-scan $(date -u +"%Y-%m-%dT%H:%M:%S") ==="
 
   [ -f credentials/.env ] && { set -a; . credentials/.env; set +a; }
 

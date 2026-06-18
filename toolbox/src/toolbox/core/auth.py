@@ -26,6 +26,7 @@ import threading
 import time
 import urllib.parse
 import webbrowser
+from pathlib import Path
 
 import httpx
 
@@ -40,11 +41,16 @@ class AuthError(Exception):
 
 # ---- keychain session storage ----------------------------------------------
 
+_SESSION_FILE = Path.home() / ".blackwell" / "session.json"
+
 
 def _save_session(session: dict) -> None:
     import keyring
 
     keyring.set_password(config.KEYRING_SERVICE, _KEYRING_USER, json.dumps(session))
+    _SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _SESSION_FILE.write_text(json.dumps(session))
+    _SESSION_FILE.chmod(0o600)
 
 
 def _load_session() -> dict | None:
@@ -53,7 +59,15 @@ def _load_session() -> dict | None:
     import keyring
 
     raw = keyring.get_password(config.KEYRING_SERVICE, _KEYRING_USER)
-    return json.loads(raw) if raw else None
+    if raw:
+        return json.loads(raw)
+    # Fallback for headless/cron contexts that can't read the macOS keychain.
+    if _SESSION_FILE.exists():
+        try:
+            return json.loads(_SESSION_FILE.read_text())
+        except Exception:
+            pass
+    return None
 
 
 def _jwt_expiry(token: str) -> float:

@@ -20,6 +20,9 @@ cd "$ROOT"
 # run.py does not auto-load .env, so the values must be in the environment.
 set -a; source credentials/.env; set +a
 
+# Ensure ~/.blackwell/session.json exists so cron reply scan can auth headlessly.
+toolbox/.venv/bin/python skills/campaign/ensure_session_file.py || exit 1
+
 # Founder roster + the "CC everyone but the sender" convention.
 # Canonical doc: skills/campaign/FOUNDERS.md. Kept here as a flat list so the
 # script stays portable (no bash 4 associative arrays needed on macOS).
