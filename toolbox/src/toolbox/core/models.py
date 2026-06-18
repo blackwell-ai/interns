@@ -64,6 +64,7 @@ class OutboxRow(Row):
     email: str
     subject: str
     body: str
+    body_html: str = ""
 
     @field_validator("email")
     @classmethod

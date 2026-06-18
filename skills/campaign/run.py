@@ -33,11 +33,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import html as _html_module
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import tomllib
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -124,11 +127,19 @@ async def _enrich_batch(
         findemail_cli._apollo_domain if provider == "apollo" else findemail_cli._hunter_domain
     )
     contacts: list[models.Contact] = []
-    sem = asyncio.Semaphore(5)
+    sem = asyncio.Semaphore(3)
 
     async def one(domain: str) -> None:
         async with sem:
-            res = await domain_fn(client, key, domain, limit=10, executives_only=True)
+            try:
+                res = await domain_fn(client, key, domain, limit=10, executives_only=True)
+            except Exception as e:
+                msg = str(e)
+                if "429" in msg:
+                    events.emit("campaign.rate_limited", level="warn", domain=domain)
+                else:
+                    events.emit("campaign.enrich_error", level="warn", domain=domain, reason=msg[:120])
+                return
         if not res or not res.get("email"):
             events.emit("campaign.no_contact", domain=domain)
             return
@@ -238,10 +249,81 @@ async def _filter_new_contacts(contacts: list[models.Contact], session_token: st
     return [c for _, c in results]
 
 
+# ---- ICP mix -----------------------------------------------------------
+
+_ICP_MIX_PATH = Path(__file__).parent / "icp_mix.toml"
+
+
+def _load_mix() -> list[dict]:
+    with open(_ICP_MIX_PATH, "rb") as f:
+        data = tomllib.load(f)
+    return data["segments"]
+
+
+def _mix_quotas(limit: int, segments: list[dict]) -> list[tuple[dict, int]]:
+    """Return (segment, quota) pairs that sum exactly to limit."""
+    raw = [(s, s["weight"] * limit) for s in segments]
+    quotas = [(s, int(q)) for s, q in raw]
+    remainder = limit - sum(q for _, q in quotas)
+    # Distribute leftover slots to segments with the largest fractional parts.
+    fracs = sorted(range(len(raw)), key=lambda i: -(raw[i][1] % 1))
+    for i in range(remainder):
+        seg, q = quotas[fracs[i]]
+        quotas[fracs[i]] = (seg, q + 1)
+    return [(s, q) for s, q in quotas if q > 0]
+
+
+async def _source_from_mix(
+    provider: str,
+    key: str,
+    session_token: str,
+    limit: int,
+    from_name: str = "",
+    min_score: int = 80,
+) -> list[models.OutboxRow]:
+    """Source and compose outbox rows across segments per icp_mix.toml."""
+    segments = _load_mix()
+    quotas = _mix_quotas(limit, segments)
+    all_rows: list[models.OutboxRow] = []
+
+    for i, (seg, quota) in enumerate(quotas):
+        if i > 0:
+            await asyncio.sleep(2)  # avoid Hunter/Apollo per-minute rate limits
+        label = seg["label"]
+        icp = seg["icp"]
+        template_path = _ICP_MIX_PATH.parent / seg["template_a"]
+        segment_phrase = seg.get("segment_phrase", label.lower())
+
+        print(f"\n[{label}] target: {quota}")
+        domain_count = max(30, quota * 3)
+        domains = generate_domains(icp, count=domain_count)
+        print(f"  {len(domains)} domains generated")
+        contacts = await source_contacts_incremental(
+            domains, provider, key, session_token,
+            limit=quota, min_score=min_score,
+        )
+        print(f"  {len(contacts)} contacts sourced")
+        subject_t, body_t = load_template(str(template_path))
+        rows = compose_outbox(contacts, subject_t, body_t, from_name,
+                              extra_values={"segment_phrase": segment_phrase})
+        all_rows.extend(rows)
+
+    return all_rows
+
+
 # ---- Compose -----------------------------------------------------------
 
 def load_template(path: str) -> tuple[str, str]:
     return compose_lib.parse_template(Path(path).read_text(encoding="utf-8"))
+
+
+def _html_to_text(html: str) -> str:
+    """Strip HTML tags to produce a plain-text fallback for email clients."""
+    text = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
+    text = re.sub(r"</p>", "\n\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = _html_module.unescape(text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 def compose_outbox(
@@ -249,20 +331,28 @@ def compose_outbox(
     subject_t: str,
     body_t: str,
     from_name: str = "",
+    extra_values: dict | None = None,
 ) -> list[models.OutboxRow]:
+    is_html = body_t.lstrip().startswith("<")
     rows: list[models.OutboxRow] = []
     for c in contacts:
         values = {**c.model_dump(), "from_name": from_name}
+        if extra_values:
+            values.update(extra_values)
         # 'company' slot: fall back to domain stem if missing
         if not values.get("company") and values.get("domain"):
             values["company"] = values["domain"].split(".")[0].title()
         try:
+            rendered_body = compose_lib.render(body_t, values)
+            body = _html_to_text(rendered_body) if is_html else rendered_body
+            body_html = rendered_body if is_html else ""
             rows.append(models.OutboxRow(
                 email=c.email,
                 subject=compose_lib.render(subject_t, values),
-                body=compose_lib.render(body_t, values),
+                body=body,
+                body_html=body_html,
                 **{k: v for k, v in values.items()
-                   if k not in ("email", "subject", "body")
+                   if k not in ("email", "subject", "body", "body_html")
                    and isinstance(v, (str, int, float, bool))},
             ))
         except compose_lib.TemplateError as e:
@@ -344,6 +434,73 @@ def _write_campaign_to_supabase(
                         status=r.status_code, body=r.text[:200])
     except Exception as e:
         events.emit("campaigns.write_error", level="warn", reason=str(e)[:200])
+
+
+# ---- Finalize (shared by mix and single-ICP paths) --------------------
+
+def _finalize(
+    args: argparse.Namespace,
+    run_id: str,
+    sender_name: str,
+    total_sent: int,
+    total_dry: int,
+    template_name: str,
+    icp_label: str,
+    outbox_a: list[models.OutboxRow],
+    outbox_b: list[models.OutboxRow],
+    sent_at: str,
+    counts_a: dict,
+    counts_b: dict,
+) -> None:
+    if not args.dry_run:
+        _write_campaign_to_supabase(
+            run_id=run_id,
+            sender=sender_name,
+            sender_email=args.from_,
+            provider=args.provider,
+            template_name=template_name,
+            icp=icp_label,
+            experiment=args.experiment,
+            sent_count=total_sent,
+        )
+
+    notion_page_id = ""
+    if not args.dry_run:
+        notion_page_id = notion_sync.create_campaign_row(
+            run_id=run_id,
+            sender=sender_name,
+            date=datetime.now().strftime("%Y-%m-%d"),
+            provider=args.provider,
+            template_name=template_name,
+            icp=icp_label,
+            experiment=args.experiment,
+            sent_count=total_sent,
+        ) or ""
+        if notion_page_id:
+            print(f"Notion : https://app.notion.com/p/{notion_page_id.replace('-', '')}")
+
+    default_log_dir = Path.home() / ".blackwell" / "campaigns"
+    default_log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = args.log or str(default_log_dir / f"campaign_{run_id[:8]}.jsonl")
+    meta_entry = {
+        "_meta": True, "run_id": run_id, "sender": sender_name,
+        "sender_email": args.from_, "provider": args.provider,
+        "template": template_name, "icp": icp_label,
+        "experiment": args.experiment, "sent_count": total_sent,
+        "notion_page_id": notion_page_id, "sent_at": sent_at,
+    }
+    contact_entries = (
+        [{"email": r.email, "run_id": run_id, "variant": "a", "sent_at": sent_at}
+         for r in outbox_a]
+        + [{"email": r.email, "run_id": run_id, "variant": "b", "sent_at": sent_at}
+           for r in outbox_b]
+    )
+    write_campaign_log(log_path, [meta_entry] + contact_entries)
+
+    print(f"\nResult: sent={total_sent}" + (f", dry_run_preview={total_dry}" if args.dry_run else ""))
+    print(f"Log   : {log_path}")
+    print(f"Replies: python3 skills/campaign/reply_scan.py --log {log_path}")
+    print(f"Report : python3 skills/campaign/reply_report.py --log {log_path}")
 
 
 # ---- Preflight ---------------------------------------------------------
@@ -454,7 +611,11 @@ def main() -> None:
     if args.provider in ("clay", "origami") and not args.leads:
         parser.error(f"--provider {args.provider} requires --leads <exported_csv>")
     if not args.icp and not args.leads and not args.domains:
-        parser.error("Need one of: --icp TEXT, --leads FILE, or --domains FILE")
+        if not _ICP_MIX_PATH.exists():
+            parser.error(
+                "Need one of: --icp TEXT, --leads FILE, or --domains FILE\n"
+                f"(or add {_ICP_MIX_PATH} to use the default ICP mix)"
+            )
 
     _preflight(args.from_, args.provider)
 
@@ -491,10 +652,9 @@ def main() -> None:
         print(f"  {len(contacts)} new (not yet contacted)")
         if args.limit:
             contacts = contacts[: args.limit]
-    else:
-        # ICP path: generate a large domain pool, enrich + ledger-check in
-        # batches of 20, stop as soon as --limit new contacts are found.
-        # This spends ~limit enrichment credits instead of ~2x limit.
+    elif args.icp:
+        # Focused ICP path: generate a large domain pool, enrich + ledger-check
+        # in batches of 20, stop as soon as --limit new contacts are found.
         domain_count = max(60, (args.limit or 30) * 3)
         print(f"Generating domains for: {args.icp[:80]}")
         domains = generate_domains(args.icp, count=domain_count)
@@ -507,7 +667,43 @@ def main() -> None:
                 limit=args.limit, min_score=args.min_score,
             )
         )
-        print(f"  {len(contacts)} new contacts ready to send")
+    else:
+        # Default: distribute contacts across segments per icp_mix.toml.
+        # Each segment uses its own template; outbox rows are returned pre-composed.
+        limit = args.limit or 20
+        key = auth.get_token(args.provider)
+        print(f"Sourcing {limit} contacts across ICP mix ({_ICP_MIX_PATH.name})...")
+        outbox_a = asyncio.run(
+            _source_from_mix(
+                args.provider, key, session_token,
+                limit=limit, from_name=args.from_name, min_score=args.min_score,
+            )
+        )
+        outbox_b = []
+        print(f"\nComposed: {len(outbox_a)} contacts across all segments")
+        if not outbox_a:
+            print("No new contacts — exiting.")
+            sys.exit(0)
+        # Skip the standard compose block below.
+        if args.dry_run:
+            print("\n[dry-run] Sample sends:")
+            for row in outbox_a[:5]:
+                print(f"  TO: {row.email}")
+                print(f"      {row.subject}")
+            print()
+        sent_at = datetime.now(UTC).isoformat()
+        counts_a = asyncio.run(
+            _send_batch(outbox_a, args.from_, args.from_name, run_id, run_dir, args.dry_run)
+        )
+        counts_b = {}
+        total_sent = counts_a.get("sent", 0)
+        total_dry = counts_a.get("dry_run", 0)
+        template_name = "icp_mix"
+        sender_name = args.from_name or args.from_.split("@")[0].title()
+        icp_label = "ICP mix"
+        _finalize(args, run_id, sender_name, total_sent, total_dry, template_name,
+                  icp_label, outbox_a, outbox_b, sent_at, counts_a, counts_b)
+        return
 
     if not contacts:
         print("No new contacts — exiting.")
@@ -556,61 +752,10 @@ def main() -> None:
 
     total_sent = counts_a.get("sent", 0) + counts_b.get("sent", 0)
     total_dry = counts_a.get("dry_run", 0) + counts_b.get("dry_run", 0)
-
-    # 6. Write to Supabase campaigns table ------------------------------------
     template_name = Path(args.template).stem
     sender_name = args.from_name or args.from_.split("@")[0].title()
-    if not args.dry_run:
-        _write_campaign_to_supabase(
-            run_id=run_id,
-            sender=sender_name,
-            sender_email=args.from_,
-            provider=args.provider,
-            template_name=template_name,
-            icp=args.icp,
-            experiment=args.experiment,
-            sent_count=total_sent,
-        )
-
-    # 7. Write to Notion ------------------------------------------------------
-    notion_page_id = ""
-    if not args.dry_run:
-        notion_page_id = notion_sync.create_campaign_row(
-            run_id=run_id,
-            sender=sender_name,
-            date=datetime.now().strftime("%Y-%m-%d"),
-            provider=args.provider,
-            template_name=template_name,
-            icp=args.icp,
-            experiment=args.experiment,
-            sent_count=total_sent,
-        ) or ""
-        if notion_page_id:
-            print(f"Notion : https://app.notion.com/p/{notion_page_id.replace('-', '')}")
-
-    # 8. Write campaign log (for reply_scan.py) --------------------------------
-    default_log_dir = Path.home() / ".blackwell" / "campaigns"
-    default_log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = args.log or str(default_log_dir / f"campaign_{run_id[:8]}.jsonl")
-    meta_entry = {
-        "_meta": True, "run_id": run_id, "sender": sender_name,
-        "sender_email": args.from_, "provider": args.provider,
-        "template": template_name, "icp": args.icp,
-        "experiment": args.experiment, "sent_count": total_sent,
-        "notion_page_id": notion_page_id, "sent_at": sent_at,
-    }
-    contact_entries = (
-        [{"email": r.email, "run_id": run_id, "variant": "a", "sent_at": sent_at}
-         for r in outbox_a]
-        + [{"email": r.email, "run_id": run_id, "variant": "b", "sent_at": sent_at}
-           for r in outbox_b]
-    )
-    write_campaign_log(log_path, [meta_entry] + contact_entries)
-
-    print(f"\nResult: sent={total_sent}" + (f", dry_run_preview={total_dry}" if args.dry_run else ""))
-    print(f"Log   : {log_path}")
-    print(f"Replies: python3 skills/campaign/reply_scan.py --log {log_path}")
-    print(f"Report : python3 skills/campaign/reply_report.py --log {log_path}")
+    _finalize(args, run_id, sender_name, total_sent, total_dry, template_name,
+              args.icp, outbox_a, outbox_b, sent_at, counts_a, counts_b)
 
 
 if __name__ == "__main__":

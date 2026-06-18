@@ -1,0 +1,47 @@
+# Target distribution for campaign outreach.
+# weights must sum to 1.0.
+# icp is passed to Claude to generate target domains for that segment.
+# template_a is relative to this file's directory.
+# segment_phrase slots into {{segment_phrase}} in template_b.
+
+[[segments]]
+label          = "DTC brands and retailers"
+weight         = 0.40
+icp            = "DTC e-commerce brands and online retailers selling consumer products directly to shoppers"
+template_a     = "templates/dtc.md"
+segment_phrase = "running a DTC brand"
+
+[[segments]]
+label          = "Shopping agent companies"
+weight         = 0.05
+icp            = "AI shopping assistant and agent companies that help consumers discover and purchase products automatically"
+template_a     = "templates/shopping_agents.md"
+segment_phrase = "building shopping agent technology"
+
+[[segments]]
+label          = "Agent transaction companies"
+weight         = 0.10
+icp            = "Agentic commerce platforms and automated transaction companies enabling AI-driven purchasing and checkout"
+template_a     = "templates/agent_transactions.md"
+segment_phrase = "building agentic commerce infrastructure"
+
+[[segments]]
+label          = "Inventory management systems"
+weight         = 0.05
+icp            = "Inventory management and demand forecasting software companies serving e-commerce and retail businesses"
+template_a     = "templates/inventory.md"
+segment_phrase = "building inventory management software"
+
+[[segments]]
+label          = "3PL and warehouses"
+weight         = 0.20
+icp            = "Third-party logistics providers, fulfillment centers, and warehouse operators serving e-commerce brands"
+template_a     = "templates/3pl.md"
+segment_phrase = "running a 3PL or fulfillment operation"
+
+[[segments]]
+label          = "Manufacturing"
+weight         = 0.20
+icp            = "Consumer product manufacturers producing goods sold through DTC brands and retail channels"
+template_a     = "templates/manufacturing.md"
+segment_phrase = "running a manufacturing operation for consumer brands"
