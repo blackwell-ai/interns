@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Daily reply scanner for all campaign logs.
+# Reply scanner for all campaign logs — runs every 3 hours.
 #
 # Scans Gmail for replies to every campaign log in ~/.blackwell/campaigns/,
 # upserts new replies to Supabase, and syncs the Replied count to Notion.
 #
-# Install the daily cron (idempotent, safe to re-run):
+# Install the cron (idempotent, safe to re-run):
 #   skills/campaign/cron.sh --install
 #
 # Other flags:
@@ -26,18 +26,19 @@ SELF="$ROOT/skills/campaign/cron.sh"
 
 if [ -n "$INSTALL" ]; then
   if command -v crontab >/dev/null 2>&1; then
-    LINE="0 23 * * * $SELF  # campaign-reply-scan"
+    LINE="0 */3 * * * $SELF  # campaign-reply-scan"
     CUR="$(crontab -l 2>/dev/null || true)"
     if printf '%s\n' "$CUR" | grep -qF "# campaign-reply-scan"; then
-      echo "cron already installed:"; printf '%s\n' "$CUR" | grep -F "# campaign-reply-scan"
-      echo "edit with 'crontab -e' to change it."
+      # Update existing entry in place.
+      printf '%s\n' "$CUR" | sed "s|.*# campaign-reply-scan|$LINE|" | crontab -
+      echo "updated cron (every 3 hours): $LINE"
     else
       printf '%s\n%s\n' "$CUR" "$LINE" | grep -v '^[[:space:]]*$' | crontab -
-      echo "installed daily cron (23:00): $LINE"
+      echo "installed cron (every 3 hours): $LINE"
     fi
   else
-    echo "no crontab found. Add a daily job by hand:"
-    echo "  0 23 * * * $SELF"
+    echo "no crontab found. Add the job by hand:"
+    echo "  0 */3 * * * $SELF"
   fi
   exit 0
 fi

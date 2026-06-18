@@ -50,7 +50,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT))
 sys.path.insert(0, str(_REPO_ROOT / "toolbox" / "src"))
 
-from toolbox.core import auth, config, events, io, models
+from toolbox.core import auth, config, events, io, ledger, models
 from toolbox.core import llm as llm_mod
 from toolbox.primitives.compose import lib as compose_lib
 from toolbox.primitives.findemail import cli as findemail_cli
@@ -69,7 +69,7 @@ class _VariantTemplate(BaseModel):
     body: str
 
 
-def generate_domains(icp: str, count: int = 20) -> list[str]:
+def generate_domains(icp: str, count: int = 30) -> list[str]:
     """Ask Claude for real company domains that match the ICP."""
     result = llm_mod.parse(
         f"List {count} real company website domains (e.g. 'glossier.com') that fit this "
@@ -112,44 +112,130 @@ def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
     return contacts
 
 
-async def enrich_domains(
+async def _enrich_batch(
+    client: httpx.AsyncClient,
     domains: list[str],
     provider: str,
     key: str,
-    min_score: int = 80,
+    min_score: int,
 ) -> list[models.Contact]:
-    """domains -> decision-maker contacts via Hunter or Apollo domain search."""
+    """Enrich one batch of domains — returns contacts that passed the score filter."""
     domain_fn = (
         findemail_cli._apollo_domain if provider == "apollo" else findemail_cli._hunter_domain
     )
     contacts: list[models.Contact] = []
     sem = asyncio.Semaphore(5)
 
-    async with httpx.AsyncClient(timeout=60) as client:
-        async def one(domain: str) -> None:
-            async with sem:
-                res = await domain_fn(client, key, domain, limit=10, executives_only=True)
-            if not res or not res.get("email"):
-                events.emit("campaign.no_contact", domain=domain)
-                return
-            if int(res.get("email_score") or 0) < min_score:
-                events.emit("campaign.low_score", domain=domain, score=res.get("email_score"))
-                return
-            try:
-                contacts.append(models.Contact(
-                    email=res["email"],
-                    first_name=res.get("first_name", ""),
-                    last_name=res.get("last_name", ""),
-                    title=res.get("title", ""),
-                    company=domain.split(".")[0].title(),
-                    domain=domain,
-                ))
-            except ValueError as e:
-                events.emit("campaign.bad_email", level="warn", email=res.get("email"), reason=str(e))
+    async def one(domain: str) -> None:
+        async with sem:
+            res = await domain_fn(client, key, domain, limit=10, executives_only=True)
+        if not res or not res.get("email"):
+            events.emit("campaign.no_contact", domain=domain)
+            return
+        if int(res.get("email_score") or 0) < min_score:
+            events.emit("campaign.low_score", domain=domain, score=res.get("email_score"))
+            return
+        try:
+            contacts.append(models.Contact(
+                email=res["email"],
+                first_name=res.get("first_name", ""),
+                last_name=res.get("last_name", ""),
+                title=res.get("title", ""),
+                company=domain.split(".")[0].title(),
+                domain=domain,
+            ))
+        except ValueError as e:
+            events.emit("campaign.bad_email", level="warn", email=res.get("email"), reason=str(e))
 
-        await asyncio.gather(*(one(d) for d in domains))
-
+    await asyncio.gather(*(one(d) for d in domains))
     return contacts
+
+
+async def enrich_domains(
+    domains: list[str],
+    provider: str,
+    key: str,
+    min_score: int = 80,
+) -> list[models.Contact]:
+    """Enrich all domains at once. Used when --domains is provided (pool already fixed)."""
+    async with httpx.AsyncClient(timeout=60) as client:
+        return await _enrich_batch(client, domains, provider, key, min_score)
+
+
+async def source_contacts_incremental(
+    domains: list[str],
+    provider: str,
+    key: str,
+    session_token: str,
+    limit: int | None,
+    min_score: int = 80,
+    batch_size: int = 20,
+) -> list[models.Contact]:
+    """Enrich domains in batches, ledger-checking each batch before continuing.
+
+    Stops as soon as `limit` new contacts are accumulated. This avoids spending
+    enrichment credits on contacts that will be discarded after ledger dedup.
+    """
+    accumulated: list[models.Contact] = []
+    ldg = ledger.Ledger(session_token)
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        for i in range(0, len(domains), batch_size):
+            batch = domains[i : i + batch_size]
+            raw = await _enrich_batch(client, batch, provider, key, min_score)
+
+            # Ledger-check this batch concurrently.
+            sem = asyncio.Semaphore(10)
+            new_in_batch: list[tuple[int, models.Contact]] = []
+
+            async def check_one(idx: int, c: models.Contact) -> None:
+                async with sem:
+                    status = await ldg.check("email", c.email)
+                if status == "new":
+                    new_in_batch.append((idx, c))
+
+            await asyncio.gather(*(check_one(j, c) for j, c in enumerate(raw)))
+            new_in_batch.sort(key=lambda x: x[0])
+            accumulated.extend(c for _, c in new_in_batch)
+
+            enriched_so_far = i + len(batch)
+            print(
+                f"  batch {i // batch_size + 1}: {len(raw)} found, "
+                f"{len(new_in_batch)} new — {len(accumulated)} total "
+                f"({enriched_so_far}/{len(domains)} domains used)"
+            )
+
+            if limit and len(accumulated) >= limit:
+                break
+
+    await ldg.aclose()
+
+    if limit:
+        accumulated = accumulated[:limit]
+    return accumulated
+
+
+# ---- Ledger pre-check --------------------------------------------------
+
+async def _filter_new_contacts(contacts: list[models.Contact], session_token: str) -> list[models.Contact]:
+    """Remove contacts already in the ledger so --limit counts actual sends."""
+    ldg = ledger.Ledger(session_token)
+    sem = asyncio.Semaphore(10)
+    results: list[tuple[int, models.Contact]] = []
+
+    async def check_one(i: int, c: models.Contact) -> None:
+        async with sem:
+            status = await ldg.check("email", c.email)
+        if status == "new":
+            results.append((i, c))
+
+    try:
+        await asyncio.gather(*(check_one(i, c) for i, c in enumerate(contacts)))
+    finally:
+        await ldg.aclose()
+
+    results.sort(key=lambda x: x[0])
+    return [c for _, c in results]
 
 
 # ---- Compose -----------------------------------------------------------
@@ -260,6 +346,77 @@ def _write_campaign_to_supabase(
         events.emit("campaigns.write_error", level="warn", reason=str(e)[:200])
 
 
+# ---- Preflight ---------------------------------------------------------
+
+def _preflight(from_: str, provider: str) -> None:
+    """Validate all credentials before spending any API credits.
+
+    Exits with a clear message on the first failure so the user knows
+    exactly what to fix before the run starts.
+    """
+    errors: list[str] = []
+
+    # 1. Supabase session
+    try:
+        auth.session_token()
+    except Exception as e:
+        errors.append(f"Supabase session invalid: {e}\n  Fix: toolbox auth login")
+
+    # 2. Provider key
+    if provider not in ("clay", "origami"):
+        try:
+            key = auth.get_token(provider)
+            if not key:
+                raise ValueError("empty token")
+        except Exception as e:
+            env_var = f"TOOLBOX_TOKEN_{provider.upper()}"
+            errors.append(
+                f"{provider} API key missing or invalid: {e}\n"
+                f"  Fix: set {env_var} in credentials/.env"
+            )
+
+    # 3. gog Gmail token
+    try:
+        token = gog_auth.get_access_token(from_)
+        if not token:
+            raise ValueError("empty token")
+        # Probe Gmail API with the token — a bad token returns 401 immediately.
+        r = httpx.get(
+            "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        if r.status_code == 401:
+            raise ValueError("token rejected by Gmail (401)")
+    except Exception as e:
+        errors.append(
+            f"Gmail (gog) auth failed for {from_}: {e}\n"
+            f"  Fix: gog auth add {from_} --services gmail"
+        )
+
+    # 4. Notion token (optional — only warn)
+    notion_token = os.environ.get("NOTION_TOKEN", "").strip()
+    if notion_token:
+        r = httpx.get(
+            "https://api.notion.com/v1/users/me",
+            headers={
+                "Authorization": f"Bearer {notion_token}",
+                "Notion-Version": "2022-06-28",
+            },
+            timeout=10,
+        )
+        if r.status_code == 401:
+            print("Warning: NOTION_TOKEN is invalid — Notion sync will be skipped")
+
+    if errors:
+        print("\nPreflight failed — fix these before running:\n")
+        for err in errors:
+            print(f"  {err}\n")
+        sys.exit(1)
+
+    print("Preflight OK")
+
+
 # ---- Main --------------------------------------------------------------
 
 def main() -> None:
@@ -299,37 +456,61 @@ def main() -> None:
     if not args.icp and not args.leads and not args.domains:
         parser.error("Need one of: --icp TEXT, --leads FILE, or --domains FILE")
 
+    _preflight(args.from_, args.provider)
+
     run_id = str(uuid.uuid4())
     run_dir = tempfile.mkdtemp(prefix=f"campaign_{run_id[:8]}_")
     print(f"run_id : {run_id}")
     print(f"run_dir: {run_dir}")
 
     # 1. Source contacts --------------------------------------------------
+    session_token = auth.session_token()
+
     if args.leads:
+        # CSV import: all contacts are known upfront, just ledger-filter.
         contacts = load_leads_csv(args.leads, min_score=args.min_score)
         print(f"Loaded {len(contacts)} contacts from {args.leads}")
-    else:
-        if args.domains:
-            domain_rows = io.read_csv(args.domains, models.Domain)
-            domains = [r.domain for r in domain_rows]
-            print(f"Loaded {len(domains)} domains from {args.domains}")
-        else:
-            print(f"Generating domains for: {args.icp[:80]}")
-            domains = generate_domains(args.icp)
-            print(f"  {len(domains)} domains: {', '.join(domains[:6])}{'...' if len(domains) > 6 else ''}")
-
+        print("Checking ledger...")
+        contacts = asyncio.run(_filter_new_contacts(contacts, session_token))
+        print(f"  {len(contacts)} new (not yet contacted)")
+        if args.limit:
+            contacts = contacts[: args.limit]
+    elif args.domains:
+        # Fixed domain list: enrich all upfront, then ledger-filter.
+        domain_rows = io.read_csv(args.domains, models.Domain)
+        domains = [r.domain for r in domain_rows]
+        print(f"Loaded {len(domains)} domains from {args.domains}")
         key = auth.get_token(args.provider)
         print(f"Enriching via {args.provider}...")
         contacts = asyncio.run(
             enrich_domains(domains, args.provider, key, min_score=args.min_score)
         )
         print(f"  {len(contacts)} contacts found")
-
-    if args.limit:
-        contacts = contacts[: args.limit]
+        print("Checking ledger...")
+        contacts = asyncio.run(_filter_new_contacts(contacts, session_token))
+        print(f"  {len(contacts)} new (not yet contacted)")
+        if args.limit:
+            contacts = contacts[: args.limit]
+    else:
+        # ICP path: generate a large domain pool, enrich + ledger-check in
+        # batches of 20, stop as soon as --limit new contacts are found.
+        # This spends ~limit enrichment credits instead of ~2x limit.
+        domain_count = max(60, (args.limit or 30) * 3)
+        print(f"Generating domains for: {args.icp[:80]}")
+        domains = generate_domains(args.icp, count=domain_count)
+        print(f"  {len(domains)} domains generated")
+        key = auth.get_token(args.provider)
+        print(f"Enriching via {args.provider} (incremental, stop at limit)...")
+        contacts = asyncio.run(
+            source_contacts_incremental(
+                domains, args.provider, key, session_token,
+                limit=args.limit, min_score=args.min_score,
+            )
+        )
+        print(f"  {len(contacts)} new contacts ready to send")
 
     if not contacts:
-        print("No contacts — exiting.")
+        print("No new contacts — exiting.")
         sys.exit(0)
 
     # 2. Load template A --------------------------------------------------

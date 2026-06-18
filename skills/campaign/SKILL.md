@@ -12,8 +12,8 @@ Supports A/B experiment mode and Clay/Origami CSV imports.
 Install gog from https://gogcli.sh, then:
 
 ```bash
-gog auth credentials ~/client_secret.json   # import your Google OAuth client
-gog auth login you@gmail.com                # authorise Gmail access
+gog auth credentials ~/client_secret.json       # import your Google OAuth client
+gog auth add you@gmail.com --services gmail    # authorise Gmail access
 ```
 
 gog stores credentials in its keyring. The campaign skill calls
@@ -41,7 +41,7 @@ No `GMAIL_*` keys needed.
 toolbox auth login
 ```
 
-### 4. Install the daily reply scan cron (optional)
+### 4. Install the daily reply scan cron
 
 ```bash
 skills/campaign/cron.sh --install
