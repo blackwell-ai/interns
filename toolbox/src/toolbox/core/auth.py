@@ -165,9 +165,18 @@ def get_token(provider: str) -> str:
     """Fresh provider token/key via the token-refresh edge function.
 
     Never logged, never put in argv (argv is visible in `ps`), never echoed.
+
+    .env shortcut for gmail: set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and
+    GMAIL_REFRESH_TOKEN to bypass Supabase entirely (run get_gmail_token.py once).
     """
     if override := os.environ.get(f"TOOLBOX_TOKEN_{provider.upper()}"):
         return override
+    if provider == "gmail":
+        refresh_token = os.environ.get("GMAIL_REFRESH_TOKEN", "").strip()
+        client_id = os.environ.get("GMAIL_CLIENT_ID", "").strip()
+        client_secret = os.environ.get("GMAIL_CLIENT_SECRET", "").strip()
+        if refresh_token and client_id and client_secret:
+            return _refresh_gmail_token(refresh_token, client_id, client_secret)
     r = httpx.post(
         f"{config.supabase_url()}/functions/v1/token-refresh",
         json={"provider": provider},
@@ -178,6 +187,24 @@ def get_token(provider: str) -> str:
         raise AuthError(f"no '{provider}' connection — run `toolbox auth connect {provider}`")
     r.raise_for_status()
     return r.json()["token"]
+
+
+def _refresh_gmail_token(refresh_token: str, client_id: str, client_secret: str) -> str:
+    r = httpx.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "grant_type": "refresh_token",
+        },
+        timeout=30,
+    )
+    r.raise_for_status()
+    tok = r.json()
+    if not tok.get("access_token"):
+        raise AuthError("Gmail token refresh failed — check GMAIL_REFRESH_TOKEN in credentials/.env")
+    return tok["access_token"]
 
 
 def connect_api_key(provider: str, key: str, account: str = "", org_shared: bool = False) -> None:
