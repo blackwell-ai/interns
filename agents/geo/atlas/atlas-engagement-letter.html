@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Engagement Letter: Search and AI Visibility Remediation for Atlas Skateboarding</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --script:"Snell Roundhand","Apple Chancery","Brush Script MT",cursive;
+  }
+  @page{ size:Letter; margin:0.36in 0.56in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:8pt; line-height:1.28; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 4.5pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code{ font-family:"Menlo",monospace; font-size:7.8pt; }
+  .head{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:1.5px solid var(--rule-hard); padding-bottom:6pt; }
+  .head .b{ font-size:9pt; letter-spacing:.16em; text-transform:uppercase; font-weight:700; color:var(--ink); }
+  .head .d{ font-size:8pt; color:var(--muted); }
+  h1{ font-size:15pt; font-weight:700; color:var(--ink); letter-spacing:-.3pt; margin:8pt 0 2pt; }
+  .sub{ font-size:9.4pt; color:var(--soft); margin:0 0 11pt; }
+  .eyebrow{ font-size:6.8pt; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:4pt 0 2pt; }
+  .two{ display:flex; gap:26pt; }
+  .two .col{ flex:1; }
+  .who .label{ font-size:6.6pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 2pt; }
+  .who .name{ font-weight:700; color:var(--ink); }
+  .who .det{ color:var(--soft); font-size:8.3pt; }
+  ol{ margin:3pt 0 0; padding-left:15pt; }
+  ol li{ margin:0 0 2.5pt; padding-left:3pt; line-height:1.34; }
+  .price{ display:flex; gap:14pt; align-items:flex-start; }
+  .price .big{ font-size:19pt; font-weight:800; color:var(--ink); line-height:1; white-space:nowrap; }
+  .price .t{ font-size:8.5pt; color:var(--soft); }
+  .sig{ display:flex; gap:30pt; margin-top:7pt; }
+  .sig .col{ flex:1; }
+  .sig .for{ font-weight:700; color:var(--ink); margin:0 0 6pt; }
+  .sig .lbl{ font-size:6.6pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 1pt; }
+  .sig .sigline{ border-bottom:1px solid var(--rule-hard); min-height:19pt; padding-bottom:2pt; margin:0 0 8pt; display:flex; align-items:flex-end; }
+  .sig .sigline.last{ margin-bottom:0; }
+  .sig .script{ font-family:var(--script); font-size:18pt; color:#1a1a1a; line-height:.85; }
+  .sig .nm{ font-size:8.6pt; color:var(--ink); padding-bottom:1pt; }
+  .team{ display:grid; grid-template-columns:1fr 1fr; gap:2pt 28pt; }
+  .team div{ font-size:8.4pt; color:var(--soft); }
+  .team .tn{ font-weight:700; color:var(--ink); }
+  .foot{ border-top:1px solid var(--rule); margin-top:4pt; padding-top:3pt; font-size:7pt; color:var(--faint); }
+  .tight p{ margin:0 0 4pt; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="b">Blackwell Enterprises</span>
+  <span class="d">Engagement Letter · June 17, 2026</span>
+</div>
+
+<h1>Search and AI Visibility Remediation for Atlas Skateboarding</h1>
+<p class="sub">A 30-day implementation sprint that makes the storefront legible to Google search and AI engines, and connects the shop's reputation to it.</p>
+
+<div class="two who">
+  <div class="col">
+    <p class="label">Service provider</p>
+    <p class="name">Blackwell Enterprises</p>
+    <p class="det">Search and AI visibility for retail and DTC brands.<br>ethanpzhou@berkeley.edu</p>
+  </div>
+  <div class="col">
+    <p class="label">Client</p>
+    <p class="name">Atlas Skateboarding</p>
+    <p class="det">atlasskateboarding.com · San Mateo, CA</p>
+  </div>
+</div>
+
+<p class="eyebrow">Background</p>
+<div class="tight">
+<p>Shoppers find skate shops through Google search and, increasingly, AI answer engines (ChatGPT, Perplexity, Gemini, Google AI Mode). The same machine-readable gaps hurt both: a one-word title, empty metadata, and missing structured data keep a shop out of Google's rich results and out of the AI answers alike. The visibility audit Blackwell delivered separately on June 16, 2026 put Atlas at 44 of 100 (F): absent from "best Bay Area skate shop" results that named competitors, 4,528 products with no structured data, and a real 4.8-star reputation no machine can connect to the storefront. This engagement closes those gaps across both surfaces.</p>
+</div>
+
+<p class="eyebrow">Engagement and scope</p>
+<p style="margin:0 0 3pt">The 30-day implementation sprint that closes the gaps the audit identified:</p>
+<ol>
+  <li><strong>On-page and entity foundation.</strong> Descriptive title, meta, and <code>h1</code> templates across homepage, collections, and products; an <code>https</code> share image; and <code>Organization</code> plus <code>LocalBusiness</code> schema for the San Mateo store and gallery, with <code>sameAs</code> links connecting the site to the Yelp, Google, Nike SB, and social profiles that hold the 4.8-star reputation.</li>
+  <li><strong>Catalog structured data.</strong> <code>Product</code> and <code>Offer</code> schema (price, availability, SKU, brand) across all 4,528 products, with <code>AggregateRating</code> where reviews exist, exposed for both Google rich results and AI shopping engines.</li>
+  <li><strong>Agent-commerce content layer.</strong> <code>llms.txt</code> and <code>agents.md</code> rewritten as a real content map (signature brands, categories, the San Mateo shop) with agent-readable pricing, over the working Shopify transaction layer; <code>Article</code> schema and internal linking across the blog archive.</li>
+  <li><strong>Paid-acquisition readiness.</strong> Meta pixel and Conversions API connected, and the product catalog feed prepared for Advantage+ and dynamic product ads.</li>
+  <li><strong>Benchmark setup and verification.</strong> Joint benchmarks set at kickoff and re-measured at day 30: composite visibility score, schema-validator pass rate and Google rich-result coverage across the catalog, presence in AI category answers for "skate shop San Mateo" and "Peninsula skate shop," and Meta event match quality. Schema-validator pass at 100% required for sign-off.</li>
+</ol>
+
+<p class="eyebrow">What we need from Atlas</p>
+<ol>
+  <li><strong>A single point of contact</strong> with authority to approve site changes and answer questions within one business day.</li>
+  <li><strong>Shopify theme deploy access</strong> (or a designated Atlas developer paired with Blackwell), read-only admin access for the engagement, and Meta Business access to connect the pixel and Conversions API.</li>
+  <li><strong>Openness to a few early calls:</strong> which signature brands and categories to foreground in the content map, how to represent the San Mateo store and gallery as the entity, and confirmation of the review and social profiles to link. We bring recommendations; the calls are Atlas's.</li>
+</ol>
+
+<p class="eyebrow">Continued work</p>
+<div class="tight">
+<p>The 30-day engagement is Phase 1. Continued work, scoped after benchmarks land, covers ongoing search and AI visibility (per-dimension monitoring, entity establishment so "Atlas" resolves to the shop, and placement in the category sources AI engines cite) and protocol-evolution work as agent-commerce standards advance. Separately and at no additional cost, Blackwell will explore an AI assistant pilot with Atlas as design partner: a tool that takes repetitive catalog work off the team (new-arrival onboarding, restock and drop posts, stock-question replies, social cross-posting). Any full version is scoped and priced on its own.</p>
+</div>
+
+<p class="eyebrow">Team</p>
+<div class="team">
+  <div><span class="tn">Armaan Priyadarshan</span> · Dartmouth, Math and CS</div>
+  <div><span class="tn">Samarjit Deshmukh</span> · Dartmouth, Computer Science</div>
+  <div><span class="tn">Ethan Zhou</span> · UC Berkeley, MET (EECS and Business)</div>
+  <div><span class="tn">Shamit D'Souza</span> · Stanford, CS and Biology</div>
+</div>
+
+<p class="eyebrow">Term and fee</p>
+<div class="price">
+  <span class="big">$1,000 USD</span>
+  <span class="t">Paid in full upfront. Refunded in full if the work does not meet the benchmarks agreed at kickoff. Covers implementation, benchmark setup, and verification. Kickoff within five business days of execution.</span>
+</div>
+
+<p class="eyebrow">Confidentiality, ownership, termination</p>
+<div class="tight">
+<p>Once paid, all deliverables become Atlas's property. Blackwell will not disclose Atlas's findings or data without written consent, and may name Atlas as a customer (brand name, work category, public benchmark deltas) for portfolio purposes. Either party may terminate with seven days written notice. If terminated before kickoff, the full fee is refunded. If the engagement runs to completion and the work does not meet the benchmarks agreed at kickoff, the full fee is refunded. In any other post-kickoff termination, Blackwell retains payment for work completed.</p>
+</div>
+
+<div class="sig">
+  <div class="col">
+    <p class="for">For Blackwell Enterprises</p>
+    <p class="lbl">Signature</p>
+    <div class="sigline"><span class="script">Ethan Zhou</span></div>
+    <p class="lbl">Name and title</p>
+    <div class="sigline last"><span class="nm">Ethan Zhou, Founder</span></div>
+  </div>
+  <div class="col">
+    <p class="for">For Atlas Skateboarding</p>
+    <p class="lbl">Signature</p>
+    <div class="sigline"></div>
+    <p class="lbl">Name and title</p>
+    <div class="sigline last"></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atlas Skateboarding: AI Visibility Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  /* page footer, repeated by Chrome on every page */
+  .pagefoot{ position:fixed; bottom:0.34in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:78%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  /* numbered short list */
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  /* evidence */
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+
+  /* readiness + compare tables */
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:30%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  /* phases */
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>Atlas Skateboarding · AI Visibility Audit</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Atlas Skateboarding<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI engines and search see Atlas today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> Atlas Skateboarding leadership</div>
+    <div><span class="k">Date</span> June 16, 2026</div>
+    <div><span class="k">Scope</span> Public site, search and AI surface, reputation, paid readiness</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS · Dartmouth CS · UC Berkeley MET (EECS &amp; Business) · Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded Atlas on five dimensions of how AI engines and search treat the shop. Each dimension is scored 0 to 100 against observed behavior across AI answer engines, Yelp, Birdeye, the brand's own indexed pages, and the agent-commerce surface. Competitor scores are our estimates from the same public signals. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">F</div>
+      <div class="score">44 / 100</div>
+      <div class="cap">Atlas today</div>
+    </div>
+    <p class="grade-note"><strong>Atlas is the lowest-scoring shop in its competitive set.</strong> CCS, Tactics, and Labor average 79 (B range). Atlas sits at 44. The cause is not the shop. Reputation, at 62, is the strongest of the five dimensions, a genuine 4.8-star, 19-year institution. The two dimensions that decide whether an AI engine ever recommends Atlas to a new customer, quotability (18) and recommendability (28), are the lowest, because almost nothing about Atlas is machine-readable. The reputation is real. AI engines never reach it.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">Atlas</th><th class="cmp">CCS</th><th class="cmp">Tactics</th><th class="cmp">Labor</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:50%"></div></div></div><div class="n">50</div></td>
+      <td class="cmp">85</td><td class="cmp">88</td><td class="cmp">78</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:18%"></div></div></div><div class="n">18</div></td>
+      <td class="cmp">85</td><td class="cmp">85</td><td class="cmp">80</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:28%"></div></div></div><div class="n">28</div></td>
+      <td class="cmp">85</td><td class="cmp">85</td><td class="cmp">65</td>
+      <td class="what">Inclusion in AI category recommendations and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:60%"></div></div></div><div class="n">60</div></td>
+      <td class="cmp">78</td><td class="cmp">70</td><td class="cmp">76</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:62%"></div></div></div><div class="n">62</div></td>
+      <td class="cmp">75</td><td class="cmp">78</td><td class="cmp">72</td>
+      <td class="what">Review aggregator presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">44 (F)</span></td>
+      <td class="cmp">80 (B+)</td><td class="cmp">81 (B+)</td><td class="cmp">74 (B-)</td>
+      <td class="what">Atlas trails the competitive average by 35 points, all of it on the machine-readable layer.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not a full audit of those shops. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>Atlas is one of the most loved skate shops on the Peninsula: 4.8 stars, an official Nike SB and Vans dealer, a 19-year San Mateo institution and art gallery. None of that is legible to a machine. Its Shopify store ships the modern agent-commerce rails, but the layer that decides whether an AI engine recommends the shop to a new customer is close to empty. When we asked AI answer engines for the best Bay Area skate shops, Atlas was not named once. Its own sibling shop, DLX, was.</p>
+  <p style="color:var(--muted);font-size:9pt">Six findings, ordered worst first.</p>
+  <ol class="short">
+    <li><strong>AI engines do not recommend Atlas, even when DLX is named.</strong> Asked for the best Bay Area skate shops, AI answer engines returned DLX, FTC, SF Skate Club, 510, and Circle-A. Atlas was absent. It is also missing from the "13 best Bay Area skate shops" listicle that those engines cite.</li>
+    <li><strong>4,528 products carry nothing an AI engine can quote.</strong> No product page renders any structured data: no price, availability, brand, or SKU in machine-readable form. CCS, Tactics, and Labor expose all of it.</li>
+    <li><strong>An A-grade reputation that no machine can read.</strong> 4.8 stars across 115 Birdeye reviews and 135 on Yelp, and no <code>Organization</code> or <code>LocalBusiness</code> schema linking the shop to any of it. The reputation is stranded.</li>
+    <li><strong>The homepage tells search engines almost nothing.</strong> The title is the single word "Atlas," the meta description is empty, there is no <code>h1</code>, and "Atlas" is one of the most contested names on the web.</li>
+    <li><strong>The agent-commerce layer is provisioned but empty.</strong> Shopify gives Atlas a working UCP/MCP endpoint and an <code>llms.txt</code>, but the content is generic boilerplate and prices are not exposed for agents to read.</li>
+    <li><strong>A deep editorial archive sits unused.</strong> Roughly 990 blog posts, including collaborations with Alien Workshop, Lakai, and Antihero, carry no <code>Article</code> schema and are not wired into search.</li>
+  </ol>
+  <div class="darkbox">ChatGPT, Perplexity, and Google AI Mode all default to live web retrieval in 2026. Every query that hits live retrieval reads the same empty machine layer and reaches the same competitors. For a shop whose edge is reputation and curation, being unreadable is the most expensive problem on this list.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 6 · Critical</p>
+  <h2 class="ruled">AI engines do not recommend Atlas, even when DLX is named</h2>
+  <p>AI answer engines are now where many shoppers start. They do not browse; they ask "what is the best skate shop near me" or "where do I buy Antihero decks," and they return a short, synthesized list. Atlas is not on it.</p>
+  <div class="ai avoid">
+    <p class="plabel">Query, web-search-backed AI answer: "best skateboard shops in the San Francisco Bay Area"</p>
+    <p class="resp">"DLX (Deluxe), FTC, SF Skate Club, Mission Skateboards, Low Key, 510 Skateboarding (East Bay), Circle-A Skateboards (South Bay)..."</p>
+  </div>
+  <p>Atlas is not mentioned. DLX, the sibling shop run by the same ownership, is. The Peninsula and South Bay slots went to Circle-A in San Jose and, in the listicle below, Skateworks in Los Altos. San Mateo's 19-year institution did not place.</p>
+  <div class="quote">The California.com "13 best Bay Area skate shops" feature names FTC, 510, Circle-A, Skates on Haight, Create, MacArthur, Red Curbs, Skateworks, Orbit, Quad Republic, Mainland, Boardgarden, and Street Science. Atlas is not among them. <span class="src">(california.com, the kind of source AI engines cite verbatim)</span></div>
+  <p class="sub-h">Why this is the most expensive finding in the deck</p>
+  <p>Category recommendation is the moment of intent, a shopper deciding where to buy. Atlas being absent there is worth more than any single ranking position, because the AI engine is making the choice on the shopper's behalf and never offers Atlas as an option. The shop's reputation, which is excellent, cannot rescue a recommendation it is never part of. And the gap compounds: each engine that adds live retrieval reads the same listicles and the same empty entity layer, and reaches the same competitors.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is downstream of the next three findings. A machine-readable entity, structured products, and a reputation linked to the entity are what get a shop pulled into these answers. We also seed the specific category sources these engines cite, so "skate shop San Mateo" and "Peninsula skate shop" resolve to Atlas.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 6 · Critical</p>
+  <h2 class="ruled">4,528 products carry nothing an AI engine can quote</h2>
+  <p>Quotability is the lowest dimension on the scorecard, an 18, and it is the reason finding 1 happens. Product pages render no JSON-LD at all, the format Google uses for rich results and the format AI shopping engines read to recommend and compare products. The data exists in Shopify, real SKUs and barcodes. It is never published where machines look.</p>
+  <pre class="code"><span class="c">// Any Atlas product page, structured data found</span>
+JSON-LD Product schema:   <span class="r">none</span>
+Offer / price / availability in schema:   <span class="r">none</span>
+AggregateRating / Review:   <span class="r">none</span>
+
+<span class="c">// CCS, Tactics, and Labor all publish full Product + Offer schema;</span>
+<span class="c">// Tactics adds AggregateRating (star ratings) on every product.</span></pre>
+  <p class="sub-h">What this costs in an AI shopping query</p>
+  <p>When a shopper asks an AI engine "where can I buy the cheapest Spitfire Formula Four wheels" or "which Bay Area shop has the new Nike SB Dunk in stock," the engine quotes shops whose price and availability it can read. It cannot quote Atlas, because there is nothing structured to quote, so it quotes the competitors instead. Across 4,528 products, nearly double the DLX catalog we reviewed last week, that is a large amount of inventory that is invisible at the exact moment of purchase intent.</p>
+  <p class="fixline"><b>The fix.</b> Emit <code>Product</code> + <code>Offer</code> schema (price, availability, SKU, brand) across the catalog from the data Shopify already holds, plus <code>AggregateRating</code> where reviews exist. One template change covers all 4,528 products.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 6 · High severity</p>
+  <h2 class="ruled">An A-grade reputation that no machine can read</h2>
+  <p>This is the finding that should be encouraging. Atlas's reputation is its single best asset, and it is genuinely strong. It is also completely disconnected from the machine-readable entity, so no AI engine can attribute it.</p>
+  <div class="quote">Atlas Skateboard Store: <strong>4.8 stars across 115 reviews</strong> (Birdeye), <strong>135 reviews</strong> on Yelp, an official Nike SB and Vans dealer, described in coverage as "the best skate boutique along the peninsula." Open since 2007 at 209 2nd Ave, San Mateo. <span class="src">(Birdeye, Yelp, Nike SB, Vans store locator)</span></div>
+  <p>Now the problem. There is no <code>Organization</code> or <code>LocalBusiness</code> schema on the site, and no <code>sameAs</code> links connecting atlasskateboarding.com to its Yelp, Google, Nike SB, or social profiles. To an AI engine, the excellent 4.8-star "Atlas Skateboard Store" on Yelp and the anonymous Shopify store at atlasskateboarding.com are not obviously the same business. The reputation and the store are two unlinked records.</p>
+  <div class="ai avoid">
+    <p class="plabel">The consequence, in the engine's own logic</p>
+    <p class="resp">"Atlas" resolves to an atlas, the Titan, Atlas Obscura, and dozens of brands before it resolves to a San Mateo skate shop. With no entity tying the domain to the 4.8-star local business, the engine has no confident basis to recommend it, even though the underlying sentiment is excellent.</p>
+  </div>
+  <p class="fixline"><b>The fix.</b> <code>Organization</code> + <code>LocalBusiness</code> schema (name, San Mateo address, hours, phone), <code>sameAs</code> links to Yelp, Google, Nike SB, and socials, and <code>AggregateRating</code> where appropriate. This connects the 4.8 stars to the entity and is what lets the reputation start doing work in AI answers.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 6 · High severity</p>
+  <h2 class="ruled">The homepage tells search engines almost nothing</h2>
+  <p>The title tag is the line Google weighs most heavily for ranking, and the line AI engines read first to understand a page. Atlas's is one word.</p>
+  <pre class="code"><span class="c">// atlasskateboarding.com, homepage &lt;head&gt;, today</span>
+&lt;title&gt;<span class="r">Atlas</span>&lt;/title&gt;
+&lt;meta name="description" content=""&gt;   <span class="c">// empty</span>
+&lt;h1&gt; ... &lt;/h1&gt;   <span class="c">// none on the page</span>
+&lt;meta property="og:image" content="<span class="r">http://</span>atlasskateboarding.com/..."&gt;   <span class="c">// insecure scheme</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>No "skate shop," no "San Mateo," no brands. The empty meta description means Google writes its own, and there is no <code>h1</code> to anchor the page. Combined with one of the most ambiguous names on the web, the result is that Atlas ranks for "Atlas" and little else. "Skate shop San Mateo," "Antihero decks Bay Area," and "skate shop near me" do not surface it. This is the discoverability tax under findings 1 and 3.</p>
+  <p class="fixline"><b>The fix.</b> Descriptive, keyworded title, meta, and <code>h1</code> templates across the homepage, collections, and products, plus an <code>https</code> share image. Theme-level and mechanical, measured in hours.</p>
+</section>
+
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 6 · High severity</p>
+  <h2 class="ruled">The agent-commerce layer is provisioned but empty</h2>
+  <p>This is the dimension where Atlas scores best on infrastructure and worst on content. Shopify auto-provisions a full agent stack, and Atlas has all of it: an <code>llms.txt</code>, an <code>agents.md</code>, a working UCP/MCP endpoint at <code>/.well-known/ucp</code>, and an agentic-discovery sitemap. The rails an AI shopping agent needs to transact are live. What runs on them is generic.</p>
+  <pre class="code"><span class="c">// atlasskateboarding.com agent surface</span>
+/.well-known/ucp        <span class="r">live</span>  (Shopify-provisioned, version 2026-04-08)
+llms.txt / agents.md    <span class="r">generic</span>  (~4.4 KB default template, zero brand or catalog content)
+agent-readable pricing  <span class="r">none</span>  (no Offer schema; prices require running JavaScript)</pre>
+  <p class="sub-h">Why it matters</p>
+  <p>To an agent reading the <code>llms.txt</code> today, Atlas is an anonymous Shopify store routing to Shop Pay, not "the San Mateo shop with one of the deepest Antihero, Krooked, and independent-brand selections in the Bay." And while the UCP endpoint can technically take a cart to checkout, the agent has no machine-readable prices to reason over before it gets there. The transaction rails work; the catalog and identity that would make an agent choose Atlas are missing.</p>
+  <p class="fixline"><b>The fix.</b> Rewrite <code>llms.txt</code> and <code>agents.md</code> as a real content map (brands, categories, the San Mateo store and gallery, what makes the curation distinct) and expose <code>Offer</code> pricing so agents can read and compare before they transact, keeping the working Shopify transaction layer underneath.</p>
+</section>
+
+<!-- FINDING 6 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 6 of 6 · Medium severity</p>
+  <h2 class="ruled">A deep editorial archive sits unused</h2>
+  <p>Atlas has an asset most shops would envy and few have: roughly 990 posts across three blogs (news, projects, videos), including artist series and collaboration features with Alien Workshop, Lakai, Stussy, and Antihero. It is exactly the kind of original, branded content AI engines reward, and it is doing almost no work.</p>
+  <div class="quote">Sampled blog posts carry no <code>Article</code> schema, are not wired into the SEO of the products they relate to, and are not referenced from the (generic) <code>llms.txt</code>. The archive is a curation signal that machines currently cannot see. <span class="src">(atlasskateboarding.com/blogs, sitemap_blogs_1.xml)</span></div>
+  <p class="sub-h">Why it matters</p>
+  <p>Original editorial is one of the few durable advantages in AI visibility, because it is hard to fake and it establishes the brand as an authority a machine will quote. Atlas already did the hard part, producing 19 years of it. Wiring it in is cheap, and it strengthens discoverability, quotability, and recommendability at once.</p>
+  <p class="fixline"><b>The fix.</b> <code>Article</code> schema across the archive, internal links from posts to the products and brands they feature, and the strongest pieces surfaced in the rewritten <code>llms.txt</code> content map.</p>
+</section>
+
+<!-- PAID READINESS -->
+<section class="sec">
+  <h2 class="ruled">Traffic and paid acquisition readiness</h2>
+  <p class="lead">You also asked for help with traffic, including Meta ads, beyond SEO and GEO. The same fixes above are what make paid traffic pay off, and the Meta measurement plumbing is not connected yet, so spend today would fly partly blind.</p>
+  <p>Google Ads (conversion tag <code>AW-841187191</code>) and GA4 (<code>G-3PF1CHM497</code>) are live, with Klaviyo and Attentive connected. But no Meta pixel fires on the storefront, and Shopify's customer-events configuration shows the Meta app slot present with its system-user token empty, so neither the browser pixel nor the Conversions API is sending events to Meta. Tactics, by contrast, runs a live Meta pixel. Advantage+ Shopping and dynamic product ads, the formats that make Meta efficient for a 4,500-product catalog, run on a clean product feed, which is the same structured data finding 2 is missing. Fix the catalog once and you feed Google Shopping, AI shopping, and Meta's catalog together.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Layer paid spend depends on</th><th>Status</th><th>Note</th></tr>
+    <tr><td class="k1">Meta pixel + Conversions API</td><td><span class="pill no">Not connected</span></td><td>App slot present, system-user token empty; no events reaching Meta</td></tr>
+    <tr><td class="k1">Product catalog feed (Advantage+)</td><td><span class="pill no">Blocked</span></td><td>Depends on the structured product data missing in finding 2</td></tr>
+    <tr><td class="k1">Landing and collection pages</td><td><span class="pill part">Weak</span></td><td>Thin titles and empty meta; fixed by finding 4</td></tr>
+    <tr><td class="k1">Measurement (GA4) and Google Ads</td><td><span class="pill yes">Live</span></td><td>Already running; benefit from the same clean feed</td></tr>
+  </table>
+  <p class="fixline" style="margin-top:11pt"><b>Sequence.</b> Land the findability and schema fixes first, connect the Meta pixel and Conversions API alongside them, then turn on Advantage+ against the clean feed. We cannot see your ad accounts or current ROAS from outside; this is the on-site plumbing paid depends on, which is what is verifiable here.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The same machine-readable signals across the four shops. Atlas wins on heritage and, in San Mateo, on a story none of the others can copy. On the layer that decides who AI engines surface, it is the only one of the four showing up empty.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>Atlas</th><th>CCS</th><th>Tactics</th><th>Labor</th></tr>
+    <tr><td class="k1">Homepage title</td><td class="bad">"Atlas"</td><td class="good">descriptive</td><td class="good">descriptive</td><td class="good">descriptive</td></tr>
+    <tr><td class="k1">Homepage entity schema</td><td class="bad">none</td><td class="good">Org · WebSite · SearchAction</td><td class="good">Org · WebSite · SearchAction · ContactPoint</td><td class="good">Org · WebSite · SearchAction</td></tr>
+    <tr><td class="k1">Product structured data</td><td class="bad">none</td><td class="good">full Product + Offer</td><td class="good">Product + Offer + ratings</td><td class="good">Product + Offer + Brand</td></tr>
+    <tr><td class="k1">Named in AI category answers</td><td class="bad">no</td><td class="good">yes</td><td class="good">yes</td><td class="good">sometimes</td></tr>
+    <tr><td class="k1">Meta pixel (paid readiness)</td><td class="bad">not firing</td><td>not on homepage</td><td class="good">live</td><td>not on homepage</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">Tactics is the sharpest contrast. Even after it was acquired out of Japanese ownership by Lakai's owner in 2025 and closed its Ballard, Seattle store in February 2026, its site fundamentals stay intact: full schema, a live Meta pixel, descriptive metadata, AI category presence. The plumbing is cheap to keep, and it is the difference between earning the AI recommendation and being absent from it.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Two phases. Phase 1 is a 30-day stabilization sprint that makes Atlas machine-readable and connects the reputation to the entity. Phase 2 is ongoing AI visibility work that moves the composite from F toward B over the following months. After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 · 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Stabilization sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Six remediations, each closing a finding above.</p>
+    <ul class="rem">
+      <li>Title, meta, and <code>h1</code> templates across homepage, collections, and products (finding 4)</li>
+      <li><code>Product</code> + <code>Offer</code> structured data across all 4,528 products (finding 2)</li>
+      <li><code>Organization</code> + <code>LocalBusiness</code> schema with <code>sameAs</code> links connecting the entity to the 4.8-star reputation (finding 3)</li>
+      <li><code>llms.txt</code> and <code>agents.md</code> rewritten as a content map; agent-readable pricing exposed (finding 5)</li>
+      <li><code>Article</code> schema and internal linking across the blog archive (finding 6)</li>
+      <li>Meta pixel and Conversions API connected, product catalog feed prepared for Advantage+ (paid readiness)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite AI visibility score (target 44 to 60-plus, F to C or D); rich-result and schema-validator coverage across the catalog; presence in AI category answers for "skate shop San Mateo" and "Peninsula skate shop"; Meta event match quality. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">Phase 2 and beyond</p>
+  <p>Phase 1 makes Atlas readable. Phase 2 makes it recommended, and keeps it there. This is the work that is not a one-time fix: continuous AI behavior monitoring per dimension with drift alerts; an entity establishment campaign so "Atlas" resolves to the shop across the engines; getting Atlas placed in the category sources AI engines cite; and tracking the schema and protocol changes (UCP, agent commerce) that move every quarter. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what the shop publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled Atlas's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>llms.txt</code>, <code>agents.md</code>, <code>/.well-known/ucp</code>, and the product, collection, and blog sitemaps. Counts (4,528 products, 106 collections, roughly 990 posts) come from those sitemaps, pulled June 16, 2026.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran category and brand queries through web-search-backed AI retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode now use by default, and recorded which shops were named and which sources were cited. Atlas's absence from the Bay Area results and from the listicles those engines cite is the basis of finding 1.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled Atlas's third-party reputation from Yelp, Birdeye, the Nike SB and Vans dealer locators, and local coverage, and checked whether any of it is linked to the site's entity. The 4.8-star rating is real; the missing link to it is finding 3.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>CCS, Tactics, and Labor were checked the same day on the same signals (title, entity schema, product schema, meta, Meta pixel, AI category presence). Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>llms.txt</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries. Counts pulled June 16, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises · Armaan Priyadarshan · Samarjit Deshmukh · Ethan Zhou · Shamit D'Souza · ethanpzhou@berkeley.edu</div></div>
+</section>
+
+</body>
+</html>

@@ -13,3 +13,4 @@ One line per registered skill. `report.write` updates the last-run column.
 | researcher-daily-digest | Weekday external-signal radar: fetch Reddit + HN → per-post items → filter → synthesize a brain digest + inbox tasks (cron via cron.sh) | fetch, extract, llm, inbox | 2026-06-18 (`researcher-daily-digest-20260618T170830Z-554acd`) |
 | granola-export | Export Granola meeting notes to context/samarjit-granola/ (keychain decrypt + Granola API) | (script; node + macOS keychain + granola API) | 2026-06-16 |
 | outreach-counter | Team email send counts (daily/weekly/total) derived from the ledger; writes agents/outreach/send-counts.md | (script; supabase) | 2026-06-17 |
+| ai-visibility-audit | House AI Visibility Audit to a branded PDF (Public Goods/Atlas format): recon + AI-behavior + reputation → 5-dim scorecard → findings → two-phase $1,000 close | (script; curl recon + web queries + Chrome render) | 2026-06-16 |

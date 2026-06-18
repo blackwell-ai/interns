@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atlas Skateboarding: Website Visibility Audit</title>
+<style>
+  :root{
+    --ink:#1c1a17; --ink-soft:#34302b; --body:#2d2925; --muted:#8c8077;
+    --brick:#9e3b2c; --brick-light:#b8654f; --rose:#cda08f;
+    --rose-bg:#f5e3dd; --rose-bg-soft:#faf1ec; --sand-bg:#efe7da;
+    --panel:#f6f3ee; --green:#3f7d4f; --track:#e7ded3;
+    --code-bg:#211d1a; --code-text:#e9e2d8; --code-muted:#9b8f82;
+    --line:#e3dbd1;
+    --serif:"Palatino","Palatino Linotype",Georgia,serif;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.62in 0.66in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:var(--sans); font-size:10.5pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  p{ margin:0 0 9pt; }
+  strong{ color:var(--ink); font-weight:600; }
+  code,.mono{ font-family:var(--mono); }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.18em; text-transform:uppercase; color:var(--brick); font-weight:700; margin:0 0 5pt; }
+  h1,h2,h3{ font-family:var(--serif); color:var(--ink); font-weight:700; }
+  h2{ font-size:20pt; line-height:1.12; margin:0 0 9pt; letter-spacing:-.2pt; }
+  h3{ font-size:14.5pt; line-height:1.18; margin:0 0 7pt; }
+  .lead{ font-size:11pt; color:var(--ink-soft); }
+  .section{ break-before:page; padding-top:4pt; }
+  .avoid{ break-inside:avoid; }
+  .rule{ height:1px; background:var(--line); border:0; margin:16pt 0; }
+
+  /* COVER */
+  .cover{ background:var(--ink); color:#f3eee7; border-radius:5px; padding:34pt 32pt 30pt; }
+  .cover .brand{ font-size:7.8pt; letter-spacing:.24em; text-transform:uppercase; color:#b6a89e; font-weight:700; margin:0 0 26pt; }
+  .cover h1{ color:#f5f1ea; font-size:33pt; line-height:1.04; margin:0; letter-spacing:-.4pt; }
+  .cover h1 .accent{ color:var(--rose); display:block; }
+  .cover .sub{ font-family:var(--sans); font-size:11pt; line-height:1.5; color:#d9d0c6; margin:15pt 0 26pt; max-width:74%; }
+  .meta{ display:flex; gap:20pt; border-top:1px solid #3a352f; padding-top:15pt; }
+  .meta .col{ flex:1; }
+  .meta .k{ font-size:7.2pt; letter-spacing:.16em; text-transform:uppercase; color:#9c9087; margin:0 0 4pt; }
+  .meta .v{ font-size:9pt; color:#e7ded3; line-height:1.35; }
+
+  /* EXEC SUMMARY numbered */
+  .num-item{ display:flex; gap:14pt; margin:0 0 16pt; }
+  .num{ font-family:var(--serif); font-size:25pt; font-weight:700; color:var(--brick); line-height:1; width:26pt; flex:none; }
+  .num-item h3{ margin:2pt 0 5pt; }
+  .factline{ background:var(--rose-bg-soft); border-left:2.5pt solid var(--brick); border-radius:0 3px 3px 0;
+    font-family:var(--mono); font-size:8.4pt; color:#7a3326; padding:8pt 11pt; margin:7pt 0 0; line-height:1.55; }
+  .factline .muted{ color:#a98e84; }
+
+  /* SCORECARD */
+  .panel{ background:var(--panel); border-radius:5px; padding:22pt 24pt; }
+  .grade-wrap{ display:flex; gap:22pt; align-items:flex-start; }
+  .grade{ border:2.5pt solid var(--brick); border-radius:5px; width:128pt; flex:none; text-align:center; padding:14pt 0 10pt; }
+  .grade .lg{ font-family:var(--serif); font-size:56pt; font-weight:700; color:var(--brick); line-height:.9; }
+  .grade .score{ font-size:11pt; color:var(--ink); margin-top:8pt; font-weight:600; }
+  .grade .cap{ font-size:7.4pt; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--ink-soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:6pt; }
+  table.score td,table.score th{ text-align:left; padding:8.5pt 6pt; border-bottom:1px solid var(--line); vertical-align:middle; font-size:9.4pt; }
+  table.score th{ font-size:7.4pt; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid #d9cfc3; }
+  table.score .dim{ font-weight:600; color:var(--ink); width:24%; }
+  table.score .sc{ width:8%; font-family:var(--serif); font-weight:700; color:var(--brick); font-size:11pt; }
+  .bar{ width:120pt; }
+  .bar .track{ background:var(--track); border-radius:5px; height:7pt; width:100%; overflow:hidden; }
+  .bar .fill{ background:var(--brick); height:7pt; border-radius:5px; }
+  table.score .what{ color:var(--ink-soft); font-size:8.8pt; line-height:1.4; }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid #d2c7ba; padding-top:10pt; }
+  tr.composite .dim,tr.composite .sc{ color:var(--ink); }
+  tr.composite .sc{ color:var(--brick); }
+
+  /* FINDINGS */
+  .badge{ display:inline-block; font-size:7.2pt; letter-spacing:.13em; text-transform:uppercase; font-weight:700;
+    padding:2.5pt 7pt; border-radius:3px; margin-bottom:8pt; }
+  .badge.critical{ background:var(--brick); color:#fff; }
+  .badge.high{ background:var(--rose-bg); color:var(--brick); }
+  .badge.medium{ background:var(--sand-bg); color:#6f5c43; }
+  .finding{ margin:0 0 20pt; }
+  .finding h3 .n{ color:var(--brick); }
+  pre.code{ background:var(--code-bg); color:var(--code-text); font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:12pt 14pt; border-radius:4px; margin:9pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:var(--code-muted); }
+  pre.code .r{ color:#e08a76; }
+  .callout{ background:var(--panel); border-left:2.5pt solid var(--brick-light); border-radius:0 3px 3px 0;
+    padding:10pt 13pt; margin:9pt 0; font-size:9.4pt; color:var(--ink-soft); line-height:1.5; }
+  .sub-h{ font-size:7.4pt; letter-spacing:.14em; text-transform:uppercase; color:var(--brick); font-weight:700; margin:11pt 0 3pt; }
+  .factbox{ background:var(--rose-bg); border-radius:4px; padding:11pt 13pt; margin:9pt 0; }
+  .factbox p{ margin:0; font-size:9.6pt; color:#5f5048; line-height:1.5; }
+
+  /* PAID readiness table */
+  table.ready{ width:100%; border-collapse:collapse; margin:10pt 0 4pt; }
+  table.ready th,table.ready td{ text-align:left; padding:8pt 9pt; border-bottom:1px solid var(--line); font-size:9.2pt; vertical-align:top; }
+  table.ready th{ font-size:7.4pt; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid #d9cfc3; }
+  table.ready .lyr{ font-weight:600; color:var(--ink); width:30%; }
+  .pill{ font-size:7.6pt; font-weight:700; letter-spacing:.04em; padding:2pt 7pt; border-radius:9pt; white-space:nowrap; }
+  .pill.no{ background:var(--rose-bg); color:var(--brick); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  /* COMPETITIVE */
+  table.compare{ width:100%; border-collapse:collapse; margin-top:6pt; }
+  table.compare th,table.compare td{ text-align:left; padding:9pt 8pt; border-bottom:1px solid var(--line); font-size:8.8pt; vertical-align:top; line-height:1.4; }
+  table.compare th{ font-size:7.4pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid #d9cfc3; }
+  table.compare .sig{ font-weight:600; color:var(--ink); width:21%; }
+  td.bad{ color:var(--brick); font-weight:600; }
+  td.good{ color:var(--green); }
+
+  /* PHASE */
+  .phase{ background:var(--panel); border-radius:5px; padding:20pt 22pt; margin-top:4pt; }
+  .price{ font-family:var(--serif); font-size:28pt; font-weight:700; color:var(--ink); line-height:1; margin:2pt 0 3pt; }
+  .arrow-list{ list-style:none; margin:10pt 0 0; padding:0; }
+  .arrow-list li{ position:relative; padding:5pt 0 5pt 20pt; font-size:9.6pt; color:var(--ink-soft); border-bottom:1px solid var(--line); line-height:1.45; }
+  .arrow-list li:last-child{ border-bottom:none; }
+  .arrow-list li:before{ content:"\2192"; position:absolute; left:0; color:var(--brick); font-weight:700; }
+  .foot{ background:var(--panel); border-radius:5px; padding:16pt 18pt; margin-top:18pt; font-size:8.6pt; color:var(--muted); line-height:1.55; }
+  .foot strong{ color:var(--ink-soft); }
+  .foot .team{ color:var(--ink-soft); margin-top:9pt; font-size:8.8pt; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="cover avoid">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Atlas Skateboarding<span class="accent">Website Visibility Audit</span></h1>
+  <p class="sub">A surface-level look at how Atlas shows up in Google and AI today, what it is quietly costing the shop, and the fast fixes that change it.</p>
+  <div class="meta">
+    <div class="col"><p class="k">Prepared for</p><p class="v">Atlas Skateboarding leadership</p></div>
+    <div class="col"><p class="k">Date</p><p class="v">June 16, 2026</p></div>
+    <div class="col"><p class="k">Scope</p><p class="v">Public site, search and AI surface, paid readiness</p></div>
+    <div class="col"><p class="k">Contact</p><p class="v">ethanpzhou@berkeley.edu</p></div>
+  </div>
+</section>
+
+<!-- ============ EXEC SUMMARY ============ -->
+<div style="height:26pt"></div>
+<p class="eyebrow">Executive summary</p>
+<h2>Three things you can verify in two minutes</h2>
+<p class="lead">Atlas is one of the Bay Area's most respected skate shops, an 19-year San Mateo institution that doubles as an art gallery. Its website does not tell Google, or any AI, that story. The shop is elite; the site's findability setup is not. Nearly every issue below is a fast, mechanical fix, not a rebuild.</p>
+
+<div style="height:8pt"></div>
+
+<div class="num-item avoid">
+  <div class="num">1</div>
+  <div>
+    <h3>The homepage is invisible to search.</h3>
+    <p>The page title, the single most important SEO signal, is literally the word "Atlas." There is no meta description, no <code>h1</code> heading, and the social share image is declared over insecure <code>http://</code>. You are findable for your exact name and almost nothing else.</p>
+    <div class="factline"><code>&lt;title&gt;Atlas&lt;/title&gt;</code> <span class="muted">·</span> meta description: empty <span class="muted">·</span> <code>&lt;h1&gt;</code> tags: 0</div>
+  </div>
+</div>
+
+<div class="num-item avoid">
+  <div class="num">2</div>
+  <div>
+    <h3>4,528 products, zero structured data.</h3>
+    <p>Not one product page carries the machine-readable schema Google and AI shopping engines read. No price, availability, or brand in a form they can quote. Your SKUs and barcodes exist in Shopify; they are simply never exposed. CCS, Tactics, and Labor expose all of it.</p>
+    <div class="factline">JSON-LD blocks on a product page: 0. <span class="muted">No Product, Offer, or AggregateRating schema anywhere.</span></div>
+  </div>
+</div>
+
+<div class="num-item avoid">
+  <div class="num">3</div>
+  <div>
+    <h3>An 19-year brand with no machine-readable identity.</h3>
+    <p>There is no <code>Organization</code> or <code>LocalBusiness</code> schema telling search and AI what Atlas is, or that it is a physical San Mateo shop and gallery open since 2007. The homepage is a bare product grid. None of the heritage is anywhere a machine can read.</p>
+    <div class="factline">Homepage JSON-LD blocks: 0. <span class="muted">No entity, no LocalBusiness, no store info.</span></div>
+  </div>
+</div>
+
+<!-- ============ SCORECARD ============ -->
+<div class="section"></div>
+<p class="eyebrow">Visibility scorecard</p>
+<h2>Where Atlas stands today</h2>
+<p class="lead">Five surface dimensions of how search and AI engines treat the site, each scored 0 to 100 against observed behavior and the competitive set. The composite is the simple average.</p>
+
+<div style="height:12pt"></div>
+<div class="grade-wrap avoid">
+  <div class="grade">
+    <div class="lg">F</div>
+    <div class="score">29 / 100</div>
+    <div class="cap">Atlas today</div>
+  </div>
+  <p class="grade-note"><strong>The score is low for an encouraging reason.</strong> Atlas scores at the bottom on findability, but unlike most failing sites, the cause is surface-level configuration the current setup never turned on, not a broken foundation. The catalog, the brand, the 19-year heritage, and the customer base are A-grade. The plumbing that exposes them to Google and AI is off. That is days of work, not months.</p>
+</div>
+
+<table class="score">
+  <tr><th class="dim">Dimension</th><th class="sc">Atlas</th><th>Score</th><th class="what">What it measures</th></tr>
+  <tr>
+    <td class="dim">On-page SEO</td><td class="sc">24</td>
+    <td><div class="bar"><div class="track"><div class="fill" style="width:24%"></div></div></div></td>
+    <td class="what">Title tags, meta descriptions, headings, canonical hygiene</td>
+  </tr>
+  <tr>
+    <td class="dim">Structured data</td><td class="sc">8</td>
+    <td><div class="bar"><div class="track"><div class="fill" style="width:8%"></div></div></div></td>
+    <td class="what">Product / Offer / Organization / LocalBusiness schema, rich-result eligibility</td>
+  </tr>
+  <tr>
+    <td class="dim">Brand &amp; entity</td><td class="sc">28</td>
+    <td><div class="bar"><div class="track"><div class="fill" style="width:28%"></div></div></div></td>
+    <td class="what">Machine-readable identity, name disambiguation, brand story</td>
+  </tr>
+  <tr>
+    <td class="dim">AI / GEO readiness</td><td class="sc">33</td>
+    <td><div class="bar"><div class="track"><div class="fill" style="width:33%"></div></div></div></td>
+    <td class="what">llms.txt content map, agent-readable catalog, AI shopping presence</td>
+  </tr>
+  <tr>
+    <td class="dim">Content &amp; merchandising</td><td class="sc">52</td>
+    <td><div class="bar"><div class="track"><div class="fill" style="width:52%"></div></div></div></td>
+    <td class="what">Catalog depth, blog activity, how well assets are leveraged</td>
+  </tr>
+  <tr class="composite">
+    <td class="dim">Composite</td><td class="sc">29 · F</td>
+    <td></td>
+    <td class="what">CCS, Tactics, and Labor, the benchmark set, sit well above this on every technical row.</td>
+  </tr>
+</table>
+
+<!-- ============ FINDINGS ============ -->
+<div class="section"></div>
+<p class="eyebrow">The findings</p>
+<h2>In detail, worst first</h2>
+<div style="height:10pt"></div>
+
+<div class="finding avoid">
+  <span class="badge critical">Critical</span>
+  <h3><span class="n">1 ·</span> The homepage does not tell anyone what Atlas is</h3>
+  <p>The title tag is the line Google shows in results and weighs most heavily for ranking. Atlas's is one word: Atlas. No "skate shop," no "San Mateo," no brands. The meta description is empty, so Google writes its own. There is no <code>h1</code> on the page at all.</p>
+  <pre class="code"><span class="c">// atlasskateboarding.com, homepage &lt;head&gt;, today</span>
+&lt;title&gt;<span class="r">Atlas</span>&lt;/title&gt;
+&lt;meta name="description" content=""&gt;   <span class="c">// empty</span>
+&lt;h1&gt; ... &lt;/h1&gt;   <span class="c">// none on the page</span>
+&lt;meta property="og:image" content="<span class="r">http://</span>atlasskateboarding.com/..."&gt;   <span class="c">// insecure scheme</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>You rank for "Atlas" and effectively nothing else, and "Atlas" is one of the most contested words on the web: an atlas, Atlas the Titan, Atlas Obscura, dozens of brands. Even "Atlas skate shop" is a fight the current setup is not equipped for. Searches like "skate shop San Mateo," "where to buy Antihero decks Bay Area," or "skate shop near me" never surface you. The empty description costs clicks on every link that does appear.</p>
+  <p class="sub-h">The fix</p>
+  <p>Descriptive, keyworded title and meta templates across the homepage, collections, and products; a real <code>h1</code>; and an <code>https</code> share image. Mechanical, theme-level, low-risk, measured in hours.</p>
+</div>
+
+<div class="finding avoid">
+  <span class="badge critical">Critical</span>
+  <h3><span class="n">2 ·</span> 4,528 products carry no structured data</h3>
+  <p>Product pages render no JSON-LD at all, the format Google uses for rich results (price, stock, star ratings) and the format AI shopping engines read to recommend and compare products. The data exists in Shopify, real SKUs and real barcodes. It is just never published where machines look.</p>
+  <pre class="code"><span class="c">// Any Atlas product page, structured data found</span>
+JSON-LD Product schema:   <span class="r">none</span>
+Offer / price / availability in schema:   <span class="r">none</span>
+AggregateRating / Review:   <span class="r">none</span>
+
+<span class="c">// CCS, Tactics, and Labor all publish full Product + Offer schema.</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>No rich results in Google, so your listings are plain blue links while competitors show price, stock, and stars. And when someone asks ChatGPT, Perplexity, or Google's AI "where can I buy X," Atlas cannot be quoted, because there is nothing structured to quote. Across 4,528 products, nearly double the DLX catalog we looked at last week, that is a lot of invisible inventory.</p>
+  <p class="sub-h">The fix</p>
+  <p>Emit <code>Product</code> + <code>Offer</code> schema (price, availability, SKU, brand) across the catalog from data Shopify already holds, plus <code>AggregateRating</code> where reviews exist. One template change, whole catalog covered.</p>
+</div>
+
+<div class="finding avoid">
+  <span class="badge high">High</span>
+  <h3><span class="n">3 ·</span> No machine-readable identity, and "Atlas" is highly ambiguous</h3>
+  <p>There is no <code>Organization</code> or <code>LocalBusiness</code> schema, so search and AI have no structured idea of what Atlas is, that it is a physical San Mateo shop and gallery, or that it has run since 2007. The name alone collides with an enormous field. The homepage is a product grid with no brand narrative, even though the about page tells an excellent story.</p>
+  <div class="factbox"><p>From the Atlas about page: the shop opened in May 2007 in downtown San Mateo, in the San Francisco Bay Area, and runs as a retail store and art gallery, "driven by passion over profit." That sentence lives on the site. No machine can read it as identity.</p></div>
+  <p class="sub-h">Why it matters</p>
+  <p>"What is Atlas?" / "is Atlas legit?" / "Atlas skate shop hours" have no authoritative machine-readable answer, so AI guesses or stays silent. For a shop whose whole edge is credibility, curation, and an 19-year scene, having no entity is the difference between being the answer and being absent.</p>
+  <p class="sub-h">The fix</p>
+  <p><code>Organization</code> + <code>LocalBusiness</code> schema (location, hours, sameAs to socials), a short brand block on the homepage, and entity groundwork so "Atlas" resolves to the shop, not a titan or an atlas.</p>
+</div>
+
+<div class="finding avoid">
+  <span class="badge high">High</span>
+  <h3><span class="n">4 ·</span> The AI-commerce layer is switched on but empty</h3>
+  <p>Shopify auto-provisions an agent stack: <code>llms.txt</code>, <code>agents.md</code>, a UCP/MCP endpoint, an agentic-discovery sitemap. Atlas has all of it, and the UCP transaction endpoint genuinely works. But the <code>llms.txt</code> and <code>agents.md</code> are the generic Shopify boilerplate (how to transact), not a content map (who you are, what you carry, why you). Every Shopify store ships this identical file.</p>
+  <div class="callout"><code>llms.txt</code> and <code>agents.md</code> = the default "Agent Instructions" template (about 4.4 KB) routing agents to Shop Pay. Zero brand, category, or curation content. This is exactly the gap we specialize in closing.</div>
+  <p class="sub-h">Why it matters</p>
+  <p>AI shopping is moving to live retrieval. To an agent reading your <code>llms.txt</code> today, Atlas is an anonymous Shopify store, not "the San Mateo shop and gallery with one of the deepest Antihero, Krooked, and independent-brand selections in the Bay." That framing is won or lost in the content layer, and right now it is blank.</p>
+  <p class="sub-h">The fix</p>
+  <p>Rewrite <code>llms.txt</code> and <code>agents.md</code> as a real content map (brand, categories, signature brands, the San Mateo store and gallery, what makes the curation distinct), keeping the working Shopify transaction layer underneath.</p>
+</div>
+
+<div class="finding avoid">
+  <span class="badge medium">Medium</span>
+  <h3><span class="n">5 ·</span> Real assets, badly under-leveraged</h3>
+  <p>Atlas has assets most shops would envy: 4,528 products across dozens of brands, 106 collections, and an unusually deep editorial archive of roughly 990 posts across three blogs (news, projects, videos), including artist series and collaboration features with Alien Workshop, Lakai, Stussy, and Antihero. But the blog carries no <code>Article</code> schema and is not wired into SEO, and the catalog churns constantly (drops, restocks, footwear size runs), which appears to be managed by hand.</p>
+  <div class="factbox"><p><strong>A note we would rather raise in person than assume:</strong> a lot of the day-to-day around a catalog this size, onboarding new arrivals from distributor feeds, posting restocks and drops, answering "is this in my size," cross-posting to social, tends to be repetitive, manual work. We do not want to presume how Atlas runs; we would want to understand your week first. But this is usually where, after the findability fixes land, a second and cheap layer is worth scoping: automating the busywork.</p></div>
+</div>
+
+<!-- ============ PAID READINESS ============ -->
+<div class="section"></div>
+<p class="eyebrow">Traffic &amp; paid acquisition</p>
+<h2>Before the Meta ads, get the plumbing ready</h2>
+<p class="lead">You mentioned wanting help with traffic, including Meta ads, beyond SEO and GEO. The good news is that the fixes above are what make paid traffic pay off. The caution is that the Meta measurement plumbing is not connected yet, so spend today would fly partly blind.</p>
+
+<p class="sub-h">What we can see from the storefront</p>
+<p>Google Ads (conversion tag <code>AW-841187191</code>) and GA4 (<code>G-3PF1CHM497</code>) are live, and email (Klaviyo) and SMS (Attentive) are connected. But no Meta pixel fires on the storefront. Shopify's customer-events configuration shows the Meta app slot present with its system-user token empty, so neither the browser pixel nor the Conversions API is sending events to Meta. Tactics, by contrast, runs a live Meta pixel today.</p>
+
+<p class="sub-h">Why this matters for the Meta plan</p>
+<p>Advantage+ Shopping and dynamic product ads, the formats that make Meta efficient for a 4,500-product catalog, run on a clean product feed. That feed is the same structured product data that finding 2 says is missing. Fix the catalog data once and you feed Google Shopping, AI shopping, and Meta's catalog at the same time. Without the pixel and the Conversions API, you cannot measure cost per purchase or build retargeting and lookalike audiences, and with current iOS signal loss the server-side Conversions API is close to mandatory. Cold paid clicks also land on collection and product pages, which need the titles, descriptions, and speed the on-page fixes deliver, or you pay for visits that bounce.</p>
+
+<table class="ready avoid">
+  <tr><th class="lyr">Layer paid spend depends on</th><th>Status today</th><th>Note</th></tr>
+  <tr><td class="lyr">Meta pixel + Conversions API</td><td><span class="pill no">Not connected</span></td><td>App slot present, system-user token empty; no events reaching Meta</td></tr>
+  <tr><td class="lyr">Product catalog feed (Advantage+)</td><td><span class="pill no">Blocked</span></td><td>Depends on the structured product data missing in finding 2</td></tr>
+  <tr><td class="lyr">Landing &amp; collection pages</td><td><span class="pill part">Weak</span></td><td>Thin titles and empty meta; fixed by finding 1</td></tr>
+  <tr><td class="lyr">Measurement (GA4)</td><td><span class="pill yes">Live</span></td><td>Present; worth a conversion-tracking review before scaling</td></tr>
+  <tr><td class="lyr">Google Ads</td><td><span class="pill yes">Live</span></td><td>Already running; benefits from the same clean feed</td></tr>
+</table>
+
+<div class="callout"><strong>Sequence we would suggest.</strong> Land the findability and schema fixes first, since they feed the catalog and fix the landing pages. Connect the Meta pixel and Conversions API alongside them. Then turn on Advantage+ against the now-clean feed. Paid gets cheaper because the foundation is finally there. One honest limit: we cannot see your ad accounts or current ROAS from outside, so this is about the on-site plumbing paid depends on, which is what is verifiable here.</div>
+
+<!-- ============ COMPETITIVE ============ -->
+<div class="section"></div>
+<p class="eyebrow">Competitive snapshot</p>
+<h2>What the leaders already do</h2>
+<p class="lead">Three of the most visible skate retailers online, on the same machine-readable signals. This is not about catalog or credibility; Atlas competes on those. It is about the plumbing.</p>
+
+<table class="compare avoid">
+  <tr><th class="sig">Signal</th><th>Atlas</th><th>CCS</th><th>Tactics</th><th>Labor</th></tr>
+  <tr>
+    <td class="sig">Homepage title</td>
+    <td class="bad">"Atlas"</td>
+    <td class="good">descriptive</td>
+    <td class="good">descriptive</td>
+    <td class="good">descriptive</td>
+  </tr>
+  <tr>
+    <td class="sig">Homepage entity schema</td>
+    <td class="bad">none</td>
+    <td class="good">Organization · WebSite · SearchAction</td>
+    <td class="good">Organization · WebSite · SearchAction · ContactPoint</td>
+    <td class="good">Organization · WebSite · SearchAction</td>
+  </tr>
+  <tr>
+    <td class="sig">Product structured data</td>
+    <td class="bad">none</td>
+    <td class="good">full Product + Offer</td>
+    <td class="good">full Product + Offer + ratings</td>
+    <td class="good">full Product + Offer + Brand</td>
+  </tr>
+  <tr>
+    <td class="sig">Meta description</td>
+    <td class="bad">empty</td>
+    <td class="good">present</td>
+    <td class="good">present</td>
+    <td class="good">present</td>
+  </tr>
+</table>
+<p style="font-size:9.4pt;color:var(--ink-soft);margin-top:10pt;line-height:1.5">Atlas has the heritage and, in San Mateo, a story none of them can copy. On the machine-readable layer that decides who Google and AI surface, it is the only one of the four showing up empty.</p>
+
+<div class="callout"><strong>One note on Tactics.</strong> It was acquired out of Japanese ownership by Lakai's owner in 2025 and has been trimming retail (it closed its Ballard, Seattle store in February 2026). Even under financial strain, its site fundamentals stay intact: full schema, a live Meta pixel, descriptive metadata. The plumbing is cheap to keep. The traffic it earns is not.</div>
+
+<!-- ============ WHERE THIS GOES + PHASE ============ -->
+<div class="section"></div>
+<p class="eyebrow">Where this goes</p>
+<h2>A small, low-risk first step</h2>
+<p class="lead">We would start with the findability fixes: fast, measurable, entirely on the surface. The Meta pixel and Conversions API go in alongside them, so the ad plan has data when you are ready. The automation conversation comes later, only once we understand how you actually run things.</p>
+
+<div style="height:14pt"></div>
+<div class="phase avoid">
+  <p class="eyebrow" style="color:var(--brick)">Phase 1</p>
+  <div class="price">$1,000</div>
+  <h3 style="margin:0 0 4pt">Findability and feed fix sprint</h3>
+  <ul class="arrow-list">
+    <li>Title, meta, and <code>h1</code> templates across homepage, collections, and products</li>
+    <li><code>Product</code> + <code>Offer</code> structured data across all 4,528 products</li>
+    <li><code>Organization</code> + <code>LocalBusiness</code> entity schema for the San Mateo store and gallery, plus a brand block</li>
+    <li><code>llms.txt</code> and <code>agents.md</code> rewritten as a real content map; <code>Article</code> schema on the blog archive</li>
+    <li>Meta pixel and Conversions API connected, product catalog feed prepared for Advantage+</li>
+    <li>Benchmarks set together: rich-result coverage, schema-validator pass rate, search and AI visibility, and Meta event match quality, before and after</li>
+  </ul>
+  <p style="font-size:9pt;color:var(--muted);margin:12pt 0 0">$1,000 upfront, refunded in full if the benchmarks are not met.</p>
+</div>
+
+<div style="height:14pt"></div>
+<div class="avoid">
+  <p class="eyebrow">Then, scoped together</p>
+  <h3>Automate the busywork, only if it is worth it</h3>
+  <p>After Phase 1, and after we have spent time understanding your week, we would look at the repetitive work worth automating: new-arrival onboarding from distributor feeds, restock and drop alerts, stock-question replies, social cross-posting. We scope it small, price it cheap, and only build what clearly saves you time. No commitment now.</p>
+</div>
+
+<div class="foot avoid">
+  <strong>Reproducibility.</strong> Every finding here is externally verifiable with public tools: view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>llms.txt</code>, and <code>/products.json</code>. Product and collection counts pulled from the live product and collection sitemaps on June 16, 2026. Competitor signals pulled the same day from CCS, Tactics, and Labor.
+  <div class="team">Blackwell Enterprises · Armaan Priyadarshan · Samarjit Deshmukh · Ethan Zhou · Shamit D'Souza</div>
+  <div style="margin-top:3pt">Contact: ethanpzhou@berkeley.edu</div>
+</div>
+
+</body>
+</html>
