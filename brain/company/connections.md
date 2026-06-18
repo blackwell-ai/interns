@@ -29,6 +29,14 @@ addresses used for outreach. Recorded June 15, 2026, per Armaan.
 Sending *to* these is fine; they are recipients, not accounts agents authenticate
 as. The digest cron emails this list from Armaan's Dartmouth account.
 
+As of June 17, 2026 (per Armaan) each founder also has a company inbox at
+`<firstname>@tryblackwell.com`: armaan@, samarjit@, shamit@, ethan@. These are
+the preferred internal-mail recipients going forward. Agents still only *send
+from* Armaan's two accounts (Dartmouth, personal gmail); the tryblackwell
+addresses are recipients, not send-from integrations. First send to them was the
+June 17 off-cycle "new tools" digest; delivery to the new domain is not yet
+independently confirmed (watch for bounces).
+
 | Platform | Method | Account | Status (June 10, 2026) |
 |---|---|---|---|
 | Gmail | claude.ai Gmail connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
