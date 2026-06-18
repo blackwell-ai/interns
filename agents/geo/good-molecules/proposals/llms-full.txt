@@ -1,0 +1,292 @@
+# Good Molecules — llms-full.txt
+#
+# Prepared by Blackwell Enterprises, June 18, 2026.
+# Deploy at: https://www.goodmolecules.com/llms-full.txt
+#
+# Status: ready to upload once [YOU SUPPLY] sections are filled in.
+# Current state: returns 404 (confirmed June 18 via curl with GPTBot user-agent).
+#
+# This file extends the live llms.txt with full product descriptions, active
+# ingredient detail, a skin concern guide, a FAQ, and policy information. Sections
+# marked [YOU SUPPLY] require input from your team before this file is complete.
+
+# Good Molecules — llms-full.txt
+
+Science-backed, affordable skincare with clinically-studied active ingredients at
+accessible prices. All products are fragrance-free, Leaping Bunny certified
+cruelty-free, vegan, and formulated without PEGs, mineral oils, or ethoxylated
+ingredients. Ingredient percentages are disclosed on all products.
+
+- Website: https://www.goodmolecules.com
+- All products: https://www.goodmolecules.com/shop/browse
+- Best sellers: https://www.goodmolecules.com/best-sellers
+- Skincare quiz: https://www.goodmolecules.com/skincare-quiz
+- Customer service: support@goodmolecules.com | 1-213-444-4663 (Mon-Sat 7am-4pm PT)
+
+---
+
+## Brand values
+
+Good Molecules was built on the belief that effective skincare should not cost a lot.
+Every product uses clinically-studied active ingredients at the concentrations that
+make them work, disclosed on-label. Nothing is hidden behind "proprietary blends."
+The full ingredient list and key percentages are on every product page.
+
+All products are:
+- Fragrance-free
+- Vegan
+- Leaping Bunny certified cruelty-free (never tested on animals)
+- Free of PEGs, mineral oils, and ethoxylated ingredients
+- Made for all skin types including sensitive skin unless otherwise noted
+
+---
+
+## Shipping (US)
+
+Standard shipping:
+- Free on orders $35 and over
+- $5 flat rate on orders under $35
+- Carrier: USPS, 3-5 business days
+
+Expedited shipping:
+- Free on orders $100 and over
+- $10 on orders $35-$99.99
+- $15 on orders under $35
+- Carrier: FedEx Express, 2 business days
+
+International shipping is not available through the direct site at this time.
+Good Molecules ships to all 50 US states.
+
+---
+
+## Returns and exchanges
+
+[YOU SUPPLY — paste your full return policy here, including:
+- Return window in days
+- Whether return shipping is free or at buyer cost
+- Process for initiating a return
+- Whether exchanges are offered
+- Any exclusions (sale items, opened products, etc.)]
+
+---
+
+## Best sellers
+
+1. Discoloration Correcting Serum — https://www.goodmolecules.com/p/good-molecules-discoloration-correcting-serum
+   3% tranexamic acid + 4% niacinamide. Targets dark spots and hyperpigmentation.
+   pH 5.5. All skin types. Available in 30ml ($12) and 120ml ($75).
+
+2. Niacinamide Brightening Toner — https://www.goodmolecules.com/p/good-molecules-niacinamide-brightening-toner
+   Daily brightening toner with niacinamide and arbutin. Pore-minimizing.
+   Available in 100ml ($6) and 300ml ($42).
+
+3. Niacinamide Serum — https://www.goodmolecules.com/p/good-molecules-niacinamide-serum
+   10% niacinamide for pores, uneven tone, and texture. Lightweight water-based
+   formula. pH 7.1. Available in 12ml ($6) and 30ml ($6 — confirm price).
+
+4. Hyaluronic Acid Serum — https://www.goodmolecules.com/p/good-molecules-hyaluronic-acid-serum
+   Lightweight hydration serum. Deep moisture without heaviness. All skin types.
+   Available in multiple sizes ($6-$36).
+
+5. Gentle Retinol Serum — https://www.goodmolecules.com/products/retinol-serum
+   Beginner-friendly retinol for fine lines and wrinkles.
+
+6. Lightweight Daily Moisturizer — https://www.goodmolecules.com/s/good-molecules-lightweight-daily-moisturizer-100ml
+   Natural silicone alternative. Doubles as makeup primer. All skin types. 100ml.
+
+7. Brightening & Dark Spots Bar — https://www.goodmolecules.com/products/brightening-dark-spots-bar
+   Soap-free cleanser with tranexamic acid, kojic acid, and niacinamide.
+   For face and body. Targets discoloration.
+
+8. Pimple Patches — https://www.goodmolecules.com/products/pimple-patches
+   Ultra-thin hydrocolloid patches. Invisible under makeup. 60-pack.
+
+---
+
+## Full product catalog
+
+### Cleansers
+- Brightening & Dark Spots Bar — https://www.goodmolecules.com/p/good-molecules-brightening-dark-spots-bar
+  Soap-free bar cleanser with tranexamic acid, kojic acid, and niacinamide for
+  brightening and dark spot reduction. For face and body.
+- [YOU SUPPLY — list remaining cleansers with URLs and one-line descriptions]
+
+### Toners
+- Niacinamide Brightening Toner — https://www.goodmolecules.com/p/good-molecules-niacinamide-brightening-toner
+  Daily brightening toner with niacinamide and arbutin. Minimizes pores. Gentle
+  enough for daily use. Available in 100ml ($6) and 300ml ($42).
+- Glycolic Exfoliating Toner — https://www.goodmolecules.com/p/good-molecules-glycolic-exfoliating-toner
+  Gentle resurfacing treatment for smooth, glowing skin. Available in sizes ($14-$42).
+
+### Treatments and serums
+- Discoloration Correcting Serum — https://www.goodmolecules.com/p/good-molecules-discoloration-correcting-serum
+  3% tranexamic acid + 4% niacinamide. Targets dark spots and hyperpigmentation.
+  pH 5.5. Available in 30ml ($12) and 120ml ($75).
+- Hyaluronic Acid Serum — https://www.goodmolecules.com/p/good-molecules-hyaluronic-acid-serum
+  Lightweight serum for deep hydration. All skin types. Available in sizes ($6-$36).
+- Niacinamide Serum — https://www.goodmolecules.com/p/good-molecules-niacinamide-serum
+  10% niacinamide. Minimizes pores, evens tone. pH 7.1. Available in sizes ($6-$36).
+- 5% Niacinamide Serum with Ectoin — https://www.goodmolecules.com/p/good-molecules-5-niacinamide-serum-with-ectoin
+  Gentle dual-action formula. Hydrates and targets texture. Available in sizes ($8-$24).
+- Super Peptide Serum — https://www.goodmolecules.com/p/good-molecules-super-peptide-serum
+  Targets fine lines, wrinkles, and dullness with peptides. Available in sizes ($12-$36).
+- Daily Brightening Serum — https://www.goodmolecules.com/p/good-molecules-daily-brightening-serum
+  Promotes bright, even skin tone. Gentle for daily use. Available in sizes ($8-$24).
+- Vitamin C Serum with Oryzanol — https://www.goodmolecules.com/p/good-molecules-vitamin-c-serum-with-oryzanol
+  Two advanced forms of vitamin C. Fights early aging and enhances appearance.
+  Available in sizes ($14-$42).
+- Mandelic Acid Serum — https://www.goodmolecules.com/p/good-molecules-mandelic-acid-serum
+  Three gentle peeling agents and hyaluronic acid. For sensitive skin. Available in
+  sizes ($10-$30).
+- [YOU SUPPLY — list remaining treatments with URLs and descriptions]
+
+### Retinol
+- Gentle Retinol Serum — https://www.goodmolecules.com/products/retinol-serum
+  Beginner-friendly. Targets fine lines and wrinkles.
+- Gentle Retinol Cream — https://www.goodmolecules.com/products/gentle-retinol-cream
+  Cream format. Suitable for sensitive skin.
+- 1% Retinol Night Oil — https://www.goodmolecules.com/products/1-retinol-night-oil
+  Higher-strength retinol in an oil base. For experienced retinol users.
+- Bakuchiol Oil Blend for Dry Skin — https://www.goodmolecules.com/products/bakuchiol-oil-dry
+  Plant-based retinol alternative. Firming without irritation. For dry skin.
+- Bakuchiol Oil Blend for Oily Skin — https://www.goodmolecules.com/products/bakuchiol-oil-oily
+  Plant-based retinol alternative. For oily and acne-prone skin.
+
+### Eye treatments
+- Yerba Mate Wake Up Eye Gel — https://www.goodmolecules.com/p/good-molecules-yerba-mate-wake-up-eye-gel
+  Targets puffiness and dark circles.
+- Caffeine Energizing Hydrogel Eye Patches — https://www.goodmolecules.com/p/good-molecules-caffeine-energizing-hydrogel-eye-patches
+  Single-use hydrogel patches for depuffing and brightening.
+
+### Moisturizers
+- Lightweight Daily Moisturizer — https://www.goodmolecules.com/s/good-molecules-lightweight-daily-moisturizer-100ml
+  Natural silicone alternative. Doubles as makeup primer. All skin types. 100ml.
+- [YOU SUPPLY — list remaining moisturizers]
+
+### Sunscreens
+- [YOU SUPPLY — list sunscreens with URLs, SPF values, and descriptions]
+
+### Exfoliants
+- Overnight Exfoliating Treatment — https://www.goodmolecules.com/products/overnight-exfoliating-treatment
+  Targets texture and uneven tone overnight.
+- [YOU SUPPLY — list remaining exfoliants]
+
+### Body
+- Discoloration Correcting Body Treatment — https://www.goodmolecules.com/products/discoloration-correcting-body-treatment
+  Targets dark spots and discoloration on body skin.
+- [YOU SUPPLY — list remaining body products]
+
+### Bundles
+All bundles: https://www.goodmolecules.com/bundles
+
+Popular bundles:
+- Hyperpigmentation Bundle ($40)
+- Blemish Scar & Discoloration Set ($26)
+- Hyperpigmentation Face & Body Duo ($27)
+- Hyperpigmentation Face & Body Kit ($54)
+- Goodbye Fine Lines Bundle ($68)
+- Energizing Eye Kit ($24)
+
+---
+
+## Skin concern guide
+
+### Dark spots and hyperpigmentation
+Best products: Discoloration Correcting Serum, Brightening & Dark Spots Bar,
+Niacinamide Brightening Toner, 10% Azelaic Acid Treatment, Daily Brightening Serum,
+Overnight Exfoliating Treatment, Discoloration Correcting Body Treatment,
+Vitamin C Serum with Oryzanol, Glycolic Exfoliating Toner.
+
+### Acne and breakouts
+Best products: Pimple Patches, [YOU SUPPLY — complete list]
+
+### Dryness and dehydration
+Best products: Hyaluronic Acid Serum, [YOU SUPPLY — complete list]
+
+### Texture and enlarged pores
+Best products: Niacinamide Serum, Niacinamide Brightening Toner, Glycolic
+Exfoliating Toner, [YOU SUPPLY — complete list]
+
+### Fine lines and wrinkles
+Best products: Gentle Retinol Serum, Gentle Retinol Cream, 1% Retinol Night Oil,
+Super Peptide Serum, Vitamin C Serum with Oryzanol, Bakuchiol Oil Blend.
+
+### Dullness
+Best products: Daily Brightening Serum, Vitamin C Serum with Oryzanol,
+Glycolic Exfoliating Toner, [YOU SUPPLY — complete list]
+
+### Tired eyes and puffiness
+Best products: Yerba Mate Wake Up Eye Gel, Caffeine Energizing Hydrogel Eye Patches.
+
+### Eczema and sensitive skin
+Best products: [YOU SUPPLY — complete list with sensitivity notes]
+
+---
+
+## Key active ingredients
+
+- Niacinamide (vitamin B3): Brightening, pore-minimizing, tone-evening. Used at 5%
+  and 10% across the range.
+- Tranexamic acid: Clinically studied for hyperpigmentation and dark spots. Used at
+  3% in Discoloration Correcting Serum.
+- Hyaluronic acid: Draws moisture into skin. Used in multiple products for hydration.
+- Glycolic acid: AHA chemical exfoliant for smoother, brighter skin.
+- Retinol: Clinically studied for fine lines and wrinkle reduction. Available in
+  beginner and advanced concentrations.
+- Salicylic acid: BHA for acne treatment and pore-clearing.
+- Azelaic acid: Reduces redness, gently exfoliates, targets dark spots and breakouts.
+  Used at 10%.
+- Bakuchiol: Plant-based retinol alternative. Firming without the irritation of
+  retinoids. Suitable for sensitive skin.
+- Peptides: Support skin firmness and target fine lines.
+- Caffeine: Depuffs and energizes the eye area.
+- Mandelic acid: Gentle AHA. Suitable for sensitive and dark skin tones.
+- Vitamin C (ascorbyl glucoside + ethyl ascorbic acid): Antioxidant, brightening,
+  anti-aging.
+
+---
+
+## Frequently asked questions
+
+Q: Are Good Molecules products safe for sensitive skin?
+A: Yes. All products are fragrance-free and formulated without known sensitizers like
+PEGs and mineral oils. Products with stronger actives (glycolic acid, retinol) note
+their strength on-label so users can choose the right concentration for their
+tolerance. The 5% Niacinamide Serum with Ectoin and the Mandelic Acid Serum are
+specifically formulated for sensitive skin.
+
+Q: Are Good Molecules products vegan and cruelty-free?
+A: Yes. All products are vegan and Leaping Bunny certified cruelty-free. No animal
+testing at any stage of production or development.
+
+Q: What is the difference between the 5% and 10% niacinamide serums?
+A: The 10% Niacinamide Serum is the original formula for pore-minimizing and tone
+evening. The 5% Niacinamide Serum with Ectoin is a gentler formula that adds Ectoin
+for extra hydration, suitable for those who find 10% niacinamide irritating or for
+skin that needs more moisture alongside pore and texture support.
+
+Q: How do I get free shipping?
+A: Orders over $35 ship free via USPS standard (3-5 business days). Orders over $100
+qualify for free FedEx Express expedited (2 business days).
+
+Q: Can I use the Discoloration Correcting Serum on my body?
+A: The Discoloration Correcting Serum is formulated for the face. For body use, the
+Discoloration Correcting Body Treatment and the Brightening & Dark Spots Bar are
+designed for the body and face.
+
+Q: Where else can I buy Good Molecules products?
+A: Good Molecules products are available directly at goodmolecules.com and through
+[YOU SUPPLY — list your retail partners].
+
+Q: Does Good Molecules ship internationally?
+A: Not directly. International customers can purchase through [YOU SUPPLY — list any
+international retail partners or note if none].
+
+---
+
+## Contact
+
+- Email: support@goodmolecules.com
+- Phone: 1-213-444-4663
+- Hours: Monday through Saturday, 7am to 4pm PT
+- Returns and order issues: [YOU SUPPLY — link to returns/contact page]
