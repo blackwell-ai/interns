@@ -38,7 +38,21 @@ def _client_id() -> str:
 
 
 def _client_secret() -> str:
-    """Read the OAuth client_secret from the macOS keychain (where gog stores it)."""
+    """Read the OAuth client_secret, preferring gog's credentials file.
+
+    gog writes both client_id and client_secret into credentials.json, so the
+    secret there is guaranteed to match the id we read in `_client_id`. The
+    keychain can hold a stale secret from an earlier client (Google then rejects
+    the pair with `invalid_client`), so it is only a fallback when the file omits
+    the secret.
+    """
+    try:
+        data = json.loads(_GOG_CREDS_PATH.read_text())
+        if secret := data.get("client_secret", ""):
+            return secret
+    except Exception:
+        pass
+
     result = subprocess.run(
         ["security", "find-generic-password", "-s", "gogcli", "-w"],
         capture_output=True, text=True, timeout=10,
@@ -46,7 +60,7 @@ def _client_secret() -> str:
     secret = result.stdout.strip()
     if result.returncode != 0 or not secret:
         raise RuntimeError(
-            "Could not read gog client_secret from keychain.\n"
+            "Could not read gog client_secret from credentials.json or keychain.\n"
             "Run: gog auth credentials ~/client_secret.json"
         )
     return secret

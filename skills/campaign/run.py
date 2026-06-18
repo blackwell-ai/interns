@@ -35,6 +35,7 @@ import argparse
 import asyncio
 import html as _html_module
 import json
+import math
 import os
 import re
 import subprocess
@@ -72,15 +73,75 @@ class _VariantTemplate(BaseModel):
     body: str
 
 
-def generate_domains(icp: str, count: int = 30) -> list[str]:
-    """Ask Claude for real company domains that match the ICP."""
+# Each claude -p call reliably returns ~50 good domains; past that it repeats
+# household names. A large pool is built from several calls, each nudged toward a
+# different slice of the market to cut overlap.
+#
+# Measured: concurrent claude -p calls THROTTLE each other (the Claude
+# subscription serializes inference) — 2 at once took 35s vs 13s for one. So
+# domain generation is capped at 1 in flight. The speedup instead comes from
+# running every segment as one job (not six separate invocations) and letting
+# Hunter enrichment, which is real parallel HTTP, overlap the serial LLM calls.
+_DOMAIN_CHUNK = 50
+_LLM_CONCURRENCY = 1  # concurrent claude -p HURTS; serialize, overlap enrichment
+_DOMAIN_VARIATIONS = [
+    "",
+    "Focus on smaller and mid-market companies, not just the biggest brands.",
+    "Focus on newer or niche companies founded in the last few years.",
+    "Avoid the most obvious household names; include lesser-known players.",
+    "Include relevant companies based outside the United States.",
+    "Focus on specialized or sub-category players within this space.",
+]
+
+
+def generate_domains(icp: str, count: int = 30, variation: str = "") -> list[str]:
+    """One claude -p call for real company domains matching the ICP.
+
+    `variation` is an optional nudge appended to the prompt so that fanning out
+    several calls returns different companies instead of the same top brands.
+    """
+    extra = f"\n{variation}" if variation else ""
     result = llm_mod.parse(
         f"List {count} real company website domains (e.g. 'glossier.com') that fit this "
         f"ideal customer profile: {icp}\n\n"
-        "Return actual, real companies. Prefer DTC/e-commerce. No www prefix, no paths.",
+        "Return actual, real companies. Prefer DTC/e-commerce. No www prefix, no paths."
+        + extra,
         _DomainList,
     )
     return [d.strip().lower() for d in result.domains if "." in d.strip()]
+
+
+async def generate_domain_pool(
+    icp: str, count: int, llm_sem: asyncio.Semaphore | None = None
+) -> list[str]:
+    """Build a deduped pool of ~`count` domains via concurrent claude -p calls.
+
+    The blocking subprocess runs off the event loop (asyncio.to_thread) so the
+    calls overlap. `llm_sem` caps how many run at once across all segments.
+    """
+    if llm_sem is None:
+        llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
+    n_calls = max(1, math.ceil(count / _DOMAIN_CHUNK))
+
+    async def one(i: int) -> list[str]:
+        async with llm_sem:
+            try:
+                return await asyncio.to_thread(
+                    generate_domains, icp, _DOMAIN_CHUNK,
+                    _DOMAIN_VARIATIONS[i % len(_DOMAIN_VARIATIONS)],
+                )
+            except Exception as e:
+                events.emit("campaign.domaingen_error", level="warn", reason=str(e)[:120])
+                return []
+
+    seen: set[str] = set()
+    pool: list[str] = []
+    for chunk in await asyncio.gather(*(one(i) for i in range(n_calls))):
+        for d in chunk:
+            if d not in seen:
+                seen.add(d)
+                pool.append(d)
+    return pool
 
 
 def generate_variant_b(subject_a: str, body_a: str) -> tuple[str, str]:
@@ -121,13 +182,19 @@ async def _enrich_batch(
     provider: str,
     key: str,
     min_score: int,
+    sem: asyncio.Semaphore | None = None,
 ) -> list[models.Contact]:
-    """Enrich one batch of domains — returns contacts that passed the score filter."""
+    """Enrich one batch of domains — returns contacts that passed the score filter.
+
+    `sem` caps concurrent provider calls. Pass a shared one so that several
+    segments enriching at the same time still respect a single global rate cap.
+    """
     domain_fn = (
         findemail_cli._apollo_domain if provider == "apollo" else findemail_cli._hunter_domain
     )
     contacts: list[models.Contact] = []
-    sem = asyncio.Semaphore(3)
+    if sem is None:
+        sem = asyncio.Semaphore(3)
 
     async def one(domain: str) -> None:
         async with sem:
@@ -181,11 +248,13 @@ async def source_contacts_incremental(
     limit: int | None,
     min_score: int = 80,
     batch_size: int = 20,
+    hunter_sem: asyncio.Semaphore | None = None,
 ) -> list[models.Contact]:
     """Enrich domains in batches, ledger-checking each batch before continuing.
 
     Stops as soon as `limit` new contacts are accumulated. This avoids spending
     enrichment credits on contacts that will be discarded after ledger dedup.
+    `hunter_sem` is a shared provider-call cap when several segments run at once.
     """
     accumulated: list[models.Contact] = []
     ldg = ledger.Ledger(session_token)
@@ -193,7 +262,7 @@ async def source_contacts_incremental(
     async with httpx.AsyncClient(timeout=60) as client:
         for i in range(0, len(domains), batch_size):
             batch = domains[i : i + batch_size]
-            raw = await _enrich_batch(client, batch, provider, key, min_score)
+            raw = await _enrich_batch(client, batch, provider, key, min_score, hunter_sem)
 
             # Ledger-check this batch concurrently.
             sem = asyncio.Semaphore(10)
@@ -280,34 +349,49 @@ async def _source_from_mix(
     limit: int,
     from_name: str = "",
     min_score: int = 80,
+    enrich_concurrency: int = 8,
 ) -> list[models.OutboxRow]:
-    """Source and compose outbox rows across segments per icp_mix.toml."""
+    """Source and compose outbox rows across segments per icp_mix.toml.
+
+    All segments are sourced concurrently. Two shared semaphores keep the
+    fan-out from overwhelming the providers: `llm_sem` caps concurrent domain
+    generation (claude -p subprocesses) and `hunter_sem` caps concurrent
+    enrichment calls, both globally across every segment.
+    """
     segments = _load_mix()
     quotas = _mix_quotas(limit, segments)
-    all_rows: list[models.OutboxRow] = []
+    llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
+    hunter_sem = asyncio.Semaphore(enrich_concurrency)
 
-    for i, (seg, quota) in enumerate(quotas):
-        if i > 0:
-            await asyncio.sleep(2)  # avoid Hunter/Apollo per-minute rate limits
+    async def source_segment(seg: dict, quota: int) -> list[models.OutboxRow]:
         label = seg["label"]
         icp = seg["icp"]
         template_path = _ICP_MIX_PATH.parent / seg["template_a"]
         segment_phrase = seg.get("segment_phrase", label.lower())
 
-        print(f"\n[{label}] target: {quota}")
-        domain_count = max(30, quota * 3)
-        domains = generate_domains(icp, count=domain_count)
-        print(f"  {len(domains)} domains generated")
+        print(f"[{label}] target {quota}: generating domains...")
+        domains = await generate_domain_pool(icp, max(30, quota * 3), llm_sem)
+        print(f"[{label}] {len(domains)} domains; enriching...")
         contacts = await source_contacts_incremental(
             domains, provider, key, session_token,
-            limit=quota, min_score=min_score,
+            limit=quota, min_score=min_score, hunter_sem=hunter_sem,
         )
-        print(f"  {len(contacts)} contacts sourced")
+        print(f"[{label}] sourced {len(contacts)} contacts")
         subject_t, body_t = load_template(str(template_path))
-        rows = compose_outbox(contacts, subject_t, body_t, from_name,
+        return compose_outbox(contacts, subject_t, body_t, from_name,
                               extra_values={"segment_phrase": segment_phrase})
-        all_rows.extend(rows)
 
+    seg_rows = await asyncio.gather(*(source_segment(s, q) for s, q in quotas))
+
+    # Concurrent segments can't see each other's not-yet-sent picks in the
+    # ledger, so dedup by email across segments before sending.
+    seen: set[str] = set()
+    all_rows: list[models.OutboxRow] = []
+    for rows in seg_rows:
+        for r in rows:
+            if r.email not in seen:
+                seen.add(r.email)
+                all_rows.append(r)
     return all_rows
 
 
@@ -369,6 +453,8 @@ async def _send_batch(
     run_id: str,
     run_dir: str,
     dry_run: bool,
+    cc: str = "",
+    concurrency: int = 8,
 ) -> dict:
     if dry_run:
         return {"sent": 0, "dry_run": len(outbox), "skipped_ledger": 0, "suppressed": 0,
@@ -386,8 +472,8 @@ async def _send_batch(
             from_=from_,
             from_name=from_name,
             reply_to="",
-            cc="",
-            concurrency=5,
+            cc=cc,
+            concurrency=concurrency,
             allow_recontact=False,
             sent_already=set(),
         )
@@ -596,6 +682,10 @@ def main() -> None:
                         help="Gmail address to send from")
     parser.add_argument("--from-name", default="",
                         help="Display name in the From header")
+    parser.add_argument("--cc", default="",
+                        help="CC list (comma-separated) added to every send — the co-founder CC convention")
+    parser.add_argument("--concurrency", type=int, default=8,
+                        help="Concurrent Gmail sends and enrichment calls (default 8)")
     parser.add_argument("--experiment", action="store_true",
                         help="A/B mode: split 50/50, Claude writes variant B")
     parser.add_argument("--limit", type=int, default=0,
@@ -657,7 +747,7 @@ def main() -> None:
         # in batches of 20, stop as soon as --limit new contacts are found.
         domain_count = max(60, (args.limit or 30) * 3)
         print(f"Generating domains for: {args.icp[:80]}")
-        domains = generate_domains(args.icp, count=domain_count)
+        domains = asyncio.run(generate_domain_pool(args.icp, domain_count))
         print(f"  {len(domains)} domains generated")
         key = auth.get_token(args.provider)
         print(f"Enriching via {args.provider} (incremental, stop at limit)...")
@@ -665,6 +755,7 @@ def main() -> None:
             source_contacts_incremental(
                 domains, args.provider, key, session_token,
                 limit=args.limit, min_score=args.min_score,
+                hunter_sem=asyncio.Semaphore(args.concurrency),
             )
         )
     else:
@@ -677,6 +768,7 @@ def main() -> None:
             _source_from_mix(
                 args.provider, key, session_token,
                 limit=limit, from_name=args.from_name, min_score=args.min_score,
+                enrich_concurrency=args.concurrency,
             )
         )
         outbox_b = []
@@ -693,7 +785,8 @@ def main() -> None:
             print()
         sent_at = datetime.now(UTC).isoformat()
         counts_a = asyncio.run(
-            _send_batch(outbox_a, args.from_, args.from_name, run_id, run_dir, args.dry_run)
+            _send_batch(outbox_a, args.from_, args.from_name, run_id, run_dir,
+                        args.dry_run, args.cc, args.concurrency)
         )
         counts_b = {}
         total_sent = counts_a.get("sent", 0)
@@ -741,11 +834,13 @@ def main() -> None:
     # 5. Send -------------------------------------------------------------
     sent_at = datetime.now(UTC).isoformat()
     counts_a = asyncio.run(
-        _send_batch(outbox_a, args.from_, args.from_name, run_id, run_dir, args.dry_run)
+        _send_batch(outbox_a, args.from_, args.from_name, run_id, run_dir,
+                    args.dry_run, args.cc, args.concurrency)
     )
     counts_b = (
         asyncio.run(
-            _send_batch(outbox_b, args.from_, args.from_name, run_id, run_dir, args.dry_run)
+            _send_batch(outbox_b, args.from_, args.from_name, run_id, run_dir,
+                        args.dry_run, args.cc, args.concurrency)
         )
         if outbox_b else {}
     )

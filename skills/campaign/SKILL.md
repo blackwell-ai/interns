@@ -50,7 +50,29 @@ skills/campaign/cron.sh --install
 Runs at 23:00 daily — scans all logs in `~/.blackwell/campaigns/` and syncs
 reply counts to Notion. Cron output logs to `runs/cron-campaign.log`.
 
-## Quick start
+## Fastest path: the /campaign command
+
+To send N emails across the full ICP mix with no questions asked, type:
+
+```
+/campaign 1000
+```
+
+That runs `skills/campaign/send.sh`, which distributes N across the segments in
+`icp_mix.toml` (each with its own template), CCs the cofounders who are not the
+sender (see `FOUNDERS.md`), and sends. Default sender is Samarjit; pass a sender
+key to switch: `/campaign 1000 armaan`. The script loads `credentials/.env` for
+you. You must be signed in first (`toolbox auth login`); `run.py` preflight will
+say so if not.
+
+Run the script directly with the same effect:
+
+```bash
+bash skills/campaign/send.sh 1000          # 1000 emails, Samarjit, per icp_mix.toml
+bash skills/campaign/send.sh 1000 ethan    # same, sent from Ethan
+```
+
+## Quick start (single ICP or custom)
 
 ```bash
 # Dry run first — see who would receive it
@@ -114,7 +136,9 @@ reply_scan.py
 | `gog_auth.py` | Gets Gmail access token from gog keyring |
 | `notion_sync.py` | Creates/updates Notion Campaign Metrics rows |
 | `cron.sh` | Daily reply scan cron |
+| `send.sh` | Non-interactive entrypoint behind `/campaign N` — mix send, auto sender + CC |
 | `template_a.md` | Default email template — frontmatter `subject:` + body with `{{slots}}` |
+| `FOUNDERS.md` | Cofounder roster and the per-sender `--cc` convention |
 
 Campaign logs live at `~/.blackwell/campaigns/campaign_<id>.jsonl` — one per
 run, written by `run.py`, read by `reply_scan.py` and `reply_report.py`.
@@ -142,12 +166,37 @@ Replied, Reply Rate (formula). Updated automatically on each run and scan.
 different angle or structure. Reply rates per variant are tracked in
 Supabase `replies.variant` and visible in `reply_report.py`.
 
-## Scaling
+## Scaling and where the time goes
 
-Sends: 5 concurrent Gmail API calls — ~200 emails in ~40 seconds.
-Inbox scan: batched `from:` queries (50 per query) so Gmail filters
-server-side regardless of inbox size.
+The send itself is fast and was never the bottleneck: Gmail sends run
+concurrently (`--concurrency`, default 8, the `send.sh` path uses 12), so a
+batch of contacts goes out in seconds. Inbox scan uses batched `from:` queries
+(50 per query) so Gmail filters server-side regardless of inbox size.
 Daily limit: 500 sends/day on free Gmail, 2000/day on Google Workspace.
+
+The real cost is sourcing, in two parts:
+
+- Domain generation (`claude -p`) is the single slowest step, ~15 to 30s per
+  call, and it is a serialized resource. Measured: two concurrent `claude -p`
+  calls took 35s versus 13s for one, because the Claude subscription throttles
+  concurrent inference. So domain generation runs one call at a time
+  (`_LLM_CONCURRENCY = 1`). Do not try to parallelize it; it gets slower.
+- Hunter enrichment is real parallel HTTP and is genuinely concurrent, capped
+  globally by `--concurrency` so several segments share one rate budget.
+
+How the mix mode stays fast despite serial LLM calls: all segments run as one
+job and overlap. While one segment's domains are being enriched over the network,
+the next segment's `claude -p` call runs. So wall-clock is roughly the larger of
+(total enrichment time) and (total LLM time), not their sum. Running six separate
+`run.py` invocations instead, as an early version did, pays the preflight, auth,
+and process-startup cost six times and serializes everything; that is what made
+the first 60-email send take 10 to 15 minutes. Use `/campaign N` (one job) for
+multi-ICP sends.
+
+Hard ceiling for large N: Hunter credits and domain uniqueness. The LLM starts
+repeating well-known brands past a few hundred domains per ICP, and every
+enriched domain spends a Hunter credit. For N in the thousands, expect Hunter
+credits, not send speed, to be the limit.
 
 ## Running tests
 
@@ -162,3 +211,9 @@ All tests run without real API keys (HTTP calls mocked with respx).
 
 - 2026-06-18: created. gog auth, Hunter/Apollo enrichment, Notion sync,
   A/B experiments, daily cron, concurrent send via Gmail REST API.
+- 2026-06-18: added `--cc` (cofounder CC convention), `--concurrency`, and the
+  `/campaign N` command (`send.sh`) for non-interactive mix sends. Parallelized
+  mix sourcing (segments concurrent, enrichment overlaps serial LLM domain
+  generation) after measuring that concurrent `claude -p` throttles. Fixed
+  `gog_auth` to read the client secret from `credentials.json` (the keychain
+  copy was stale and caused `invalid_client`).
