@@ -45,23 +45,32 @@ _SESSION_FILE = Path.home() / ".blackwell" / "session.json"
 
 
 def _save_session(session: dict) -> None:
-    import keyring
-
-    keyring.set_password(config.KEYRING_SERVICE, _KEYRING_USER, json.dumps(session))
+    blob = json.dumps(session)
+    # Write the file first so the session persists even when no OS keyring backend
+    # is available (headless Linux: the `fail` backend raises on set_password).
     _SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _SESSION_FILE.write_text(json.dumps(session))
+    _SESSION_FILE.write_text(blob)
     _SESSION_FILE.chmod(0o600)
+    try:
+        import keyring
+
+        keyring.set_password(config.KEYRING_SERVICE, _KEYRING_USER, blob)
+    except Exception:
+        pass  # no keyring backend; the file is the source of truth
 
 
 def _load_session() -> dict | None:
     if tok := os.environ.get("TOOLBOX_SESSION_TOKEN"):
         return {"access_token": tok, "refresh_token": ""}
-    import keyring
+    try:
+        import keyring
 
-    raw = keyring.get_password(config.KEYRING_SERVICE, _KEYRING_USER)
-    if raw:
-        return json.loads(raw)
-    # Fallback for headless/cron contexts that can't read the macOS keychain.
+        raw = keyring.get_password(config.KEYRING_SERVICE, _KEYRING_USER)
+        if raw:
+            return json.loads(raw)
+    except Exception:
+        pass  # no keyring backend (headless Linux); fall through to the file
+    # Fallback for headless/cron contexts that can't read an OS keychain.
     if _SESSION_FILE.exists():
         try:
             return json.loads(_SESSION_FILE.read_text())
