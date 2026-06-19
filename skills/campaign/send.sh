@@ -16,7 +16,7 @@ SENDER_KEY="${2:-samarjit}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
-# Load shared credentials: SUPABASE_*, TOOLBOX_TOKEN_HUNTER, NOTION_TOKEN.
+# Load shared credentials: SUPABASE_*, TOOLBOX_TOKEN_APOLLO, NOTION_TOKEN.
 # run.py does not auto-load .env, so the values must be in the environment.
 set -a; source credentials/.env; set +a
 
@@ -58,7 +58,7 @@ echo "Distribution: per icp_mix.toml"
 echo
 
 exec toolbox/.venv/bin/python skills/campaign/run.py \
-  --provider hunter \
+  --provider apollo \
   --from "$FROM" --from-name "$NAME" \
   --cc "$CC" \
   --limit "$N" \

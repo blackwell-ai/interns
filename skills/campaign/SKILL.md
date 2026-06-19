@@ -1,9 +1,9 @@
 # campaign
 
 **Purpose:** end-to-end cold outreach pipeline. Describe your ICP, find
-decision-maker contacts via Hunter, compose personalised emails, send them,
+decision-maker contacts via Apollo, compose personalised emails, send them,
 track replies in Supabase, and sync reply counts to a shared Notion dashboard.
-Supports A/B experiment mode and Clay/Origami CSV imports.
+Supports A/B experiment mode and pre-exported CSV imports (`--leads`).
 
 ## Setup (one time per machine)
 
@@ -25,7 +25,7 @@ keys ever go in `.env`.
 Copy `credentials/.env.example` to `credentials/.env` and fill in:
 
 ```
-TOOLBOX_TOKEN_HUNTER=<your hunter.io API key>   # get from hunter.io dashboard
+TOOLBOX_TOKEN_APOLLO=<your Apollo API key>   # get from your Apollo account
 
 # shared — get from a teammate out-of-band
 SUPABASE_URL=https://lvzvmqeynkwywodcqxkv.supabase.co
@@ -78,7 +78,7 @@ bash skills/campaign/send.sh 1000 ethan    # same, sent from Ethan
 # Dry run first — see who would receive it
 python3 skills/campaign/run.py \
   --icp "DTC home fitness brands" \
-  --provider hunter \
+  --provider apollo \
   --from you@gmail.com \
   --from-name "Your Name" \
   --limit 5 \
@@ -87,7 +87,7 @@ python3 skills/campaign/run.py \
 # Send for real
 python3 skills/campaign/run.py \
   --icp "DTC home fitness brands" \
-  --provider hunter \
+  --provider apollo \
   --from you@gmail.com \
   --from-name "Your Name" \
   --limit 5
@@ -106,8 +106,8 @@ python3 skills/campaign/reply_report.py \
 ```
 run.py
   1. Generate target domains from ICP description via Claude
-  2. Enrich domains via Hunter or Apollo to find decision-maker contacts
-     OR load a pre-exported Clay/Origami CSV with --leads
+  2. Enrich domains via Apollo to find decision-maker contacts
+     OR load a pre-exported leads CSV with --leads
   3. Render template_a.md into per-contact emails
      (--experiment: Claude writes variant B; leads split 50/50)
   4. Check Supabase ledger — skip anyone already contacted
@@ -151,14 +151,15 @@ https://app.notion.com/p/00b1d4354b7f475faeca57a13d426204
 Columns: Campaign, Sender, Date, Provider, Template, ICP, Experiment, Sent,
 Replied, Reply Rate (formula). Updated automatically on each run and scan.
 
-## Providers
+## Lead source
 
-| Provider | Flag | Notes |
-|----------|------|-------|
-| Hunter | `--provider hunter` | Requires `TOOLBOX_TOKEN_HUNTER` |
-| Apollo | `--provider apollo` | Requires paid Apollo plan |
-| Clay | `--provider clay --leads export.csv` | Export from Clay UI first |
-| Origami | `--provider origami --leads export.csv` | Same as Clay |
+Apollo is the only outbound tool (see
+`brain/decisions/2026-06-18-apollo-only-outbound.md`).
+
+| Source | Flag | Notes |
+|--------|------|-------|
+| Apollo | `--provider apollo` (default) | Requires `TOOLBOX_TOKEN_APOLLO` |
+| CSV import | `--leads export.csv` | Pre-exported leads CSV with an email column |
 
 ## A/B experiments
 
@@ -181,7 +182,7 @@ The real cost is sourcing, in two parts:
   calls took 35s versus 13s for one, because the Claude subscription throttles
   concurrent inference. So domain generation runs one call at a time
   (`_LLM_CONCURRENCY = 1`). Do not try to parallelize it; it gets slower.
-- Hunter enrichment is real parallel HTTP and is genuinely concurrent, capped
+- Apollo enrichment is real parallel HTTP and is genuinely concurrent, capped
   globally by `--concurrency` so several segments share one rate budget.
 
 How the mix mode stays fast despite serial LLM calls: all segments run as one
@@ -193,15 +194,15 @@ and process-startup cost six times and serializes everything; that is what made
 the first 60-email send take 10 to 15 minutes. Use `/campaign N` (one job) for
 multi-ICP sends.
 
-Hard ceiling for large N: Hunter credits and domain uniqueness. The LLM starts
+Hard ceiling for large N: Apollo credits and domain uniqueness. The LLM starts
 repeating well-known brands past a few hundred domains per ICP, and every
-enriched domain spends a Hunter credit. For N in the thousands, expect Hunter
+enriched domain spends an Apollo credit. For N in the thousands, expect Apollo
 credits, not send speed, to be the limit.
 
 ## Running tests
 
 ```bash
-TOOLBOX_TOKEN_HUNTER=fake TOOLBOX_TOKEN_APOLLO=fake TOOLBOX_SESSION_TOKEN=fake \
+TOOLBOX_TOKEN_APOLLO=fake TOOLBOX_SESSION_TOKEN=fake \
   toolbox/.venv/bin/pytest skills/campaign/tests/ -v
 ```
 
@@ -209,7 +210,7 @@ All tests run without real API keys (HTTP calls mocked with respx).
 
 ## Changelog
 
-- 2026-06-18: created. gog auth, Hunter/Apollo enrichment, Notion sync,
+- 2026-06-18: created. gog auth, Apollo enrichment, Notion sync,
   A/B experiments, daily cron, concurrent send via Gmail REST API.
 - 2026-06-18: added `--cc` (cofounder CC convention), `--concurrency`, and the
   `/campaign N` command (`send.sh`) for non-interactive mix sends. Parallelized
@@ -217,3 +218,6 @@ All tests run without real API keys (HTTP calls mocked with respx).
   generation) after measuring that concurrent `claude -p` throttles. Fixed
   `gog_auth` to read the client secret from `credentials.json` (the keychain
   copy was stale and caused `invalid_client`).
+- 2026-06-18: Apollo-only. Dropped the Hunter/Clay/Origami providers (see
+  brain/decisions/2026-06-18-apollo-only-outbound.md); `--provider` is apollo,
+  with `--leads` for CSV import.

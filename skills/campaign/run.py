@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Campaign orchestrator: ICP description -> source leads -> enrich -> compose -> send.
 
-Providers:
-  hunter / apollo   API-based. Claude generates target domains from your ICP,
-                    then the provider finds the decision-maker email per domain.
-  clay / origami    CSV export. Export leads from the tool's UI, pass with --leads.
-                    We compose and send from that list directly.
+Lead sources:
+  apollo   API-based. Claude generates target domains from your ICP, then
+           Apollo finds the decision-maker email per domain.
+  --leads  CSV import. Pass a pre-exported leads CSV (with an email column) and
+           we compose and send from that list directly.
 
 Experiment mode (--experiment):
   Leads are split 50/50. Claude generates a meaningfully different variant B.
@@ -14,17 +14,16 @@ Experiment mode (--experiment):
 Usage:
   python3 skills/campaign/run.py \\
     --icp "DTC health and wellness brands" \\
-    --provider hunter \\
+    --provider apollo \\
     --from shamit.dsouza@gmail.com \\
     --from-name "Shamit" \\
     --experiment \\
     --limit 20 \\
     --dry-run
 
-  # Clay/Origami: export CSV first, then:
+  # Import a pre-exported leads CSV instead of API sourcing:
   python3 skills/campaign/run.py \\
     --leads my_export.csv \\
-    --provider clay \\
     --from shamit.dsouza@gmail.com \\
     --from-name "Shamit"
 """
@@ -81,7 +80,7 @@ class _VariantTemplate(BaseModel):
 # subscription serializes inference) — 2 at once took 35s vs 13s for one. So
 # domain generation is capped at 1 in flight. The speedup instead comes from
 # running every segment as one job (not six separate invocations) and letting
-# Hunter enrichment, which is real parallel HTTP, overlap the serial LLM calls.
+# Apollo enrichment, which is real parallel HTTP, overlap the serial LLM calls.
 _DOMAIN_CHUNK = 50
 _LLM_CONCURRENCY = 1  # concurrent claude -p HURTS; serialize, overlap enrichment
 _DOMAIN_VARIATIONS = [
@@ -161,12 +160,12 @@ def generate_variant_b(subject_a: str, body_a: str) -> tuple[str, str]:
 # ---- Lead sourcing / enrichment ----------------------------------------
 
 def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
-    """Load a pre-exported Clay/Origami CSV into Contact objects."""
+    """Load a pre-exported leads CSV into Contact objects."""
     rows = io.read_csv(path, models.Row)
     contacts: list[models.Contact] = []
     for r in rows:
         d = r.model_dump()
-        # Clay exports sometimes put the company name in 'company' or 'brand'
+        # Exports sometimes put the company name in 'company' or 'brand'
         if not d.get("company") and d.get("brand"):
             d["company"] = d["brand"]
         try:
@@ -189,9 +188,7 @@ async def _enrich_batch(
     `sem` caps concurrent provider calls. Pass a shared one so that several
     segments enriching at the same time still respect a single global rate cap.
     """
-    domain_fn = (
-        findemail_cli._apollo_domain if provider == "apollo" else findemail_cli._hunter_domain
-    )
+    domain_fn = findemail_cli._apollo_domain
     contacts: list[models.Contact] = []
     if sem is None:
         sem = asyncio.Semaphore(3)
@@ -248,13 +245,13 @@ async def source_contacts_incremental(
     limit: int | None,
     min_score: int = 80,
     batch_size: int = 20,
-    hunter_sem: asyncio.Semaphore | None = None,
+    enrich_sem: asyncio.Semaphore | None = None,
 ) -> list[models.Contact]:
     """Enrich domains in batches, ledger-checking each batch before continuing.
 
     Stops as soon as `limit` new contacts are accumulated. This avoids spending
     enrichment credits on contacts that will be discarded after ledger dedup.
-    `hunter_sem` is a shared provider-call cap when several segments run at once.
+    `enrich_sem` is a shared provider-call cap when several segments run at once.
     """
     accumulated: list[models.Contact] = []
     ldg = ledger.Ledger(session_token)
@@ -262,7 +259,7 @@ async def source_contacts_incremental(
     async with httpx.AsyncClient(timeout=60) as client:
         for i in range(0, len(domains), batch_size):
             batch = domains[i : i + batch_size]
-            raw = await _enrich_batch(client, batch, provider, key, min_score, hunter_sem)
+            raw = await _enrich_batch(client, batch, provider, key, min_score, enrich_sem)
 
             # Ledger-check this batch concurrently.
             sem = asyncio.Semaphore(10)
@@ -355,13 +352,13 @@ async def _source_from_mix(
 
     All segments are sourced concurrently. Two shared semaphores keep the
     fan-out from overwhelming the providers: `llm_sem` caps concurrent domain
-    generation (claude -p subprocesses) and `hunter_sem` caps concurrent
+    generation (claude -p subprocesses) and `enrich_sem` caps concurrent
     enrichment calls, both globally across every segment.
     """
     segments = _load_mix()
     quotas = _mix_quotas(limit, segments)
     llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
-    hunter_sem = asyncio.Semaphore(enrich_concurrency)
+    enrich_sem = asyncio.Semaphore(enrich_concurrency)
 
     async def source_segment(seg: dict, quota: int) -> list[models.OutboxRow]:
         label = seg["label"]
@@ -374,7 +371,7 @@ async def _source_from_mix(
         print(f"[{label}] {len(domains)} domains; enriching...")
         contacts = await source_contacts_incremental(
             domains, provider, key, session_token,
-            limit=quota, min_score=min_score, hunter_sem=hunter_sem,
+            limit=quota, min_score=min_score, enrich_sem=enrich_sem,
         )
         print(f"[{label}] sourced {len(contacts)} contacts")
         subject_t, body_t = load_template(str(template_path))
@@ -591,7 +588,7 @@ def _finalize(
 
 # ---- Preflight ---------------------------------------------------------
 
-def _preflight(from_: str, provider: str) -> None:
+def _preflight(from_: str, provider: str, skip_key_check: bool = False) -> None:
     """Validate all credentials before spending any API credits.
 
     Exits with a clear message on the first failure so the user knows
@@ -605,8 +602,8 @@ def _preflight(from_: str, provider: str) -> None:
     except Exception as e:
         errors.append(f"Supabase session invalid: {e}\n  Fix: toolbox auth login")
 
-    # 2. Provider key
-    if provider not in ("clay", "origami"):
+    # 2. Provider key (skipped when importing a pre-exported leads CSV)
+    if not skip_key_check:
         try:
             key = auth.get_token(provider)
             if not key:
@@ -668,11 +665,11 @@ def main() -> None:
     )
     parser.add_argument("--icp", default="",
                         help="ICP description: Claude generates target domains from this")
-    parser.add_argument("--provider", default="hunter",
-                        choices=["hunter", "apollo", "clay", "origami"],
-                        help="Lead source (clay/origami require --leads CSV)")
+    parser.add_argument("--provider", default="apollo",
+                        choices=["apollo"],
+                        help="Lead source (Apollo only; use --leads to import a CSV)")
     parser.add_argument("--leads", default="",
-                        help="Pre-exported leads CSV from Clay or Origami (has email column)")
+                        help="Pre-exported leads CSV (has email column); skips API sourcing")
     parser.add_argument("--domains", default="",
                         help="Pre-built domains CSV (skips ICP domain generation)")
     parser.add_argument("--template",
@@ -691,15 +688,13 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=0,
                         help="Max contacts to send to (0 = no cap)")
     parser.add_argument("--min-score", type=int, default=80,
-                        help="Minimum Hunter/Apollo email confidence (0-100)")
+                        help="Minimum Apollo email confidence (0-100)")
     parser.add_argument("--log", default="",
                         help="Campaign log path for reply tracking (default: /tmp/campaign_<id>.jsonl)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be sent without actually sending")
     args = parser.parse_args()
 
-    if args.provider in ("clay", "origami") and not args.leads:
-        parser.error(f"--provider {args.provider} requires --leads <exported_csv>")
     if not args.icp and not args.leads and not args.domains:
         if not _ICP_MIX_PATH.exists():
             parser.error(
@@ -707,7 +702,7 @@ def main() -> None:
                 f"(or add {_ICP_MIX_PATH} to use the default ICP mix)"
             )
 
-    _preflight(args.from_, args.provider)
+    _preflight(args.from_, args.provider, skip_key_check=bool(args.leads))
 
     run_id = str(uuid.uuid4())
     run_dir = tempfile.mkdtemp(prefix=f"campaign_{run_id[:8]}_")
@@ -755,7 +750,7 @@ def main() -> None:
             source_contacts_incremental(
                 domains, args.provider, key, session_token,
                 limit=args.limit, min_score=args.min_score,
-                hunter_sem=asyncio.Semaphore(args.concurrency),
+                enrich_sem=asyncio.Semaphore(args.concurrency),
             )
         )
     else:
