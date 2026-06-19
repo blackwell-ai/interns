@@ -347,6 +347,30 @@ def _mix_quotas(limit: int, segments: list[dict]) -> list[tuple[dict, int]]:
     return [(s, q) for s, q in quotas if q > 0]
 
 
+_TARGET_DOMAINS_PATH = Path(__file__).parent / "target_domains.csv"
+
+
+def _load_target_domains() -> dict[str, list[str]]:
+    """segment label -> curated target domains (from target_domains.csv, if present).
+
+    Replaces LLM domain generation with a researched, ICP-filtered pool per
+    segment (see brain/research/2026-06-19-icp-targeted-domains.md). Falls back to
+    generation per-segment only when a segment has no curated domains.
+    """
+    import csv as _csv
+
+    out: dict[str, list[str]] = {}
+    if not _TARGET_DOMAINS_PATH.exists():
+        return out
+    with open(_TARGET_DOMAINS_PATH, newline="") as f:
+        for row in _csv.DictReader(f):
+            d = (row.get("domain") or "").strip().lower()
+            seg = (row.get("segment") or "").strip()
+            if d and seg:
+                out.setdefault(seg, []).append(d)
+    return out
+
+
 async def _source_from_mix(
     provider: str,
     key: str,
@@ -364,6 +388,7 @@ async def _source_from_mix(
     enrichment calls, both globally across every segment.
     """
     segments = _load_mix()
+    target_domains = _load_target_domains()
     quotas = _mix_quotas(limit, segments)
     llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
     enrich_sem = asyncio.Semaphore(enrich_concurrency)
@@ -374,9 +399,16 @@ async def _source_from_mix(
         template_path = _ICP_MIX_PATH.parent / seg["template_a"]
         segment_phrase = seg.get("segment_phrase", label.lower())
 
-        print(f"[{label}] target {quota}: generating domains...")
-        domains = await generate_domain_pool(icp, max(15, quota // 5), llm_sem)
-        print(f"[{label}] {len(domains)} domains; enriching...")
+        curated = list(target_domains.get(label, []))
+        if curated:
+            import random
+            random.shuffle(curated)  # mix categories within the segment
+            domains = curated
+            print(f"[{label}] {len(domains)} curated target domains; enriching toward {quota}...")
+        else:
+            print(f"[{label}] target {quota}: generating domains...")
+            domains = await generate_domain_pool(icp, max(15, quota // 5), llm_sem)
+            print(f"[{label}] {len(domains)} generated domains; enriching...")
         contacts = await source_contacts_incremental(
             domains, provider, key, session_token,
             limit=quota, min_score=min_score, enrich_sem=enrich_sem,
