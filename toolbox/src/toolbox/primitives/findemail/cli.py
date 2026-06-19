@@ -1,10 +1,11 @@
 """findemail primitive — find + verify a work email from a name + domain.
 
-Apollo-backed lead enrichment: name + domain → verified work email, or domain →
-decision-maker + email. Apollo is the only provider as of 2026-06-18 (see
-brain/decisions/2026-06-18-apollo-only-outbound.md); the Hunter and Findymail
-adapters were removed. A flow goes name+domain → verified email with one API key
-and zero manual steps.
+This is the *headless* equivalent of Clay's "find work email" enrichment:
+Clay itself has no API to drive its enrichment recipe (the waterfall lives in
+a Clay table configured in the UI), but the providers Clay waterfalls across
+— Hunter, Findymail, Enrow — expose clean REST APIs. This primitive calls one
+of them directly, so a flow can go name+domain → verified email with one API
+key and zero manual steps.
 
 Input  : candidates CSV with `domain` + (`first_name`,`last_name`) or `name`
          (and any passthrough columns, e.g. brand/title).
@@ -13,8 +14,9 @@ Output : contacts CSV (models.Contact) with the found email, plus
          confidence. Rows with no email found (or below --min-score) are
          dropped and logged — never guessed.
 
-Auth: core/auth.get_token("apollo") — Supabase connection or the
-TOOLBOX_TOKEN_APOLLO env override. No key in argv or the repo.
+Providers (--provider): `hunter` (default) | `findymail` | `apollo`.
+Auth: core/auth.get_token("hunter"|"findymail"|"apollo") — Supabase connection or the
+TOOLBOX_TOKEN_<PROVIDER> env override. No key in argv or the repo.
 """
 
 from __future__ import annotations
@@ -57,11 +59,47 @@ def _split_name(row: models.Row) -> tuple[str, str]:
     return "", ""
 
 
-# ---- provider adapter: returns (email, score_0_100, status) ------------------
+# ---- provider adapters: each returns (email, score_0_100, status) -----------
+
+
+@_transient
+async def _hunter(client: httpx.AsyncClient, key: str, domain: str, first: str, last: str):
+    r = await client.get(
+        "https://api.hunter.io/v2/email-finder",
+        params={"domain": domain, "first_name": first, "last_name": last, "api_key": key},
+    )
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()  # transient → retried
+    if r.status_code != 200:
+        return "", 0, f"http_{r.status_code}"
+    data = r.json().get("data") or {}
+    email = (data.get("email") or "").strip().lower()
+    score = int(data.get("score") or 0)
+    status = (data.get("verification") or {}).get("status") or "unknown"
+    return email, score, status
+
+
+@_transient
+async def _findymail(client: httpx.AsyncClient, key: str, domain: str, first: str, last: str):
+    name = f"{first} {last}".strip()
+    r = await client.post(
+        "https://app.findymail.com/api/search/name",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={"name": name, "domain": domain},
+    )
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()
+    if r.status_code != 200:
+        return "", 0, f"http_{r.status_code}"
+    contact = (r.json() or {}).get("contact") or {}
+    email = (contact.get("email") or "").strip().lower()
+    # Findymail only returns verified/deliverable emails → treat as high score.
+    return email, (90 if email else 0), "valid" if email else "not_found"
 
 
 @_transient
 async def _apollo(client: httpx.AsyncClient, key: str, domain: str, first: str, last: str):
+    name = f"{first} {last}".strip()
     r = await client.post(
         "https://api.apollo.io/v1/people/match",
         headers={"X-Api-Key": key, "Content-Type": "application/json"},
@@ -80,7 +118,7 @@ async def _apollo(client: httpx.AsyncClient, key: str, domain: str, first: str, 
     return email, score, status
 
 
-_PROVIDERS = {"apollo": _apollo}
+_PROVIDERS = {"hunter": _hunter, "findymail": _findymail, "apollo": _apollo}
 
 # Seniority/role ranking for picking the decision-maker out of a domain search.
 _ROLE_RANK = ("founder", "owner", "ceo", "chief executive", "president",
@@ -97,15 +135,51 @@ def _decision_maker_rank(position: str, seniority: str) -> int:
     return len(_ROLE_RANK) + 1
 
 
+@_transient
+async def _hunter_domain(client: httpx.AsyncClient, key: str, domain: str,
+                         limit: int = 10, executives_only: bool = True):
+    """Domain search → pick the most senior decision-maker + their email.
+
+    Credit cost = ceil(emails_returned / 10): limit=10 → 1 credit, limit=25 → 3.
+    Default (limit=10 + seniority=executive) is the efficient setting — 1 credit
+    and the returned set is execs only. `--thorough` (limit=25, no seniority
+    filter) sees more emails so a lower-confidence FOUNDER isn't cut off, at 3
+    credits. See harness/learnings/05.
+    """
+    params = {"domain": domain, "api_key": key, "limit": limit, "type": "personal"}
+    if executives_only:
+        params["seniority"] = "executive"
+    r = await client.get("https://api.hunter.io/v2/domain-search", params=params)
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()
+    if r.status_code != 200:
+        return None
+    emails = (r.json().get("data") or {}).get("emails") or []
+    candidates = [e for e in emails if (e.get("value") or "").strip()]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda e: (_decision_maker_rank(e.get("position", ""), e.get("seniority", "")),
+                                   -(e.get("confidence") or 0)))
+    best = candidates[0]
+    return {
+        "email": best["value"].strip().lower(),
+        "first_name": (best.get("first_name") or "").strip(),
+        "last_name": (best.get("last_name") or "").strip(),
+        "title": (best.get("position") or "").strip(),
+        "email_score": int(best.get("confidence") or 0),
+        "email_status": (best.get("verification") or {}).get("status") or "unknown",
+    }
+
+
 @app.command()
 def find(
     in_: str = typer.Option(..., "--in", help="candidates CSV: domain + first_name/last_name or name"),
     out: str = typer.Option(..., "--out", help="contacts CSV with email,email_score,email_status"),
-    provider: str = typer.Option("apollo", "--provider", help="apollo"),
-    concurrency: int = typer.Option(5, "--concurrency", help="keep low: Apollo rate-limits above ~5 (see harness/learnings/03)"),
-    min_score: int = typer.Option(80, "--min-score", help="drop emails below this confidence (0-100)"),
+    provider: str = typer.Option("hunter", "--provider", help="hunter | findymail | apollo"),
+    concurrency: int = typer.Option(5, "--concurrency", help="keep low: Hunter rate-limits above ~5 (see harness/learnings/03)"),
+    min_score: int = typer.Option(80, "--min-score", help="drop emails below this confidence (hunter score)"),
 ):
-    """name + domain -> verified work email (Apollo people match, headless)."""
+    """name + domain -> verified work email (Clay's find-work-email, headless)."""
     if provider not in _PROVIDERS:
         raise typer.BadParameter(f"unknown provider {provider!r}; one of {sorted(_PROVIDERS)}")
     rows = io.read_csv(in_, models.Row)
@@ -164,48 +238,72 @@ def _load_cache(path: str) -> dict[str, dict]:
     return cache
 
 
+# Apollo's email_status -> confidence score, shared by the people adapters.
+_APOLLO_SCORE = {"verified": 95, "likely to engage": 70, "guessed": 40}
+
+
 @_transient
 async def _apollo_domain(client: httpx.AsyncClient, key: str, domain: str,
                          limit: int = 10, executives_only: bool = True):
-    """Apollo people search (api_search) -> reveal the top decision-maker.
+    """Apollo domain search -> most senior decision-maker + their verified email.
 
-    The old mixed_people/search is deprecated for API callers. api_search returns
-    names + titles + ids but no emails (and obfuscated last names), so we reveal
-    the top-ranked candidate via people/match (one credit) for the work email.
+    Two calls, because Apollo's people search no longer returns email addresses
+    (the old `mixed_people/search` endpoint is deprecated for API callers and
+    returns HTTP 422):
+      1. `mixed_people/api_search`, filtered to the company with
+         `q_organization_domains_list`, returns the current people there. (Note
+         `organization_domains` is silently ignored by this endpoint — it must
+         be `q_organization_domains_list` or every domain returns the same
+         random people.)
+      2. `people/match` reveals and verifies the chosen decision-maker's email
+         (one Apollo enrichment credit). Only the single best candidate is
+         revealed, so cost stays at ~1 credit per domain, like Hunter's default.
+
+    The revealed email must be at the target domain; that drops stale records
+    (a person Apollo still lists who has since moved to another company).
     """
-    hdr = {"X-Api-Key": key, "Content-Type": "application/json"}
-    seniorities = (["owner", "founder", "c_suite", "partner", "vp", "head", "director"]
-                   if executives_only else [])
+    headers = {"X-Api-Key": key, "Content-Type": "application/json"}
+    titles = (["CEO", "Founder", "Co-Founder", "President", "Chief Executive",
+               "CMO", "Chief Marketing", "VP Marketing", "Head of Marketing"]
+              if executives_only else [])
     body: dict = {"q_organization_domains_list": [domain], "per_page": limit, "page": 1}
-    if seniorities:
-        body["person_seniorities"] = seniorities
-    r = await client.post("https://api.apollo.io/v1/mixed_people/api_search", headers=hdr, json=body)
+    if titles:
+        body["person_titles"] = titles
+    r = await client.post(
+        "https://api.apollo.io/v1/mixed_people/api_search", headers=headers, json=body,
+    )
     if r.status_code in (429,) or r.status_code >= 500:
         r.raise_for_status()
     if r.status_code != 200:
         return None
     people = (r.json() or {}).get("people") or []
-    if not people:
+    # Apollo flags who it holds an email for; rank those by decision-maker seniority.
+    candidates = [p for p in people if p.get("has_email") and p.get("id")]
+    if not candidates:
         return None
-    people.sort(key=lambda p: _decision_maker_rank(p.get("title", ""), ""))
-    top = people[0]
-    rr = await client.post("https://api.apollo.io/v1/people/match", headers=hdr,
-                           json={"id": top.get("id"), "reveal_personal_emails": False})
-    if rr.status_code in (429,) or rr.status_code >= 500:
-        rr.raise_for_status()
-    if rr.status_code != 200:
+    candidates.sort(key=lambda p: _decision_maker_rank(p.get("title", ""), ""))
+    best = candidates[0]
+
+    m = await client.post(
+        "https://api.apollo.io/v1/people/match", headers=headers,
+        json={"id": best["id"], "reveal_personal_emails": False},
+    )
+    if m.status_code in (429,) or m.status_code >= 500:
+        m.raise_for_status()
+    if m.status_code != 200:
         return None
-    person = (rr.json() or {}).get("person") or {}
+    person = (m.json() or {}).get("person") or {}
     email = (person.get("email") or "").strip().lower()
-    if not email:
+    if not email or "@" not in email or "not_unlocked" in email:
         return None
-    _APOLLO_SCORE = {"verified": 95, "likely to engage": 70, "guessed": 40}
+    if email.rsplit("@", 1)[-1] != domain.lower():
+        return None
     status = (person.get("email_status") or "unknown").lower()
     return {
         "email": email,
         "first_name": (person.get("first_name") or "").strip(),
         "last_name": (person.get("last_name") or "").strip(),
-        "title": (person.get("title") or top.get("title") or "").strip(),
+        "title": (person.get("title") or "").strip(),
         "email_score": _APOLLO_SCORE.get(status, 50),
         "email_status": status,
     }
@@ -215,21 +313,23 @@ async def _apollo_domain(client: httpx.AsyncClient, key: str, domain: str,
 def find_exec(
     in_: str = typer.Option(..., "--in", help="domains CSV: just `domain` (+ passthrough e.g. brand)"),
     out: str = typer.Option(..., "--out"),
-    concurrency: int = typer.Option(5, "--concurrency", help="keep low: Apollo rate-limits above ~5 (see harness/learnings/03)"),
+    concurrency: int = typer.Option(5, "--concurrency", help="keep low: Hunter rate-limits above ~5 (see harness/learnings/03)"),
     min_score: int = typer.Option(80, "--min-score"),
-    per_domain: int = typer.Option(10, "--per-domain", help="people fetched per domain"),
-    thorough: bool = typer.Option(False, "--thorough", help="limit=25, no seniority filter — better founder precision"),
-    cache: str = typer.Option("", "--cache", help="JSONL cache; skip Apollo for domains already seen (incl. misses)"),
-    provider: str = typer.Option("apollo", "--provider", help="apollo"),
+    per_domain: int = typer.Option(10, "--per-domain", help="emails fetched per domain; cost = ceil(n/10) credits"),
+    thorough: bool = typer.Option(False, "--thorough", help="limit=25, no seniority filter (3 credits) — better founder precision"),
+    cache: str = typer.Option("", "--cache", help="JSONL cache; skip Hunter/Apollo for domains already seen (incl. misses)"),
+    provider: str = typer.Option("hunter", "--provider", help="hunter | apollo"),
 ):
-    """domain -> the most senior decision-maker + their verified email (Apollo
-    people search). No founder name needed — Apollo finds the person.
+    """domain -> the most senior decision-maker + their verified email (Hunter
+    domain-search). No founder name needed — Hunter finds the person.
 
+    Credit-efficient by default: 1 Hunter credit/domain (limit=10, execs only).
+    `--thorough` spends 3/domain to avoid cutting off a lower-confidence founder.
     `--cache` makes re-runs and a growing lead bank free (each domain queried
-    once, ever). Apollo's exact credit model is pending Armaan's directions.
+    once, ever). See harness/learnings/05 for the cost model.
     """
-    if provider not in ("apollo",):
-        raise typer.BadParameter(f"find-exec supports apollo, got {provider!r}")
+    if provider not in ("hunter", "apollo"):
+        raise typer.BadParameter(f"find-exec supports hunter | apollo, got {provider!r}")
     limit = 25 if thorough else per_domain
     execs_only = not thorough
     rows = io.read_csv(in_, models.Row)
@@ -259,8 +359,9 @@ def find_exec(
                     res = cached[domain]
                 else:
                     async with sem:
-                        res = await _apollo_domain(client, key, domain, limit=limit,
-                                                   executives_only=execs_only)
+                        domain_fn = _apollo_domain if provider == "apollo" else _hunter_domain
+                        res = await domain_fn(client, key, domain, limit=limit,
+                                              executives_only=execs_only)
                     new_cache_rows.append({"domain": domain, **(res or {"email_status": "no_exec"})})
                 if not res or not res.get("email"):
                     events.emit("findemail.no_exec", domain=domain)

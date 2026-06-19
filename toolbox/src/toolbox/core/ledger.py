@@ -14,6 +14,8 @@ network round-trip (plan §7 item 1).
 
 from __future__ import annotations
 
+import asyncio
+import time
 from pathlib import Path
 
 import httpx
@@ -40,10 +42,56 @@ class Ledger:
         )
 
     async def _rpc(self, fn: str, payload: dict) -> object:
-        r = await self._client.post(f"/rest/v1/rpc/{fn}", json=payload)
-        r.raise_for_status()
-        # void functions come back 204/empty from PostgREST
-        return r.json() if r.content.strip() else None
+        """Call a ledger RPC, surviving a mid-run token expiry or a transient
+        network blip. A long run (sourcing/sending 1000+ contacts) outlives the
+        session JWT this client was built with; on the resulting 401 we force a
+        fresh token and retry, rather than trusting the local expiry estimate.
+        """
+        from toolbox.core import auth, events
+
+        last_exc: Exception | None = None
+        for attempt in range(3):
+            try:
+                r = await self._client.post(f"/rest/v1/rpc/{fn}", json=payload)
+            except httpx.TransportError as e:  # connection reset/timeout under load
+                last_exc = e
+                await asyncio.sleep(0.5 * (attempt + 1))
+                continue
+
+            if r.status_code == 401 and attempt < 2:
+                # Capture full context so a recurrence is fixable, not guessed:
+                # the server's error body and how much life the local token had.
+                try:
+                    token_exp_in = round(auth._jwt_expiry(self._token) - time.time())
+                except Exception:
+                    token_exp_in = None
+                events.emit("ledger.unauthorized", level="warn", fn=fn, attempt=attempt,
+                            token_exp_in_s=token_exp_in, body=r.text[:500])
+                try:
+                    fresh = auth.force_refresh(self._token)
+                except Exception as e:
+                    events.emit("ledger.refresh_failed", level="warn", fn=fn, reason=str(e)[:200])
+                    fresh = ""
+                if fresh and fresh != self._token:
+                    self._token = fresh
+                    self._client.headers["Authorization"] = f"Bearer {fresh}"
+                    try:
+                        new_exp_in = round(auth._jwt_expiry(fresh) - time.time())
+                    except Exception:
+                        new_exp_in = None
+                    events.emit("ledger.token_refreshed", fn=fn, attempt=attempt,
+                                new_token_exp_in_s=new_exp_in)
+                    continue  # retry with the new token
+                # refresh produced nothing usable — surface the 401 below
+                events.emit("ledger.refresh_no_change", level="warn", fn=fn, got_token=bool(fresh))
+
+            r.raise_for_status()
+            # void functions come back 204/empty from PostgREST
+            return r.json() if r.content.strip() else None
+
+        if last_exc:
+            raise last_exc
+        raise RuntimeError(f"ledger _rpc {fn} exhausted retries")
 
     async def claim(self, channel: str, recipient: str, *, skill: str = "", run_id: str = "") -> str:
         """-> 'claimed' | 'skipped' (someone already has them) | 'suppressed'."""

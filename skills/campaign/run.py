@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Campaign orchestrator: ICP description -> source leads -> enrich -> compose -> send.
 
-Lead sources:
-  apollo   API-based. Claude generates target domains from your ICP, then
-           Apollo finds the decision-maker email per domain.
-  --leads  CSV import. Pass a pre-exported leads CSV (with an email column) and
-           we compose and send from that list directly.
+Providers:
+  hunter / apollo   API-based. Claude generates target domains from your ICP,
+                    then the provider finds the decision-maker email per domain.
+  clay / origami    CSV export. Export leads from the tool's UI, pass with --leads.
+                    We compose and send from that list directly.
 
 Experiment mode (--experiment):
   Leads are split 50/50. Claude generates a meaningfully different variant B.
@@ -14,16 +14,17 @@ Experiment mode (--experiment):
 Usage:
   python3 skills/campaign/run.py \\
     --icp "DTC health and wellness brands" \\
-    --provider apollo \\
+    --provider hunter \\
     --from shamit.dsouza@gmail.com \\
     --from-name "Shamit" \\
     --experiment \\
     --limit 20 \\
     --dry-run
 
-  # Import a pre-exported leads CSV instead of API sourcing:
+  # Clay/Origami: export CSV first, then:
   python3 skills/campaign/run.py \\
     --leads my_export.csv \\
+    --provider clay \\
     --from shamit.dsouza@gmail.com \\
     --from-name "Shamit"
 """
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import csv
 import html as _html_module
 import json
 import math
@@ -56,8 +58,9 @@ sys.path.insert(0, str(_REPO_ROOT / "toolbox" / "src"))
 from toolbox.core import auth, config, events, io, ledger, models
 from toolbox.core import llm as llm_mod
 from toolbox.primitives.compose import lib as compose_lib
+from toolbox.primitives.findemail import cli as findemail_cli
 from toolbox.primitives.gmail import cli as gmail_cli
-from skills.campaign import apollo_source, gog_auth, notion_sync
+from skills.campaign import gog_auth, notion_sync
 
 
 # ---- LLM helpers -------------------------------------------------------
@@ -79,7 +82,7 @@ class _VariantTemplate(BaseModel):
 # subscription serializes inference) — 2 at once took 35s vs 13s for one. So
 # domain generation is capped at 1 in flight. The speedup instead comes from
 # running every segment as one job (not six separate invocations) and letting
-# Apollo enrichment, which is real parallel HTTP, overlap the serial LLM calls.
+# Hunter enrichment, which is real parallel HTTP, overlap the serial LLM calls.
 _DOMAIN_CHUNK = 50
 _LLM_CONCURRENCY = 1  # concurrent claude -p HURTS; serialize, overlap enrichment
 _DOMAIN_VARIATIONS = [
@@ -110,12 +113,14 @@ def generate_domains(icp: str, count: int = 30, variation: str = "") -> list[str
 
 
 async def generate_domain_pool(
-    icp: str, count: int, llm_sem: asyncio.Semaphore | None = None
+    icp: str, count: int, llm_sem: asyncio.Semaphore | None = None, label: str = ""
 ) -> list[str]:
     """Build a deduped pool of ~`count` domains via concurrent claude -p calls.
 
     The blocking subprocess runs off the event loop (asyncio.to_thread) so the
-    calls overlap. `llm_sem` caps how many run at once across all segments.
+    calls overlap. `llm_sem` caps how many run at once across all segments. Each
+    batch is streamed to the domains file and the terminal the moment it comes
+    back, so the slow generation step is visible instead of looking frozen.
     """
     if llm_sem is None:
         llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
@@ -124,13 +129,18 @@ async def generate_domain_pool(
     async def one(i: int) -> list[str]:
         async with llm_sem:
             try:
-                return await asyncio.to_thread(
+                chunk = await asyncio.to_thread(
                     generate_domains, icp, _DOMAIN_CHUNK,
                     _DOMAIN_VARIATIONS[i % len(_DOMAIN_VARIATIONS)],
                 )
             except Exception as e:
                 events.emit("campaign.domaingen_error", level="warn", reason=str(e)[:120])
                 return []
+            # Stream the batch as soon as the LLM call returns.
+            _write_domains_rows(label, chunk)
+            tag = f"[{label}] " if label else ""
+            print(f"{tag}generated {len(chunk)} domains (call {i + 1}/{n_calls})", flush=True)
+            return chunk
 
     seen: set[str] = set()
     pool: list[str] = []
@@ -159,12 +169,12 @@ def generate_variant_b(subject_a: str, body_a: str) -> tuple[str, str]:
 # ---- Lead sourcing / enrichment ----------------------------------------
 
 def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
-    """Load a pre-exported leads CSV into Contact objects."""
+    """Load a pre-exported Clay/Origami CSV into Contact objects."""
     rows = io.read_csv(path, models.Row)
     contacts: list[models.Contact] = []
     for r in rows:
         d = r.model_dump()
-        # Exports sometimes put the company name in 'company' or 'brand'
+        # Clay exports sometimes put the company name in 'company' or 'brand'
         if not d.get("company") and d.get("brand"):
             d["company"] = d["brand"]
         try:
@@ -174,30 +184,66 @@ def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
     return contacts
 
 
-def _apollo_pattern_contacts(domain: str) -> list[models.Contact]:
-    """Pattern-source one domain (sync) via apollo_source: many relevant contacts
-    for ~1 Apollo credit (verified seed + pattern-derived). apollo_source decides
-    what to include, so there is no extra score gate here. Derived addresses keep
-    email_status=pattern_derived so the send + bounce-suppression treat them as
-    guesses (per the 2026-06-18 Apollo strategy)."""
-    out: list[models.Contact] = []
-    with httpx.Client(headers=apollo_source._headers()) as c:
-        res = apollo_source.source_domain(c, domain)
-    for d in res.get("contacts", []):
-        try:
-            out.append(models.Contact(
-                email=d["email"],
-                first_name=d.get("first_name", ""),
-                last_name=d.get("last_name", ""),
-                title=d.get("title", ""),
-                company=d.get("company") or domain.split(".")[0].title(),
-                domain=d.get("domain", domain),
-                email_score=d.get("email_score", 60),
-                email_status=d.get("email_status", "pattern_derived"),
-            ))
-        except (ValueError, TypeError) as e:
-            events.emit("campaign.bad_email", level="warn", email=d.get("email"), reason=str(e))
-    return out
+# Generated domains are streamed to a repo-local CSV as each claude -p call
+# returns, so the slow generation step is visible (and its rate is measurable,
+# which helps diagnose throttling). Set in main(); None = disabled.
+_DOMAINS_PATH: str | None = None
+
+
+def _write_domains_rows(segment: str, domains: list[str]) -> None:
+    """Append a batch of freshly-generated domains to the live domains CSV.
+
+    Every domain is logged as it is generated (duplicates included) with a
+    timestamp, so the file doubles as a record of how fast generation is going.
+    Safe under asyncio: writes happen on the single event-loop thread.
+    """
+    if not _DOMAINS_PATH or not domains:
+        return
+    p = Path(_DOMAINS_PATH)
+    new = not p.exists() or p.stat().st_size == 0
+    try:
+        with p.open("a", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            if new:
+                w.writerow(["generated_at", "segment", "domain"])
+            ts = datetime.now(UTC).isoformat()
+            for d in domains:
+                w.writerow([ts, segment, d])
+    except OSError as e:
+        events.emit("campaign.domains_write_failed", level="warn", reason=str(e)[:120])
+
+
+# Enriched contacts are streamed to a repo-local CSV as they are found, so a
+# long run is fully visible (and inspectable) while it is still going. Set once
+# in main(); _enrich_batch appends to it. None = disabled (e.g. CSV-leads runs).
+_ENRICHED_PATH: str | None = None
+_ENRICHED_HEADER = ["enriched_at", "email", "first_name", "last_name", "title",
+                    "company", "domain", "email_score", "email_status"]
+
+
+def _write_enriched_row(domain: str, res: dict) -> None:
+    """Append one freshly-enriched contact to the live CSV (no-op if unset).
+
+    Runs inside the single-threaded asyncio loop, so a plain append is safe:
+    no two writes interleave. The header is written once, on the first row.
+    """
+    if not _ENRICHED_PATH:
+        return
+    p = Path(_ENRICHED_PATH)
+    new = not p.exists() or p.stat().st_size == 0
+    try:
+        with p.open("a", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            if new:
+                w.writerow(_ENRICHED_HEADER)
+            w.writerow([
+                datetime.now(UTC).isoformat(), res.get("email", ""),
+                res.get("first_name", ""), res.get("last_name", ""),
+                res.get("title", ""), domain.split(".")[0].title(), domain,
+                res.get("email_score", ""), res.get("email_status", ""),
+            ])
+    except OSError as e:
+        events.emit("campaign.enriched_write_failed", level="warn", reason=str(e)[:120])
 
 
 async def _enrich_batch(
@@ -208,27 +254,50 @@ async def _enrich_batch(
     min_score: int,
     sem: asyncio.Semaphore | None = None,
 ) -> list[models.Contact]:
-    """Pattern-source a batch of domains via Apollo: each domain yields multiple
-    relevant contacts for ~1 credit. `client`/`provider`/`key`/`min_score` are
-    kept for signature compatibility; apollo_source reads TOOLBOX_TOKEN_APOLLO
-    from the env and gates inclusion itself. `sem` caps concurrent domains so
-    segments share one global rate budget.
+    """Enrich one batch of domains — returns contacts that passed the score filter.
+
+    `sem` caps concurrent provider calls. Pass a shared one so that several
+    segments enriching at the same time still respect a single global rate cap.
     """
+    domain_fn = (
+        findemail_cli._apollo_domain if provider == "apollo" else findemail_cli._hunter_domain
+    )
+    contacts: list[models.Contact] = []
     if sem is None:
         sem = asyncio.Semaphore(3)
-    contacts: list[models.Contact] = []
 
     async def one(domain: str) -> None:
         async with sem:
             try:
-                got = await asyncio.to_thread(_apollo_pattern_contacts, domain)
+                res = await domain_fn(client, key, domain, limit=10, executives_only=True)
             except Exception as e:
-                events.emit("campaign.enrich_error", level="warn", domain=domain, reason=str(e)[:120])
+                msg = str(e)
+                if "429" in msg:
+                    events.emit("campaign.rate_limited", level="warn", domain=domain)
+                else:
+                    events.emit("campaign.enrich_error", level="warn", domain=domain, reason=msg[:120])
                 return
-        if not got:
+        if not res or not res.get("email"):
             events.emit("campaign.no_contact", domain=domain)
             return
-        contacts.extend(got)
+        if int(res.get("email_score") or 0) < min_score:
+            events.emit("campaign.low_score", domain=domain, score=res.get("email_score"))
+            return
+        try:
+            contacts.append(models.Contact(
+                email=res["email"],
+                first_name=res.get("first_name", ""),
+                last_name=res.get("last_name", ""),
+                title=res.get("title", ""),
+                company=domain.split(".")[0].title(),
+                domain=domain,
+            ))
+        except ValueError as e:
+            events.emit("campaign.bad_email", level="warn", email=res.get("email"), reason=str(e))
+            return
+        # Stream the hit: append to the live CSV and print it to the terminal.
+        _write_enriched_row(domain, res)
+        print(f"  + {res['email']}  ({res.get('email_status', '')})  {domain}", flush=True)
 
     await asyncio.gather(*(one(d) for d in domains))
     return contacts
@@ -252,14 +321,15 @@ async def source_contacts_incremental(
     session_token: str,
     limit: int | None,
     min_score: int = 80,
-    batch_size: int = 3,
-    enrich_sem: asyncio.Semaphore | None = None,
+    batch_size: int = 20,
+    hunter_sem: asyncio.Semaphore | None = None,
+    label: str = "",
 ) -> list[models.Contact]:
     """Enrich domains in batches, ledger-checking each batch before continuing.
 
     Stops as soon as `limit` new contacts are accumulated. This avoids spending
     enrichment credits on contacts that will be discarded after ledger dedup.
-    `enrich_sem` is a shared provider-call cap when several segments run at once.
+    `hunter_sem` is a shared provider-call cap when several segments run at once.
     """
     accumulated: list[models.Contact] = []
     ldg = ledger.Ledger(session_token)
@@ -267,7 +337,7 @@ async def source_contacts_incremental(
     async with httpx.AsyncClient(timeout=60) as client:
         for i in range(0, len(domains), batch_size):
             batch = domains[i : i + batch_size]
-            raw = await _enrich_batch(client, batch, provider, key, min_score, enrich_sem)
+            raw = await _enrich_batch(client, batch, provider, key, min_score, hunter_sem)
 
             # Ledger-check this batch concurrently.
             sem = asyncio.Semaphore(10)
@@ -284,10 +354,13 @@ async def source_contacts_incremental(
             accumulated.extend(c for _, c in new_in_batch)
 
             enriched_so_far = i + len(batch)
+            tag = f"[{label}] " if label else ""
+            target = f"/{limit}" if limit else ""
             print(
-                f"  batch {i // batch_size + 1}: {len(raw)} found, "
-                f"{len(new_in_batch)} new — {len(accumulated)} total "
-                f"({enriched_so_far}/{len(domains)} domains used)"
+                f"{tag}batch {i // batch_size + 1}: {len(raw)} enriched, "
+                f"{len(new_in_batch)} new, {len(accumulated)}{target} sourced "
+                f"({enriched_so_far}/{len(domains)} domains tried)",
+                flush=True,
             )
 
             if limit and len(accumulated) >= limit:
@@ -347,30 +420,6 @@ def _mix_quotas(limit: int, segments: list[dict]) -> list[tuple[dict, int]]:
     return [(s, q) for s, q in quotas if q > 0]
 
 
-_TARGET_DOMAINS_PATH = Path(__file__).parent / "target_domains.csv"
-
-
-def _load_target_domains() -> dict[str, list[str]]:
-    """segment label -> curated target domains (from target_domains.csv, if present).
-
-    Replaces LLM domain generation with a researched, ICP-filtered pool per
-    segment (see brain/research/2026-06-19-icp-targeted-domains.md). Falls back to
-    generation per-segment only when a segment has no curated domains.
-    """
-    import csv as _csv
-
-    out: dict[str, list[str]] = {}
-    if not _TARGET_DOMAINS_PATH.exists():
-        return out
-    with open(_TARGET_DOMAINS_PATH, newline="") as f:
-        for row in _csv.DictReader(f):
-            d = (row.get("domain") or "").strip().lower()
-            seg = (row.get("segment") or "").strip()
-            if d and seg:
-                out.setdefault(seg, []).append(d)
-    return out
-
-
 async def _source_from_mix(
     provider: str,
     key: str,
@@ -384,14 +433,13 @@ async def _source_from_mix(
 
     All segments are sourced concurrently. Two shared semaphores keep the
     fan-out from overwhelming the providers: `llm_sem` caps concurrent domain
-    generation (claude -p subprocesses) and `enrich_sem` caps concurrent
+    generation (claude -p subprocesses) and `hunter_sem` caps concurrent
     enrichment calls, both globally across every segment.
     """
     segments = _load_mix()
-    target_domains = _load_target_domains()
     quotas = _mix_quotas(limit, segments)
     llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
-    enrich_sem = asyncio.Semaphore(enrich_concurrency)
+    hunter_sem = asyncio.Semaphore(enrich_concurrency)
 
     async def source_segment(seg: dict, quota: int) -> list[models.OutboxRow]:
         label = seg["label"]
@@ -399,21 +447,14 @@ async def _source_from_mix(
         template_path = _ICP_MIX_PATH.parent / seg["template_a"]
         segment_phrase = seg.get("segment_phrase", label.lower())
 
-        curated = list(target_domains.get(label, []))
-        if curated:
-            import random
-            random.shuffle(curated)  # mix categories within the segment
-            domains = curated
-            print(f"[{label}] {len(domains)} curated target domains; enriching toward {quota}...")
-        else:
-            print(f"[{label}] target {quota}: generating domains...")
-            domains = await generate_domain_pool(icp, max(15, quota // 5), llm_sem)
-            print(f"[{label}] {len(domains)} generated domains; enriching...")
+        print(f"[{label}] target {quota}: generating domains...")
+        domains = await generate_domain_pool(icp, max(30, quota * 3), llm_sem, label=label)
+        print(f"[{label}] {len(domains)} domains; enriching...")
         contacts = await source_contacts_incremental(
             domains, provider, key, session_token,
-            limit=quota, min_score=min_score, enrich_sem=enrich_sem,
+            limit=quota, min_score=min_score, hunter_sem=hunter_sem, label=label,
         )
-        print(f"[{label}] sourced {len(contacts)} contacts")
+        print(f"[{label}] sourced {len(contacts)} contacts", flush=True)
         subject_t, body_t = load_template(str(template_path))
         return compose_outbox(contacts, subject_t, body_t, from_name,
                               extra_values={"segment_phrase": segment_phrase})
@@ -628,7 +669,7 @@ def _finalize(
 
 # ---- Preflight ---------------------------------------------------------
 
-def _preflight(from_: str, provider: str, skip_key_check: bool = False) -> None:
+def _preflight(from_: str, provider: str) -> None:
     """Validate all credentials before spending any API credits.
 
     Exits with a clear message on the first failure so the user knows
@@ -642,8 +683,8 @@ def _preflight(from_: str, provider: str, skip_key_check: bool = False) -> None:
     except Exception as e:
         errors.append(f"Supabase session invalid: {e}\n  Fix: toolbox auth login")
 
-    # 2. Provider key (skipped when importing a pre-exported leads CSV)
-    if not skip_key_check:
+    # 2. Provider key
+    if provider not in ("clay", "origami"):
         try:
             key = auth.get_token(provider)
             if not key:
@@ -700,16 +741,24 @@ def _preflight(from_: str, provider: str, skip_key_check: bool = False) -> None:
 # ---- Main --------------------------------------------------------------
 
 def main() -> None:
+    # Stream progress live: line-buffer stdout so every print() flushes on its
+    # newline instead of sitting in a block buffer until the run ends. (send.sh
+    # also runs python with -u; this also covers a direct `python run.py` call.)
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except (AttributeError, ValueError):
+        pass
+
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--icp", default="",
                         help="ICP description: Claude generates target domains from this")
-    parser.add_argument("--provider", default="apollo",
-                        choices=["apollo"],
-                        help="Lead source (Apollo only; use --leads to import a CSV)")
+    parser.add_argument("--provider", default="hunter",
+                        choices=["hunter", "apollo", "clay", "origami"],
+                        help="Lead source (clay/origami require --leads CSV)")
     parser.add_argument("--leads", default="",
-                        help="Pre-exported leads CSV (has email column); skips API sourcing")
+                        help="Pre-exported leads CSV from Clay or Origami (has email column)")
     parser.add_argument("--domains", default="",
                         help="Pre-built domains CSV (skips ICP domain generation)")
     parser.add_argument("--template",
@@ -728,13 +777,15 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=0,
                         help="Max contacts to send to (0 = no cap)")
     parser.add_argument("--min-score", type=int, default=80,
-                        help="Minimum Apollo email confidence (0-100)")
+                        help="Minimum Hunter/Apollo email confidence (0-100)")
     parser.add_argument("--log", default="",
                         help="Campaign log path for reply tracking (default: /tmp/campaign_<id>.jsonl)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be sent without actually sending")
     args = parser.parse_args()
 
+    if args.provider in ("clay", "origami") and not args.leads:
+        parser.error(f"--provider {args.provider} requires --leads <exported_csv>")
     if not args.icp and not args.leads and not args.domains:
         if not _ICP_MIX_PATH.exists():
             parser.error(
@@ -742,12 +793,22 @@ def main() -> None:
                 f"(or add {_ICP_MIX_PATH} to use the default ICP mix)"
             )
 
-    _preflight(args.from_, args.provider, skip_key_check=bool(args.leads))
+    _preflight(args.from_, args.provider)
 
     run_id = str(uuid.uuid4())
     run_dir = tempfile.mkdtemp(prefix=f"campaign_{run_id[:8]}_")
     print(f"run_id : {run_id}")
     print(f"run_dir: {run_dir}")
+
+    # Stream generated domains and enriched contacts to repo-local CSVs as they
+    # happen, so both the slow generation step and enrichment are visible live.
+    global _ENRICHED_PATH, _DOMAINS_PATH
+    enriched_dir = _REPO_ROOT / "skills" / "campaign" / "enriched"
+    enriched_dir.mkdir(parents=True, exist_ok=True)
+    _DOMAINS_PATH = str(enriched_dir / f"domains_{run_id[:8]}.csv")
+    _ENRICHED_PATH = str(enriched_dir / f"enriched_{run_id[:8]}.csv")
+    print(f"domains: {_DOMAINS_PATH} (written live as domains are generated)")
+    print(f"emails : {_ENRICHED_PATH} (written live as contacts are enriched)")
 
     # 1. Source contacts --------------------------------------------------
     session_token = auth.session_token()
@@ -780,7 +841,7 @@ def main() -> None:
     elif args.icp:
         # Focused ICP path: generate a large domain pool, enrich + ledger-check
         # in batches of 20, stop as soon as --limit new contacts are found.
-        domain_count = max(20, (args.limit or 30) // 5)
+        domain_count = max(60, (args.limit or 30) * 3)
         print(f"Generating domains for: {args.icp[:80]}")
         domains = asyncio.run(generate_domain_pool(args.icp, domain_count))
         print(f"  {len(domains)} domains generated")
@@ -790,7 +851,7 @@ def main() -> None:
             source_contacts_incremental(
                 domains, args.provider, key, session_token,
                 limit=args.limit, min_score=args.min_score,
-                enrich_sem=asyncio.Semaphore(args.concurrency),
+                hunter_sem=asyncio.Semaphore(args.concurrency),
             )
         )
     else:

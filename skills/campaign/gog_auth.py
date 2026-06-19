@@ -11,38 +11,28 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
 import httpx
 
+_GOG_CREDS_PATH = (
+    Path.home() / "Library" / "Application Support" / "gogcli" / "credentials.json"
+)
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-
-
-def _gog_creds_path() -> Path:
-    """Locate gog's credentials.json across platforms (macOS vs Linux/XDG)."""
-    mac = Path.home() / "Library" / "Application Support" / "gogcli" / "credentials.json"
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    linux = (Path(xdg) if xdg else Path.home() / ".config") / "gogcli" / "credentials.json"
-    for c in (linux, mac):
-        if c.exists():
-            return c
-    return mac if sys.platform == "darwin" else linux
 
 
 def _client_id() -> str:
     """Read the OAuth client_id from gog's credentials file."""
-    creds = _gog_creds_path()
     try:
-        data = json.loads(creds.read_text())
+        data = json.loads(_GOG_CREDS_PATH.read_text())
         cid = data.get("client_id", "")
         if not cid:
             raise ValueError("client_id missing")
         return cid
     except Exception as e:
         raise RuntimeError(
-            f"Could not read gog client_id from {creds}: {e}\n"
+            f"Could not read gog client_id from {_GOG_CREDS_PATH}: {e}\n"
             "Run: gog auth credentials ~/client_secret.json"
         ) from e
 
@@ -57,7 +47,7 @@ def _client_secret() -> str:
     the secret.
     """
     try:
-        data = json.loads(_gog_creds_path().read_text())
+        data = json.loads(_GOG_CREDS_PATH.read_text())
         if secret := data.get("client_secret", ""):
             return secret
     except Exception:

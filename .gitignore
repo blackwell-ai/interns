@@ -25,9 +25,11 @@ skills/autonomous-outreach/*.csv
 skills/autonomous-outreach/agentic-ads/
 skills/autonomous-outreach/taste-data/
 skills/autonomous-outreach/enrichment_cache.jsonl
+# campaign skill: live enriched-contact CSVs (lead emails / PII) stay local.
+skills/campaign/enriched/
 /tmp/
 !skills/autonomous-outreach/lead_bank.csv
 .gstack/
 
-# Locally-installed plugin skills, not repo content
+# Locally-installed plugin skills (origami, etc.) — not repo content
 .claude/skills/

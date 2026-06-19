@@ -2,11 +2,12 @@
 
 Run without any real API keys:
   cd /Users/shamitd/interns
-  TOOLBOX_TOKEN_APOLLO=fake TOOLBOX_SESSION_TOKEN=fake \
+  TOOLBOX_TOKEN_HUNTER=fake TOOLBOX_TOKEN_APOLLO=fake \
+  TOOLBOX_SESSION_TOKEN=fake \
   python -m pytest skills/campaign/tests/ -v
 
 All HTTP calls are intercepted by respx. Supabase calls use TOOLBOX_SESSION_TOKEN
-to bypass keychain. Apollo calls use TOOLBOX_TOKEN_* overrides.
+to bypass keychain. Hunter/Apollo calls use TOOLBOX_TOKEN_* overrides.
 """
 
 from __future__ import annotations
@@ -29,10 +30,46 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
 
 # ---- helpers -----------------------------------------------------------
 
-FAKE_APOLLO_SEARCH_RESP = {"people": [{"id": "p_bob", "first_name": "Bob", "title": "Founder"}]}
-FAKE_APOLLO_MATCH_RESP = {"person": {"email": "bob@widgets.io", "first_name": "Bob",
-                                     "last_name": "Jones", "title": "Founder",
-                                     "email_status": "verified"}}
+FAKE_HUNTER_DOMAIN_RESP = {
+    "data": {
+        "emails": [
+            {
+                "value": "alice@example.com",
+                "first_name": "Alice",
+                "last_name": "Smith",
+                "position": "CEO",
+                "seniority": "executive",
+                "confidence": 92,
+                "verification": {"status": "valid"},
+            }
+        ]
+    }
+}
+
+# Apollo now needs two calls: api_search finds the person (no email), then
+# people/match reveals + verifies it.
+FAKE_APOLLO_SEARCH_RESP = {
+    "people": [
+        {
+            "id": "person_bob_1",
+            "first_name": "Bob",
+            "last_name": "Jones",
+            "title": "Founder",
+            "has_email": True,
+            "organization": {"name": "Widgets", "primary_domain": "widgets.io"},
+        }
+    ]
+}
+
+FAKE_APOLLO_MATCH_RESP = {
+    "person": {
+        "first_name": "Bob",
+        "last_name": "Jones",
+        "title": "Founder",
+        "email": "bob@widgets.io",
+        "email_status": "verified",
+    }
+}
 
 FAKE_GMAIL_SEND_RESP = {"id": "msg_abc123", "threadId": "thread_1", "labelIds": ["SENT"]}
 
@@ -63,6 +100,54 @@ def test_generate_domains_calls_llm():
     mock_llm.assert_called_once()
     assert "glossier.com" in domains
     assert "warbyparker.com" in domains
+
+
+# ---- test: domains streamed to a file as generated ---------------------
+
+def test_write_domains_rows_appends_csv(tmp_path, monkeypatch):
+    from skills.campaign import run as camp
+
+    p = tmp_path / "domains.csv"
+    monkeypatch.setattr(camp, "_DOMAINS_PATH", str(p))
+    camp._write_domains_rows("DTC", ["a.com", "b.com"])
+    camp._write_domains_rows("3PL", ["c.com"])
+    lines = p.read_text().strip().splitlines()
+    assert lines[0] == "generated_at,segment,domain"   # header written once
+    assert len(lines) == 4                              # header + 3 domain rows
+    assert "a.com" in lines[1] and "DTC" in lines[1]
+    assert "c.com" in lines[3] and "3PL" in lines[3]
+
+
+def test_write_domains_rows_noop_when_unset(monkeypatch):
+    from skills.campaign import run as camp
+
+    monkeypatch.setattr(camp, "_DOMAINS_PATH", None)
+    camp._write_domains_rows("DTC", ["a.com"])  # must not raise
+
+
+def test_generate_domain_pool_streams_to_file(tmp_path, monkeypatch):
+    import asyncio
+
+    from skills.campaign import run as camp
+
+    p = tmp_path / "domains.csv"
+    monkeypatch.setattr(camp, "_DOMAINS_PATH", str(p))
+    batches = [["a.com", "b.com"], ["b.com", "c.com"]]  # 100/50 -> 2 calls
+    calls = {"n": 0}
+
+    def fake_gen(icp, n, variation=""):
+        i = calls["n"]
+        calls["n"] += 1
+        return batches[i] if i < len(batches) else []
+
+    monkeypatch.setattr(camp, "generate_domains", fake_gen)
+    pool = asyncio.run(camp.generate_domain_pool("icp", 100, label="DTC"))
+
+    assert set(pool) == {"a.com", "b.com", "c.com"}     # pool is deduped
+    rows = p.read_text().strip().splitlines()
+    assert rows[0] == "generated_at,segment,domain"
+    assert len(rows) - 1 == 4                            # raw generations logged (incl. dup)
+    assert all(",DTC," in r for r in rows[1:])
 
 
 # ---- test: generate_variant_b ------------------------------------------
@@ -199,6 +284,25 @@ def test_sent_counts_filters_by_run_id():
     assert ("r2", "a") not in counts
 
 
+# ---- test: Hunter domain search (mocked HTTP) -------------------------
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_hunter_domain_search():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
+    from toolbox.primitives.findemail.cli import _hunter_domain
+
+    respx.get("https://api.hunter.io/v2/domain-search").mock(
+        return_value=httpx.Response(200, json=FAKE_HUNTER_DOMAIN_RESP)
+    )
+    async with httpx.AsyncClient(timeout=60) as client:
+        res = await _hunter_domain(client, "fake_key", "example.com", limit=10, executives_only=True)
+    assert res is not None
+    assert res["email"] == "alice@example.com"
+    assert res["first_name"] == "Alice"
+    assert res["email_score"] == 92
+
+
 # ---- test: Apollo domain search (mocked HTTP) -------------------------
 
 @pytest.mark.asyncio
@@ -221,33 +325,58 @@ async def test_apollo_domain_search():
     assert res["email_score"] == 95  # verified = 95
 
 
-# ---- test: enrich_domains via apollo_source pattern sourcing ----------
+@pytest.mark.asyncio
+@respx.mock
+async def test_apollo_drops_offdomain_email():
+    """A revealed email at a different domain (person changed jobs) is dropped."""
+    from toolbox.primitives.findemail.cli import _apollo_domain
+
+    respx.post("https://api.apollo.io/v1/mixed_people/api_search").mock(
+        return_value=httpx.Response(200, json=FAKE_APOLLO_SEARCH_RESP)
+    )
+    respx.post("https://api.apollo.io/v1/people/match").mock(
+        return_value=httpx.Response(200, json={"person": {
+            "first_name": "Bob", "last_name": "Jones", "title": "Founder",
+            "email": "bob@elsewhere.com", "email_status": "verified"}})
+    )
+    async with httpx.AsyncClient(timeout=60) as client:
+        res = await _apollo_domain(client, "fake_key", "widgets.io", limit=10)
+    assert res is None
+
+
+# ---- test: enrich_domains orchestrator (mocked) -----------------------
 
 @pytest.mark.asyncio
-async def test_enrich_domains_pattern(monkeypatch):
-    """The campaign enriches each domain through apollo_source: one verified seed
-    plus pattern-derived contacts, all included (no min-score gate)."""
-    from skills.campaign import apollo_source
+@respx.mock
+async def test_enrich_domains_hunter(monkeypatch):
     from skills.campaign import run as camp
 
-    monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
+    respx.get("https://api.hunter.io/v2/domain-search").mock(
+        return_value=httpx.Response(200, json=FAKE_HUNTER_DOMAIN_RESP)
+    )
+    contacts = await camp.enrich_domains(["example.com"], "hunter", "fake_key", min_score=50)
+    assert len(contacts) == 1
+    assert contacts[0].email == "alice@example.com"
 
-    def fake_source(client, domain, **kwargs):
-        return {"domain": domain, "pattern": "{first}", "credits": 1, "contacts": [
-            {"email": "gabi@magicspoon.com", "first_name": "Gabi", "last_name": "Lewis",
-             "title": "Co-Founder", "company": "Magic Spoon", "domain": domain,
-             "email_score": 95, "email_status": "verified"},
-            {"email": "david@magicspoon.com", "first_name": "David", "last_name": "",
-             "title": "COO", "company": "Magic Spoon", "domain": domain,
-             "email_score": 60, "email_status": "pattern_derived"},
-        ]}
 
-    monkeypatch.setattr(apollo_source, "source_domain", fake_source)
-    contacts = await camp.enrich_domains(["magicspoon.com"], "apollo", "fake_key", min_score=80)
-    emails = {c.email for c in contacts}
-    assert emails == {"gabi@magicspoon.com", "david@magicspoon.com"}
-    # the low-confidence derived contact is still included (send + bounce-suppress)
-    assert any(c.email_status == "pattern_derived" for c in contacts)
+@pytest.mark.asyncio
+@respx.mock
+async def test_enrich_domains_filters_low_score():
+    from skills.campaign import run as camp
+
+    low_score_resp = {
+        "data": {
+            "emails": [
+                {"value": "low@example.com", "first_name": "Low", "confidence": 30,
+                 "position": "CEO", "seniority": "executive", "verification": {"status": "unknown"}}
+            ]
+        }
+    }
+    respx.get("https://api.hunter.io/v2/domain-search").mock(
+        return_value=httpx.Response(200, json=low_score_resp)
+    )
+    contacts = await camp.enrich_domains(["example.com"], "hunter", "fake_key", min_score=80)
+    assert len(contacts) == 0
 
 
 # ---- test: reply upsert (mocked Supabase) -----------------------------

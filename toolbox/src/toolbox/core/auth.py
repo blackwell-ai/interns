@@ -171,6 +171,51 @@ def session_token() -> str:
     return session["access_token"]
 
 
+# Serializes force_refresh so concurrent 401s don't each spend (and thus reuse)
+# the rotating refresh token; only the first refreshes, the rest reuse its result.
+_refresh_lock = threading.Lock()
+
+
+def force_refresh(stale_token: str = "") -> str:
+    """Get a fresh session token, refreshing even if the *local* clock thinks
+    the current one is still valid.
+
+    `session_token()` returns the cached token while `exp - now > 60`. But a long
+    run gets a 401 the moment the server considers the token expired, which can be
+    earlier than the local estimate (clock skew) or simply because the run
+    outlived the token. On that 401 we must get a genuinely new token, not the
+    same one back, which is what this does.
+
+    Concurrency-safe: serialized by `_refresh_lock`. If another caller already
+    refreshed (the stored token now differs from `stale_token`), return that
+    without a second network refresh, so the rotating refresh token is used once.
+    """
+    if tok := os.environ.get("TOOLBOX_SESSION_TOKEN"):  # tests/CI: no refresh path
+        return tok
+    with _refresh_lock:
+        session = _load_session()
+        if not session:
+            raise AuthError("not signed in - run `toolbox auth login`")
+        current = session.get("access_token", "")
+        if stale_token and current and current != stale_token:
+            return current  # another caller already refreshed under the lock
+        refresh_token = session.get("refresh_token")
+        if not refresh_token:
+            raise AuthError("session expired - run `toolbox auth login`")
+        r = httpx.post(
+            f"{config.supabase_url()}/auth/v1/token?grant_type=refresh_token",
+            json={"refresh_token": refresh_token},
+            headers={"apikey": config.supabase_anon_key()},
+            timeout=30,
+        )
+        if r.status_code != 200:
+            raise AuthError(f"session refresh failed ({r.status_code}) - run `toolbox auth login`")
+        data = r.json()
+        new = {"access_token": data["access_token"], "refresh_token": data["refresh_token"]}
+        _save_session(new)
+        return new["access_token"]
+
+
 def whoami() -> dict:
     r = httpx.get(
         f"{config.supabase_url()}/auth/v1/user",
