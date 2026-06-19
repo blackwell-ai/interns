@@ -56,9 +56,8 @@ sys.path.insert(0, str(_REPO_ROOT / "toolbox" / "src"))
 from toolbox.core import auth, config, events, io, ledger, models
 from toolbox.core import llm as llm_mod
 from toolbox.primitives.compose import lib as compose_lib
-from toolbox.primitives.findemail import cli as findemail_cli
 from toolbox.primitives.gmail import cli as gmail_cli
-from skills.campaign import gog_auth, notion_sync
+from skills.campaign import apollo_source, gog_auth, notion_sync
 
 
 # ---- LLM helpers -------------------------------------------------------
@@ -175,6 +174,32 @@ def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
     return contacts
 
 
+def _apollo_pattern_contacts(domain: str) -> list[models.Contact]:
+    """Pattern-source one domain (sync) via apollo_source: many relevant contacts
+    for ~1 Apollo credit (verified seed + pattern-derived). apollo_source decides
+    what to include, so there is no extra score gate here. Derived addresses keep
+    email_status=pattern_derived so the send + bounce-suppression treat them as
+    guesses (per the 2026-06-18 Apollo strategy)."""
+    out: list[models.Contact] = []
+    with httpx.Client(headers=apollo_source._headers()) as c:
+        res = apollo_source.source_domain(c, domain)
+    for d in res.get("contacts", []):
+        try:
+            out.append(models.Contact(
+                email=d["email"],
+                first_name=d.get("first_name", ""),
+                last_name=d.get("last_name", ""),
+                title=d.get("title", ""),
+                company=d.get("company") or domain.split(".")[0].title(),
+                domain=d.get("domain", domain),
+                email_score=d.get("email_score", 60),
+                email_status=d.get("email_status", "pattern_derived"),
+            ))
+        except (ValueError, TypeError) as e:
+            events.emit("campaign.bad_email", level="warn", email=d.get("email"), reason=str(e))
+    return out
+
+
 async def _enrich_batch(
     client: httpx.AsyncClient,
     domains: list[str],
@@ -183,44 +208,27 @@ async def _enrich_batch(
     min_score: int,
     sem: asyncio.Semaphore | None = None,
 ) -> list[models.Contact]:
-    """Enrich one batch of domains — returns contacts that passed the score filter.
-
-    `sem` caps concurrent provider calls. Pass a shared one so that several
-    segments enriching at the same time still respect a single global rate cap.
+    """Pattern-source a batch of domains via Apollo: each domain yields multiple
+    relevant contacts for ~1 credit. `client`/`provider`/`key`/`min_score` are
+    kept for signature compatibility; apollo_source reads TOOLBOX_TOKEN_APOLLO
+    from the env and gates inclusion itself. `sem` caps concurrent domains so
+    segments share one global rate budget.
     """
-    domain_fn = findemail_cli._apollo_domain
-    contacts: list[models.Contact] = []
     if sem is None:
         sem = asyncio.Semaphore(3)
+    contacts: list[models.Contact] = []
 
     async def one(domain: str) -> None:
         async with sem:
             try:
-                res = await domain_fn(client, key, domain, limit=10, executives_only=True)
+                got = await asyncio.to_thread(_apollo_pattern_contacts, domain)
             except Exception as e:
-                msg = str(e)
-                if "429" in msg:
-                    events.emit("campaign.rate_limited", level="warn", domain=domain)
-                else:
-                    events.emit("campaign.enrich_error", level="warn", domain=domain, reason=msg[:120])
+                events.emit("campaign.enrich_error", level="warn", domain=domain, reason=str(e)[:120])
                 return
-        if not res or not res.get("email"):
+        if not got:
             events.emit("campaign.no_contact", domain=domain)
             return
-        if int(res.get("email_score") or 0) < min_score:
-            events.emit("campaign.low_score", domain=domain, score=res.get("email_score"))
-            return
-        try:
-            contacts.append(models.Contact(
-                email=res["email"],
-                first_name=res.get("first_name", ""),
-                last_name=res.get("last_name", ""),
-                title=res.get("title", ""),
-                company=domain.split(".")[0].title(),
-                domain=domain,
-            ))
-        except ValueError as e:
-            events.emit("campaign.bad_email", level="warn", email=res.get("email"), reason=str(e))
+        contacts.extend(got)
 
     await asyncio.gather(*(one(d) for d in domains))
     return contacts
@@ -244,7 +252,7 @@ async def source_contacts_incremental(
     session_token: str,
     limit: int | None,
     min_score: int = 80,
-    batch_size: int = 20,
+    batch_size: int = 3,
     enrich_sem: asyncio.Semaphore | None = None,
 ) -> list[models.Contact]:
     """Enrich domains in batches, ledger-checking each batch before continuing.

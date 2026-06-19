@@ -221,38 +221,33 @@ async def test_apollo_domain_search():
     assert res["email_score"] == 95  # verified = 95
 
 
-# ---- test: enrich_domains orchestrator (mocked) -----------------------
+# ---- test: enrich_domains via apollo_source pattern sourcing ----------
 
 @pytest.mark.asyncio
-@respx.mock
-async def test_enrich_domains_apollo(monkeypatch):
+async def test_enrich_domains_pattern(monkeypatch):
+    """The campaign enriches each domain through apollo_source: one verified seed
+    plus pattern-derived contacts, all included (no min-score gate)."""
+    from skills.campaign import apollo_source
     from skills.campaign import run as camp
 
-    respx.post("https://api.apollo.io/v1/mixed_people/api_search").mock(
-        return_value=httpx.Response(200, json=FAKE_APOLLO_SEARCH_RESP)
-    )
-    respx.post("https://api.apollo.io/v1/people/match").mock(
-        return_value=httpx.Response(200, json=FAKE_APOLLO_MATCH_RESP)
-    )
-    contacts = await camp.enrich_domains(["widgets.io"], "apollo", "fake_key", min_score=50)
-    assert len(contacts) == 1
-    assert contacts[0].email == "bob@widgets.io"
+    monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
 
+    def fake_source(client, domain, **kwargs):
+        return {"domain": domain, "pattern": "{first}", "credits": 1, "contacts": [
+            {"email": "gabi@magicspoon.com", "first_name": "Gabi", "last_name": "Lewis",
+             "title": "Co-Founder", "company": "Magic Spoon", "domain": domain,
+             "email_score": 95, "email_status": "verified"},
+            {"email": "david@magicspoon.com", "first_name": "David", "last_name": "",
+             "title": "COO", "company": "Magic Spoon", "domain": domain,
+             "email_score": 60, "email_status": "pattern_derived"},
+        ]}
 
-@pytest.mark.asyncio
-@respx.mock
-async def test_enrich_domains_filters_low_score():
-    from skills.campaign import run as camp
-
-    respx.post("https://api.apollo.io/v1/mixed_people/api_search").mock(
-        return_value=httpx.Response(200, json={"people": [{"id": "p_low", "first_name": "Low", "title": "CEO"}]})
-    )
-    respx.post("https://api.apollo.io/v1/people/match").mock(
-        return_value=httpx.Response(200, json={"person": {"email": "low@example.com",
-            "first_name": "Low", "last_name": "", "title": "CEO", "email_status": "guessed"}})
-    )
-    contacts = await camp.enrich_domains(["example.com"], "apollo", "fake_key", min_score=80)
-    assert len(contacts) == 0
+    monkeypatch.setattr(apollo_source, "source_domain", fake_source)
+    contacts = await camp.enrich_domains(["magicspoon.com"], "apollo", "fake_key", min_score=80)
+    emails = {c.email for c in contacts}
+    assert emails == {"gabi@magicspoon.com", "david@magicspoon.com"}
+    # the low-confidence derived contact is still included (send + bounce-suppress)
+    assert any(c.email_status == "pattern_derived" for c in contacts)
 
 
 # ---- test: reply upsert (mocked Supabase) -----------------------------
