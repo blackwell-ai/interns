@@ -29,17 +29,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
 
 # ---- helpers -----------------------------------------------------------
 
-FAKE_APOLLO_DOMAIN_RESP = {
-    "people": [
-        {
-            "email": "bob@widgets.io",
-            "first_name": "Bob",
-            "last_name": "Jones",
-            "title": "Founder",
-            "email_status": "verified",
-        }
-    ]
-}
+FAKE_APOLLO_SEARCH_RESP = {"people": [{"id": "p_bob", "first_name": "Bob", "title": "Founder"}]}
+FAKE_APOLLO_MATCH_RESP = {"person": {"email": "bob@widgets.io", "first_name": "Bob",
+                                     "last_name": "Jones", "title": "Founder",
+                                     "email_status": "verified"}}
 
 FAKE_GMAIL_SEND_RESP = {"id": "msg_abc123", "threadId": "thread_1", "labelIds": ["SENT"]}
 
@@ -214,8 +207,11 @@ async def test_apollo_domain_search():
     sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
     from toolbox.primitives.findemail.cli import _apollo_domain
 
-    respx.post("https://api.apollo.io/v1/mixed_people/search").mock(
-        return_value=httpx.Response(200, json=FAKE_APOLLO_DOMAIN_RESP)
+    respx.post("https://api.apollo.io/v1/mixed_people/api_search").mock(
+        return_value=httpx.Response(200, json=FAKE_APOLLO_SEARCH_RESP)
+    )
+    respx.post("https://api.apollo.io/v1/people/match").mock(
+        return_value=httpx.Response(200, json=FAKE_APOLLO_MATCH_RESP)
     )
     async with httpx.AsyncClient(timeout=60) as client:
         res = await _apollo_domain(client, "fake_key", "widgets.io", limit=10, executives_only=True)
@@ -232,8 +228,11 @@ async def test_apollo_domain_search():
 async def test_enrich_domains_apollo(monkeypatch):
     from skills.campaign import run as camp
 
-    respx.post("https://api.apollo.io/v1/mixed_people/search").mock(
-        return_value=httpx.Response(200, json=FAKE_APOLLO_DOMAIN_RESP)
+    respx.post("https://api.apollo.io/v1/mixed_people/api_search").mock(
+        return_value=httpx.Response(200, json=FAKE_APOLLO_SEARCH_RESP)
+    )
+    respx.post("https://api.apollo.io/v1/people/match").mock(
+        return_value=httpx.Response(200, json=FAKE_APOLLO_MATCH_RESP)
     )
     contacts = await camp.enrich_domains(["widgets.io"], "apollo", "fake_key", min_score=50)
     assert len(contacts) == 1
@@ -245,14 +244,12 @@ async def test_enrich_domains_apollo(monkeypatch):
 async def test_enrich_domains_filters_low_score():
     from skills.campaign import run as camp
 
-    low_score_resp = {
-        "people": [
-            {"email": "low@example.com", "first_name": "Low", "last_name": "",
-             "title": "CEO", "email_status": "guessed"}
-        ]
-    }
-    respx.post("https://api.apollo.io/v1/mixed_people/search").mock(
-        return_value=httpx.Response(200, json=low_score_resp)
+    respx.post("https://api.apollo.io/v1/mixed_people/api_search").mock(
+        return_value=httpx.Response(200, json={"people": [{"id": "p_low", "first_name": "Low", "title": "CEO"}]})
+    )
+    respx.post("https://api.apollo.io/v1/people/match").mock(
+        return_value=httpx.Response(200, json={"person": {"email": "low@example.com",
+            "first_name": "Low", "last_name": "", "title": "CEO", "email_status": "guessed"}})
     )
     contacts = await camp.enrich_domains(["example.com"], "apollo", "fake_key", min_score=80)
     assert len(contacts) == 0

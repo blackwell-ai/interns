@@ -13,7 +13,7 @@ from toolbox.primitives.findemail.cli import app
 runner = CliRunner()
 
 APOLLO_MATCH = "https://api.apollo.io/v1/people/match"
-APOLLO_SEARCH = "https://api.apollo.io/v1/mixed_people/search"
+APOLLO_SEARCH = "https://api.apollo.io/v1/mixed_people/api_search"
 
 
 @pytest.fixture
@@ -62,13 +62,15 @@ def test_find_exec_picks_decision_maker(tmp_path, monkeypatch):
     monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
     domains = tmp_path / "domains.csv"
     domains.write_text("brand,domain\nCaraway,carawayhome.com\n")
-    # domain search returns several people; the founder must be chosen over staff
+    # api_search returns people without emails; the founder must outrank staff,
+    # then the top pick is revealed via people/match.
     respx.post(APOLLO_SEARCH).mock(return_value=Response(200, json={"people": [
-        {"email": "support@carawayhome.com", "first_name": "Sam", "last_name": "Help",
-         "title": "Support Agent", "email_status": "verified"},
-        {"email": "jordan@carawayhome.com", "first_name": "Jordan", "last_name": "Nathan",
-         "title": "Founder & CEO", "email_status": "verified"},
+        {"id": "p_support", "first_name": "Sam", "title": "Support Agent"},
+        {"id": "p_founder", "first_name": "Jordan", "title": "Founder & CEO"},
     ]}))
+    respx.post(APOLLO_MATCH).mock(return_value=Response(200, json={"person": {
+        "email": "jordan@carawayhome.com", "first_name": "Jordan", "last_name": "Nathan",
+        "title": "Founder & CEO", "email_status": "verified"}}))
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out)])
     assert result.exit_code == 0, result.output
@@ -92,8 +94,10 @@ def test_find_exec_cache_skips_apollo(tmp_path, monkeypatch):
                      '"first_name":"Jordan","last_name":"Nathan","title":"CEO",'
                      '"email_score":97,"email_status":"verified"}\n')
     route = respx.post(APOLLO_SEARCH).mock(return_value=Response(200, json={"people": [
-        {"email": "ceo@newbrand.com", "first_name": "Ann", "last_name": "Doe",
-         "title": "Founder", "email_status": "verified"}]}))
+        {"id": "p_ann", "first_name": "Ann", "title": "Founder"}]}))
+    respx.post(APOLLO_MATCH).mock(return_value=Response(200, json={"person": {
+        "email": "ceo@newbrand.com", "first_name": "Ann", "last_name": "Doe",
+        "title": "Founder", "email_status": "verified"}}))
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out),
                                  "--cache", str(cache)])
@@ -114,14 +118,15 @@ def test_find_exec_thorough_uses_limit_25(tmp_path, monkeypatch):
     captured = {}
     def handler(req):
         captured["body"] = json.loads(req.content)
-        return Response(200, json={"people": [
-            {"email": "f@x.com", "first_name": "F", "last_name": "", "title": "Founder",
-             "email_status": "verified"}]})
+        return Response(200, json={"people": [{"id": "p_f", "first_name": "F", "title": "Founder"}]})
     respx.post(APOLLO_SEARCH).mock(side_effect=handler)
+    respx.post(APOLLO_MATCH).mock(return_value=Response(200, json={"person": {
+        "email": "f@x.com", "first_name": "F", "last_name": "X", "title": "Founder",
+        "email_status": "verified"}}))
     out = tmp_path / "c.csv"
     runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out), "--thorough"])
     assert captured["body"]["per_page"] == 25
-    assert "person_titles" not in captured["body"]  # thorough = no seniority/title filter
+    assert "person_seniorities" not in captured["body"]  # thorough = no seniority filter
 
 
 @respx.mock

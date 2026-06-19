@@ -167,44 +167,47 @@ def _load_cache(path: str) -> dict[str, dict]:
 @_transient
 async def _apollo_domain(client: httpx.AsyncClient, key: str, domain: str,
                          limit: int = 10, executives_only: bool = True):
-    """Apollo people search by domain — pick the most senior decision-maker."""
-    titles = (["CEO", "Founder", "Co-Founder", "President", "Chief Executive",
-               "CMO", "Chief Marketing", "VP Marketing", "Head of Marketing"]
-              if executives_only else [])
-    body: dict = {
-        "organization_domains": [domain],
-        "per_page": limit,
-        "page": 1,
-    }
-    if titles:
-        body["person_titles"] = titles
-    r = await client.post(
-        "https://api.apollo.io/v1/mixed_people/search",
-        headers={"X-Api-Key": key, "Content-Type": "application/json"},
-        json=body,
-    )
+    """Apollo people search (api_search) -> reveal the top decision-maker.
+
+    The old mixed_people/search is deprecated for API callers. api_search returns
+    names + titles + ids but no emails (and obfuscated last names), so we reveal
+    the top-ranked candidate via people/match (one credit) for the work email.
+    """
+    hdr = {"X-Api-Key": key, "Content-Type": "application/json"}
+    seniorities = (["owner", "founder", "c_suite", "partner", "vp", "head", "director"]
+                   if executives_only else [])
+    body: dict = {"q_organization_domains_list": [domain], "per_page": limit, "page": 1}
+    if seniorities:
+        body["person_seniorities"] = seniorities
+    r = await client.post("https://api.apollo.io/v1/mixed_people/api_search", headers=hdr, json=body)
     if r.status_code in (429,) or r.status_code >= 500:
         r.raise_for_status()
     if r.status_code != 200:
         return None
     people = (r.json() or {}).get("people") or []
-    candidates = [p for p in people if (p.get("email") or "").strip()
-                  and (p.get("email_status") or "") not in ("invalid", "unavailable")]
-    if not candidates:
+    if not people:
+        return None
+    people.sort(key=lambda p: _decision_maker_rank(p.get("title", ""), ""))
+    top = people[0]
+    rr = await client.post("https://api.apollo.io/v1/people/match", headers=hdr,
+                           json={"id": top.get("id"), "reveal_personal_emails": False})
+    if rr.status_code in (429,) or rr.status_code >= 500:
+        rr.raise_for_status()
+    if rr.status_code != 200:
+        return None
+    person = (rr.json() or {}).get("person") or {}
+    email = (person.get("email") or "").strip().lower()
+    if not email:
         return None
     _APOLLO_SCORE = {"verified": 95, "likely to engage": 70, "guessed": 40}
-    candidates.sort(key=lambda p: (
-        _decision_maker_rank(p.get("title", ""), ""),
-        -_APOLLO_SCORE.get((p.get("email_status") or "").lower(), 0),
-    ))
-    best = candidates[0]
+    status = (person.get("email_status") or "unknown").lower()
     return {
-        "email": best["email"].strip().lower(),
-        "first_name": (best.get("first_name") or "").strip(),
-        "last_name": (best.get("last_name") or "").strip(),
-        "title": (best.get("title") or "").strip(),
-        "email_score": _APOLLO_SCORE.get((best.get("email_status") or "").lower(), 50),
-        "email_status": (best.get("email_status") or "unknown").lower(),
+        "email": email,
+        "first_name": (person.get("first_name") or "").strip(),
+        "last_name": (person.get("last_name") or "").strip(),
+        "title": (person.get("title") or top.get("title") or "").strip(),
+        "email_score": _APOLLO_SCORE.get(status, 50),
+        "email_status": status,
     }
 
 
