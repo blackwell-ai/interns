@@ -7,5 +7,8 @@ black.
 and favicons. `blackwell-logo-wide.png` is the same mark on a wider canvas
 (2130x1200), good for headers and banners.
 
-These came out of the June 2026 brand work. PNG only for now; if the vector
-source turns up, add it here.
+`blackwell-logo-black.svg` is the mark traced to vector: black stones on a
+transparent background, so it drops onto any light surface and recolors with
+`currentColor`. viewBox is 501x482.
+
+These came out of the June 2026 brand work.
