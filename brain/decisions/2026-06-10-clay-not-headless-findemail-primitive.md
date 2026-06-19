@@ -1,5 +1,9 @@
 # Finding: Clay can't be driven fully headlessly — `findemail` is the headless path
 
+> **Superseded 2026-06-18:** Apollo is now the only outbound tool, and `findemail`
+> is Apollo-only. Clay, Prospeo, Hunter, and Origami were dropped. See
+> `brain/decisions/2026-06-18-apollo-only-outbound.md`. Kept for history.
+
 **Date:** 2026-06-10 · **Source:** building the headless lead-sourcing pipeline
 (Armaan: "control Clay headlessly, save as a primitive").
 

@@ -1,5 +1,9 @@
 # Decision: Prospeo is the volume email-finding engine (2026-06-16)
 
+> **Superseded 2026-06-18:** Apollo is now the only outbound tool; Clay, Prospeo,
+> Hunter, and Origami were dropped. See
+> `brain/decisions/2026-06-18-apollo-only-outbound.md`. Kept for history.
+
 ## Context
 
 Cold-email volume needs verified decision-maker emails at scale. We had been

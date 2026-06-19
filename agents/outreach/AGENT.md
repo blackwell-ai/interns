@@ -6,19 +6,18 @@ replies, and reports results — while the humans sleep.
 **All outreach automations run through the automation harness.** Read
 `skills/PROTOCOL.md` and `toolbox/TOOLBOX.md` before building anything; the
 routing preference is rerun a skill → fork one → compose a new flow → (only
-deliberately) write a new primitive. **`skills/clay-cold-email/` is the
-canonical cold-email flow** — input is a Clay lead export.
+deliberately) write a new primitive. The Apollo-based cold-email skill is
+pending Armaan's directions; the old `clay-cold-email` flow was removed in the
+2026-06-18 cleanup.
 
 ## Tools
 
-- **Clay** (claude.ai MCP connector — see `brain/company/connections.md`) —
-  **the lead workbench**: sourcing, enrichment from 100+ providers, waterfall
-  email lookups, lead tables. Per the 2026-06-10 decision
-  (`brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`), **Apollo and
-  StoreLeads are not used at all** — Clay is the only sourcing/enrichment
-  tool. Caveat: the claude.ai connector is unavailable in headless/cron runs;
-  for harness flows, use Clay's HTTP API or Clay-exported CSVs as flow inputs
-  (see the open task in `inbox/`).
+- **Apollo** (apollo.io, `APOLLO_API_KEY`) — the only lead and email tool:
+  sourcing, enrichment, and verified email lookup. It replaced Clay, Prospeo,
+  Hunter, and Origami as of 2026-06-18 (see
+  `brain/decisions/2026-06-18-apollo-only-outbound.md`). Exact Apollo wire-up
+  (search filters, enrichment, sequencing, credit model) is pending Armaan's
+  directions; do not reach for any other sourcing tool.
 - **The toolbox** (`toolbox/`) — primitives for verification (`verify.check`),
   composition (`compose.render`) and sending/reading (`gmail.send`,
   `gmail.replies`, `gmail.bounces`). Auth is per-person via `toolbox auth
@@ -40,21 +39,21 @@ canonical cold-email flow** — input is a Clay lead export.
    **contact ledger** (Supabase, spec §7) guarantees no one is ever emailed
    twice across any automation, any teammate, any machine. Never work around
    it; `allow_recontact` is for deliberate follow-up sequences only.
-3. Source, enrich, and qualify in Clay: build the lead table there, verify
-   emails, fill in role/company/store context, drop leads that don't fit the
-   ICP on closer look. Hand the harness a Clay export (or Clay HTTP API pull)
-   as the flow's input list.
+3. Source, enrich, and qualify in Apollo: pull the lead list, verify emails,
+   fill in role/company/store context, drop leads that don't fit the ICP on
+   closer look. Hand the harness an Apollo export (or API pull) as the flow's
+   input list.
 4. Every email goes to a verified address. A per-lead personalization hook is
    no longer required: the current DTC opener uses social proof
    ($100M brands like Public Goods and Good Molecules) instead,
    so `compose.render` runs with `personalize` off and keeps rows that have no
    hook. When a template does use a `{{personalization_hook}}`, still ground it
    in something real about the lead.
-5. Check replies each run. Run `skills/handle-replies/` — it classifies each
-   reply, answers questions, and for interested leads proposes real open
-   calendar slots and books a Google Meet on their pick (all via gogcli +
-   headless Claude Code). Positive/ambiguous replies also become
-   `inbox/queue/` tasks. Bounces are suppressed automatically.
+5. Check replies each run: classify each reply, answer questions, and for
+   interested leads propose real open calendar slots and book a Google Meet on
+   their pick (gogcli + headless Claude Code). Positive/ambiguous replies also
+   become `inbox/queue/` tasks. Bounces are suppressed automatically. The
+   reply-handling skill is pending rebuild on Apollo.
 6. Write what's working (angles, subject lines, reply rates) into
    `brain/research/outreach-learnings.md`. Run reports live in
    `runs/<id>/report.md`.
@@ -76,13 +75,13 @@ canonical cold-email flow** — input is a Clay lead export.
 
 ## Autonomous mode
 
-For high-volume autonomous campaigns where token cost matters, use
-`skills/autonomous-outreach/` (a headless script) instead of driving sends
-turn-by-turn in the model context. It enforces the same suppression/no-double-
-contact gate per send and CCs the co-founders. Pair with `skills/handle-replies/`
-on a schedule to triage and book calls. The accountable, fully-gated version is
-`skills/clay-cold-email/`; reach for it when a campaign needs the
-clarify→dryrun→canary chain.
+For high-volume autonomous campaigns where token cost matters, the outreach
+agent runs a headless send loop (same suppression / no-double-contact gate per
+send, CCs the co-founders) instead of driving sends turn-by-turn in the model
+context. The Apollo-based skills (cold-email flow, autonomous send loop, reply
+handling) are pending Armaan's directions; the old `clay-cold-email`,
+`autonomous-outreach`, and `handle-replies` skills were removed in the
+2026-06-18 cleanup.
 
 ## Reporting
 

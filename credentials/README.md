@@ -19,7 +19,7 @@ Local credentials for human and agent employees.
 
 - **Harness flows** — Supabase (`toolbox auth login` / `connect`); nothing in
   `.env` at all. Gmail refresh tokens and provider keys stay server-side.
-- **Transitional tools** (gogcli) and direct API use (Clay HTTP, Supabase
+- **Transitional tools** (gogcli) and direct API use (Apollo, Supabase
   keys) — this `.env`.
 - **History note:** earlier today the `.env` *was* committed (the original
   stopgap decision). Those blobs remain in git history — anything that was in

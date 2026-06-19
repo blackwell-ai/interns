@@ -18,7 +18,7 @@ the Supabase record of irreversible actions.
 cd toolbox && uv sync          # install
 uv run toolbox auth login      # once per person: Google sign-in (keychain)
 uv run toolbox auth connect gmail      # second consent: gmail.send for the SENDING account
-uv run toolbox auth connect clay       # paste API key (use --org-shared for team keys)
+uv run toolbox auth connect apollo     # paste API key (use --org-shared for team keys)
 # LLM steps need no key: they run headless Claude Code (`claude -p`) under the
 # machine's logged-in Claude subscription.
 uv run toolbox run <skill> [-i key=value] [--yes]
@@ -68,7 +68,7 @@ calling skill's SKILL.md ("no existing primitive can X").
 |---|---|---|
 | `gmail.send` / `gmail.replies` / `gmail.bounces` | send mail; read replies/bounces | gmail (oauth) |
 | `domains.source` | web-search domain sourcing (Claude Code WebSearch) | Claude subscription (`claude` CLI login) |
-| `findemail.find` / `findemail.find-exec` | name+domain → verified work email; or domain → decision-maker + email (the headless lead-enrichment step) | hunter or findymail (API key) |
+| `findemail.find` / `findemail.find-exec` | name+domain → verified work email; or domain → decision-maker + email (the headless lead-enrichment step) | apollo (API key) |
 | `verify.check` | MX/DNS deliverability | — |
 | `compose.render` | template render + LLM personalization | Claude subscription (optional) |
 | `fetch.urls` | pull web sources → pages.jsonl | — |
@@ -76,14 +76,13 @@ calling skill's SKILL.md ("no existing primitive can X").
 | `inbox.file` | file findings as inbox/queue/ tasks | — |
 | `throttle.wait` | explicit pacing (in NO default chain) | — |
 
-Lead enrichment: **Clay cannot be driven fully headlessly** — it has no API to
-create a table or configure its enrichment recipe (the waterfall lives in the
-UI; "Clay doesn't have a traditional API"). So the headless enrichment step is
-`findemail`, which calls the same underlying providers Clay waterfalls across
-(Hunter, Findymail) via their REST APIs — one key, zero manual setup. A Clay
-CSV export passed via `-i` remains a valid input too. The former
-`apollo`/`storeleads` primitives were removed under the Clay decision
-(`brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`).
+Lead enrichment: the headless enrichment step is `findemail`, which calls
+**Apollo** (`api.apollo.io`) for decision-maker lookup and verified work emails.
+Apollo is the only sourcing/enrichment tool as of 2026-06-18 (see
+`brain/decisions/2026-06-18-apollo-only-outbound.md`); Clay, Prospeo, Hunter,
+and Findymail were dropped. A CSV export passed via `-i` remains a valid input
+too. The exact Apollo wire-up (filters, credit model) is pending Armaan's
+directions.
 
 **Process primitives** (removable lines like any other): `plan.write`,
 `clarify.ask`, `test.smoke`, `test.dryrun`, `canary.run`, `report.write`.

@@ -35,7 +35,7 @@ def auth_whoami():
 
 @auth_app.command("connect")
 def auth_connect(
-    provider: str = typer.Argument(help="gmail | clay | anthropic | reddit"),
+    provider: str = typer.Argument(help="gmail | apollo | anthropic | reddit"),
     org_shared: bool = typer.Option(False, help="Share this key with the whole org (team keys)."),
 ):
     """Connect an integration to YOUR account (spec §8)."""

@@ -29,5 +29,5 @@ skills/autonomous-outreach/enrichment_cache.jsonl
 !skills/autonomous-outreach/lead_bank.csv
 .gstack/
 
-# Locally-installed plugin skills (origami, etc.) — not repo content
+# Locally-installed plugin skills, not repo content
 .claude/skills/

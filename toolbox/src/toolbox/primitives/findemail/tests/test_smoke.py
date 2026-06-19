@@ -1,4 +1,6 @@
-"""findemail offline smoke tests — HTTP mocked (respx), both providers."""
+"""findemail offline smoke tests — HTTP mocked (respx), Apollo provider."""
+
+import json
 
 import pytest
 import respx
@@ -10,16 +12,14 @@ from toolbox.primitives.findemail.cli import app
 
 runner = CliRunner()
 
-HUNTER = "https://api.hunter.io/v2/email-finder"
-HUNTER_DOMAIN = "https://api.hunter.io/v2/domain-search"
-FINDYMAIL = "https://app.findymail.com/api/search/name"
+APOLLO_MATCH = "https://api.apollo.io/v1/people/match"
+APOLLO_SEARCH = "https://api.apollo.io/v1/mixed_people/search"
 
 
 @pytest.fixture
 def candidates(tmp_path, monkeypatch):
     monkeypatch.setenv("TOOLBOX_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("TOOLBOX_TOKEN_HUNTER", "fake")
-    monkeypatch.setenv("TOOLBOX_TOKEN_FINDYMAIL", "fake")
+    monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
     c = tmp_path / "cand.csv"
     c.write_text("brand,domain,name\nCaraway,carawayhome.com,Jordan Nathan\n"
                  "Cuts,cutsclothing.com,Steven Borrelli\n")
@@ -27,13 +27,11 @@ def candidates(tmp_path, monkeypatch):
 
 
 @respx.mock
-def test_hunter_finds_and_keeps_passthrough(candidates):
+def test_apollo_finds_and_keeps_passthrough(candidates):
     tmp_path, c = candidates
-    respx.get(HUNTER).mock(side_effect=[
-        Response(200, json={"data": {"email": "jordan@carawayhome.com", "score": 95,
-                                     "verification": {"status": "valid"}}}),
-        Response(200, json={"data": {"email": "steven@cutsclothing.com", "score": 88,
-                                     "verification": {"status": "valid"}}}),
+    respx.post(APOLLO_MATCH).mock(side_effect=[
+        Response(200, json={"person": {"email": "jordan@carawayhome.com", "email_status": "verified"}}),
+        Response(200, json={"person": {"email": "steven@cutsclothing.com", "email_status": "verified"}}),
     ])
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find", "--in", str(c), "--out", str(out), "--concurrency", "1"])
@@ -45,12 +43,11 @@ def test_hunter_finds_and_keeps_passthrough(candidates):
 
 
 @respx.mock
-def test_hunter_drops_low_score_and_not_found(candidates):
+def test_apollo_drops_low_score_and_not_found(candidates):
     tmp_path, c = candidates
-    respx.get(HUNTER).mock(side_effect=[
-        Response(200, json={"data": {"email": "jordan@carawayhome.com", "score": 50,
-                                     "verification": {"status": "unknown"}}}),  # below min
-        Response(200, json={"data": {"email": None, "score": 0}}),             # not found
+    respx.post(APOLLO_MATCH).mock(side_effect=[
+        Response(200, json={"person": {"email": "jordan@carawayhome.com", "email_status": "guessed"}}),  # score 40, below min
+        Response(200, json={"person": {"email": None, "email_status": "unavailable"}}),                  # not found
     ])
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find", "--in", str(c), "--out", str(out),
@@ -60,64 +57,48 @@ def test_hunter_drops_low_score_and_not_found(candidates):
 
 
 @respx.mock
-def test_findymail_provider(candidates):
-    tmp_path, c = candidates
-    respx.post(FINDYMAIL).mock(side_effect=[
-        Response(200, json={"contact": {"email": "jordan@carawayhome.com"}}),
-        Response(200, json={"contact": {"email": "steven@cutsclothing.com"}}),
-    ])
-    out = tmp_path / "contacts.csv"
-    result = runner.invoke(app, ["find", "--in", str(c), "--out", str(out),
-                                 "--provider", "findymail", "--concurrency", "1"])
-    assert result.exit_code == 0, result.output
-    assert len(io.read_csv(out, models.Contact)) == 2
-
-
-@respx.mock
 def test_find_exec_picks_decision_maker(tmp_path, monkeypatch):
     monkeypatch.setenv("TOOLBOX_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("TOOLBOX_TOKEN_HUNTER", "fake")
+    monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
     domains = tmp_path / "domains.csv"
     domains.write_text("brand,domain\nCaraway,carawayhome.com\n")
     # domain search returns several people; the founder must be chosen over staff
-    respx.get(HUNTER_DOMAIN).mock(return_value=Response(200, json={"data": {"emails": [
-        {"value": "support@carawayhome.com", "first_name": "Sam", "last_name": "Help",
-         "position": "Support Agent", "seniority": "junior", "confidence": 99},
-        {"value": "jordan@carawayhome.com", "first_name": "Jordan", "last_name": "Nathan",
-         "position": "Founder & CEO", "seniority": "executive", "confidence": 92,
-         "verification": {"status": "valid"}},
-    ]}}))
+    respx.post(APOLLO_SEARCH).mock(return_value=Response(200, json={"people": [
+        {"email": "support@carawayhome.com", "first_name": "Sam", "last_name": "Help",
+         "title": "Support Agent", "email_status": "verified"},
+        {"email": "jordan@carawayhome.com", "first_name": "Jordan", "last_name": "Nathan",
+         "title": "Founder & CEO", "email_status": "verified"},
+    ]}))
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out)])
     assert result.exit_code == 0, result.output
     rows = io.read_csv(out, models.Contact)
     assert len(rows) == 1
-    assert rows[0].email == "jordan@carawayhome.com"  # founder, not the higher-confidence support
+    assert rows[0].email == "jordan@carawayhome.com"  # founder, not the support agent
     assert rows[0].first_name == "Jordan"
     assert rows[0].brand == "Caraway"
 
 
 @respx.mock
-def test_find_exec_cache_skips_hunter(tmp_path, monkeypatch):
-    """A domain already in the cache is never re-queried (0 extra Hunter calls)."""
+def test_find_exec_cache_skips_apollo(tmp_path, monkeypatch):
+    """A domain already in the cache is never re-queried (0 extra Apollo calls)."""
     monkeypatch.setenv("TOOLBOX_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("TOOLBOX_TOKEN_HUNTER", "fake")
+    monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
     domains = tmp_path / "domains.csv"
     domains.write_text("brand,domain\nCaraway,carawayhome.com\nNew,newbrand.com\n")
     cache = tmp_path / "cache.jsonl"
     # carawayhome is pre-cached; newbrand is not
     cache.write_text('{"domain":"carawayhome.com","email":"jordan@carawayhome.com",'
                      '"first_name":"Jordan","last_name":"Nathan","title":"CEO",'
-                     '"email_score":97,"email_status":"valid"}\n')
-    route = respx.get(HUNTER_DOMAIN).mock(return_value=Response(200, json={"data": {"emails": [
-        {"value": "ceo@newbrand.com", "first_name": "Ann", "last_name": "Doe",
-         "position": "Founder", "seniority": "executive", "confidence": 95,
-         "verification": {"status": "valid"}}]}}))
+                     '"email_score":97,"email_status":"verified"}\n')
+    route = respx.post(APOLLO_SEARCH).mock(return_value=Response(200, json={"people": [
+        {"email": "ceo@newbrand.com", "first_name": "Ann", "last_name": "Doe",
+         "title": "Founder", "email_status": "verified"}]}))
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out),
                                  "--cache", str(cache)])
     assert result.exit_code == 0, result.output
-    assert route.call_count == 1          # only newbrand hit Hunter; caraway came from cache
+    assert route.call_count == 1          # only newbrand hit Apollo; caraway came from cache
     emails = {r.email for r in io.read_csv(out, models.Contact)}
     assert emails == {"jordan@carawayhome.com", "ceo@newbrand.com"}
     # newbrand is now appended to the cache for next time
@@ -127,32 +108,30 @@ def test_find_exec_cache_skips_hunter(tmp_path, monkeypatch):
 @respx.mock
 def test_find_exec_thorough_uses_limit_25(tmp_path, monkeypatch):
     monkeypatch.setenv("TOOLBOX_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("TOOLBOX_TOKEN_HUNTER", "fake")
+    monkeypatch.setenv("TOOLBOX_TOKEN_APOLLO", "fake")
     domains = tmp_path / "domains.csv"
     domains.write_text("brand,domain\nX,x.com\n")
     captured = {}
     def handler(req):
-        captured["url"] = str(req.url)
-        return Response(200, json={"data": {"emails": [
-            {"value": "f@x.com", "first_name": "F", "position": "Founder",
-             "seniority": "executive", "confidence": 90, "verification": {"status": "valid"}}]}})
-    respx.get(HUNTER_DOMAIN).mock(side_effect=handler)
+        captured["body"] = json.loads(req.content)
+        return Response(200, json={"people": [
+            {"email": "f@x.com", "first_name": "F", "last_name": "", "title": "Founder",
+             "email_status": "verified"}]})
+    respx.post(APOLLO_SEARCH).mock(side_effect=handler)
     out = tmp_path / "c.csv"
     runner.invoke(app, ["find-exec", "--in", str(domains), "--out", str(out), "--thorough"])
-    assert "limit=25" in captured["url"]
-    assert "seniority" not in captured["url"]  # thorough = no seniority filter
+    assert captured["body"]["per_page"] == 25
+    assert "person_titles" not in captured["body"]  # thorough = no seniority/title filter
 
 
 @respx.mock
-def test_hunter_retries_429(candidates):
+def test_apollo_retries_429(candidates):
     tmp_path, c = candidates
-    route = respx.get(HUNTER)
+    route = respx.post(APOLLO_MATCH)
     route.side_effect = [
-        Response(429, json={"errors": [{"details": "slow down"}]}),
-        Response(200, json={"data": {"email": "jordan@carawayhome.com", "score": 95,
-                                     "verification": {"status": "valid"}}}),
-        Response(200, json={"data": {"email": "steven@cutsclothing.com", "score": 90,
-                                     "verification": {"status": "valid"}}}),
+        Response(429, json={"error": "slow down"}),
+        Response(200, json={"person": {"email": "jordan@carawayhome.com", "email_status": "verified"}}),
+        Response(200, json={"person": {"email": "steven@cutsclothing.com", "email_status": "verified"}}),
     ]
     out = tmp_path / "contacts.csv"
     result = runner.invoke(app, ["find", "--in", str(c), "--out", str(out), "--concurrency", "1"])

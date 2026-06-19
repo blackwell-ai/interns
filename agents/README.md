@@ -7,7 +7,7 @@ charter at any time.
 
 ## Current roster
 
-- `outreach/` — autonomous outbound: finds and enriches leads in Clay,
+- `outreach/` — autonomous outbound: sources and enriches leads in Apollo,
   runs outreach via gogcli.
 - `researcher/` — monitors Discord servers, subreddits, researchers, and
   conferences; surfaces anything relevant to us.

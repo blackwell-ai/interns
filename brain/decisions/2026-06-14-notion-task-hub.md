@@ -70,6 +70,6 @@ the next interactive session so the two do not drift. Full protocol is in
   proposed builds, not yet decided: a weekly batch tracker for the YC cadence,
   and an agent standup feed so humans see agent work without reading
   `agents/*/log.md`.
-- Deliberately not built: a lead CRM (would duplicate Clay, see
-  `brain/decisions/2026-06-10-clay-is-the-lead-workbench.md`) and a knowledge
+- Deliberately not built: a lead CRM (would duplicate the lead tool, see
+  `brain/decisions/2026-06-18-apollo-only-outbound.md`) and a knowledge
   base (would duplicate the repo brain).

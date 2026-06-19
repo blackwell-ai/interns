@@ -8,7 +8,7 @@ Two separate OAuth consents (plan §7 item 4 — sign-in is NOT send-authorizati
      the refresh token server-side. Provider client-secrets never reach laptops.
 
 `get_token(provider)` exchanges the person's session for a fresh provider
-token via the `token-refresh` edge function. API-key providers (clay, anthropic) return the stored key the same way, so no key ever
+token via the `token-refresh` edge function. API-key providers (apollo, anthropic) return the stored key the same way, so no key ever
 sits in the repo or an env file.
 
 Headless/test override: TOOLBOX_TOKEN_<PROVIDER> env var short-circuits
@@ -222,7 +222,7 @@ def _refresh_gmail_token(refresh_token: str, client_id: str, client_secret: str)
 
 
 def connect_api_key(provider: str, key: str, account: str = "", org_shared: bool = False) -> None:
-    """Store an API-key connection (clay, anthropic). The secret
+    """Store an API-key connection (apollo, anthropic). The secret
     goes through the edge function into `connection_secrets` (service-role
     only); only metadata is visible to clients."""
     r = httpx.post(

@@ -62,7 +62,7 @@ and ideas worth stealing, not routine chatter.
   (the Algolia API) and is solid.
 - The authenticated `oauth.reddit.com` path is built and dormant: if Reddit ever
   grants API access, drop `TOOLBOX_TOKEN_REDDIT=client_id:client_secret` into
-  `credentials/.env` (matching `TOOLBOX_TOKEN_HUNTER`) and fetch switches to it
+  `credentials/.env` (matching the `TOOLBOX_TOKEN_<PROVIDER>` convention) and fetch switches to it
   with no code change.
 - The claude.ai MCP connectors (Notion, Gmail) are interactive and absent in
   headless or cron runs (brain/company/connections.md). So delivery uses the

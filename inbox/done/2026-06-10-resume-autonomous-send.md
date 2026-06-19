@@ -49,3 +49,12 @@ sending stays human-gated.
 
 You've decided how to run outbound (manual, or grant the agent a permission
 rule) and the queue has been sent or re-queued.
+
+## Result
+
+Closed obsolete 2026-06-18. Outbound moved entirely to Apollo, so the send path
+this task describes (the `autonomous-outreach` scripts, Clay-enriched contacts,
+the gogcli/Supabase send loop) no longer exists. Those skills were deleted. Any
+remaining outbound runs in Apollo. See
+`brain/decisions/2026-06-18-apollo-only-outbound.md`. Kept as a record of the
+auto-mode safety gate we hit on unattended mass sending.
