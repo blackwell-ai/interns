@@ -11,6 +11,11 @@ def test_infer_first_initial_last():
     assert infer_pattern("Jordan", "Nathan", "jnathan@carawayhome.com") == "{f}{last}"
 
 
+def test_infer_first_plus_last_initial():
+    # glossier-style emilyw@ — the pattern that broke the first send
+    assert infer_pattern("Emily", "Weiss", "emilyw@glossier.com") == "{first}{l}"
+
+
 def test_infer_first_dot_last():
     assert infer_pattern("Jane", "Doe", "jane.doe@acme.com") == "{first}.{last}"
 
@@ -20,15 +25,21 @@ def test_infer_unknown_returns_none():
 
 
 def test_apply_first_name_needs_no_last():
-    assert apply_pattern("{first}", "Gabi", None, "magicspoon.com") == "gabi@magicspoon.com"
+    assert apply_pattern("{first}", "Gabi", None, "", "magicspoon.com") == "gabi@magicspoon.com"
 
 
 def test_apply_last_name_pattern_without_last_is_none():
-    assert apply_pattern("{f}{last}", "Jordan", None, "carawayhome.com") is None
+    # {f}{last} needs the full last name; only the obfuscated initial is not enough
+    assert apply_pattern("{f}{last}", "Jordan", None, "N", "carawayhome.com") is None
 
 
 def test_apply_first_initial_last():
-    assert apply_pattern("{f}{last}", "Jordan", "Nathan", "carawayhome.com") == "jnathan@carawayhome.com"
+    assert apply_pattern("{f}{last}", "Jordan", "Nathan", "N", "carawayhome.com") == "jnathan@carawayhome.com"
+
+
+def test_apply_first_plus_last_initial_from_obfuscation():
+    # the fix: derive {first}{l} from first name + last initial alone (no full last name)
+    assert apply_pattern("{first}{l}", "Emily", None, "W", "glossier.com") == "emilyw@glossier.com"
 
 
 def test_obf_match_accepts_correct():

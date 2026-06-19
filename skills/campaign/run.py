@@ -375,7 +375,7 @@ async def _source_from_mix(
         segment_phrase = seg.get("segment_phrase", label.lower())
 
         print(f"[{label}] target {quota}: generating domains...")
-        domains = await generate_domain_pool(icp, max(30, quota * 3), llm_sem)
+        domains = await generate_domain_pool(icp, max(15, quota // 5), llm_sem)
         print(f"[{label}] {len(domains)} domains; enriching...")
         contacts = await source_contacts_incremental(
             domains, provider, key, session_token,
@@ -748,7 +748,7 @@ def main() -> None:
     elif args.icp:
         # Focused ICP path: generate a large domain pool, enrich + ledger-check
         # in batches of 20, stop as soon as --limit new contacts are found.
-        domain_count = max(60, (args.limit or 30) * 3)
+        domain_count = max(20, (args.limit or 30) // 5)
         print(f"Generating domains for: {args.icp[:80]}")
         domains = asyncio.run(generate_domain_pool(args.icp, domain_count))
         print(f"  {len(domains)} domains generated")

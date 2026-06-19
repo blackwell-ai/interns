@@ -53,19 +53,24 @@ MATCH_URL = "https://api.apollo.io/v1/people/match"
 # free, so we cast a wide senior net and let the caller narrow later.
 RELEVANT_SENIORITIES = ["owner", "founder", "c_suite", "partner", "vp", "head", "director"]
 
-# Patterns tried against the one revealed (name, email). Order matters: more
-# specific before less. Each maps a template to how it builds the local part.
+# Patterns tried against the one revealed (name, email). Each builder takes
+# (first, last, last_initial). Patterns that need only first name or last initial
+# can be derived for free (Apollo's search gives the first name + the last
+# initial via the obfuscated last name); patterns that need the full last name
+# require a web/reveal resolve.
 _PATTERNS = [
-    ("{first}", lambda f, l: f),
-    ("{f}{last}", lambda f, l: f[:1] + l),
-    ("{first}.{last}", lambda f, l: f + "." + l),
-    ("{f}.{last}", lambda f, l: f[:1] + "." + l),
-    ("{first}{last}", lambda f, l: f + l),
-    ("{first}_{last}", lambda f, l: f + "_" + l),
-    ("{first}.{l}", lambda f, l: f + "." + l[:1]),
-    ("{last}", lambda f, l: l),
-    ("{last}.{first}", lambda f, l: l + "." + f),
-    ("{f}", lambda f, l: f[:1]),
+    ("{first}", lambda f, ln, li: f),
+    ("{first}{l}", lambda f, ln, li: f + li),       # emilyw
+    ("{first}.{l}", lambda f, ln, li: f + "." + li),
+    ("{f}{last}", lambda f, ln, li: f[:1] + ln),
+    ("{f}.{last}", lambda f, ln, li: f[:1] + "." + ln),
+    ("{first}.{last}", lambda f, ln, li: f + "." + ln),
+    ("{first}{last}", lambda f, ln, li: f + ln),
+    ("{first}_{last}", lambda f, ln, li: f + "_" + ln),
+    ("{first}-{last}", lambda f, ln, li: f + "-" + ln),
+    ("{last}", lambda f, ln, li: ln),
+    ("{last}.{first}", lambda f, ln, li: ln + "." + f),
+    ("{f}", lambda f, ln, li: f[:1]),
 ]
 
 
@@ -104,22 +109,27 @@ def reveal(client: httpx.Client, person_id: str) -> dict:
 
 
 def infer_pattern(first: str, last: str, email: str) -> str | None:
-    f, l = (first or "").lower(), (last or "").lower()
+    f, ln = (first or "").lower(), (last or "").lower()
+    li = ln[:1]
     local = email.split("@")[0].lower()
     for tmpl, build in _PATTERNS:
-        val = build(f, l)
+        val = build(f, ln, li)
         if val and val == local:
             return tmpl
     return None
 
 
-def apply_pattern(tmpl: str, first: str, last: str, domain: str) -> str | None:
-    f, l = (first or "").lower(), (last or "").lower()
-    if ("{last}" in tmpl or "{l}" in tmpl) and not l:
-        return None  # last-name pattern but we only have the obfuscated last name
+def apply_pattern(tmpl: str, first: str, last: str, last_initial: str, domain: str) -> str | None:
+    f = (first or "").lower()
+    ln = (last or "").lower()
+    li = (last_initial or (ln[:1] if ln else "")).lower()
+    if "{last}" in tmpl and not ln:
+        return None  # needs the full last name (only the obfuscated form is free)
+    if "{l}" in tmpl and not li:
+        return None  # needs at least the last initial
     for t, build in _PATTERNS:
         if t == tmpl:
-            local = build(f, l)
+            local = build(f, ln, li)
             return f"{local}@{domain}" if local else None
     return None
 
@@ -190,7 +200,7 @@ def resolve_last_names_web(company: str, domain: str, people: list[dict]) -> dic
     return out
 
 
-def source_domain(client: httpx.Client, domain: str, max_seed_reveals: int = 2,
+def source_domain(client: httpx.Client, domain: str, max_seed_reveals: int = 3,
                   resolve_web: bool = True, reveal_undecidable: bool = False,
                   reveal_cap: int = 10) -> dict:
     """One domain -> contacts + credits spent. See module docstring for the model."""
@@ -200,25 +210,25 @@ def source_domain(client: httpx.Client, domain: str, max_seed_reveals: int = 2,
     if not people:
         return result
 
-    # Reveal the most senior people until one returns an email -> learn pattern.
+    # Reveal the most senior people: every reveal is a real verified contact, and
+    # the first seed whose name maps cleanly to its email defines the pattern.
     ordered = sorted(people, key=lambda p: _rank(p.get("title")))
-    seed = None
-    seed_id = None
+    pattern = None
+    revealed: list[tuple[str, dict]] = []
     for cand in ordered[:max_seed_reveals]:
         result["credits"] += 1
         rv = reveal(client, cand["id"])
-        if rv.get("email"):
-            seed = rv
-            seed_id = cand["id"]
+        if not rv.get("email"):
+            continue
+        revealed.append((cand["id"], rv))
+        pat = infer_pattern(rv.get("first_name", ""), rv.get("last_name", ""), rv["email"])
+        if pat:
+            pattern = pat
             break
-    if not seed:
-        return result
-    pattern = infer_pattern(seed.get("first_name", ""), seed.get("last_name", ""), seed["email"])
     result["pattern"] = pattern
-    if not pattern:
-        return result
+    if not revealed:
+        return result  # no revealable emails on this domain
 
-    seed_email = seed["email"].lower()
     contacts: list[dict] = []
     seen = set()
 
@@ -226,26 +236,30 @@ def source_domain(client: httpx.Client, domain: str, max_seed_reveals: int = 2,
         if not email or email in seen:
             return
         seen.add(email)
-        org = ""
         contacts.append({
             "email": email, "first_name": first or "", "last_name": last or "",
-            "title": title or "", "company": org, "domain": domain,
+            "title": title or "", "company": "", "domain": domain,
             "email_score": score, "email_status": status,
         })
 
-    # The verified seed.
-    add(seed_email, seed.get("first_name"), seed.get("last_name"),
-        seed.get("title"), "verified", 95)
+    # Every revealed seed is a verified contact (kept even when no pattern emerges).
+    revealed_ids = set()
+    for _id, rv in revealed:
+        revealed_ids.add(_id)
+        add(rv["email"].lower(), rv.get("first_name"), rv.get("last_name"),
+            rv.get("title"), (rv.get("email_status") or "verified").lower(), 95)
 
     undecidable = []
-    for p in people:
-        if seed_id and p.get("id") == seed_id:
-            continue  # already added as the verified seed
-        email = apply_pattern(pattern, p.get("first_name", ""), p.get("last_name"), domain)
-        if email:
-            add(email, p.get("first_name"), "", p.get("title"), "pattern_derived", 60)
-        elif p.get("id"):
-            undecidable.append(p)
+    if pattern:
+        for p in people:
+            if p.get("id") in revealed_ids:
+                continue  # already added as a verified seed
+            li = (p.get("last_name_obfuscated") or "")[:1]  # last initial is free from search
+            email = apply_pattern(pattern, p.get("first_name", ""), p.get("last_name"), li, domain)
+            if email:
+                add(email, p.get("first_name"), "", p.get("title"), "pattern_derived", 60)
+            elif p.get("id"):
+                undecidable.append(p)
 
     # Last-name pattern: recover the missing last names from the web (no Apollo
     # credits), then derive.
@@ -258,7 +272,7 @@ def source_domain(client: httpx.Client, domain: str, max_seed_reveals: int = 2,
             last = resolved.get(p["id"])
             if not last:
                 continue
-            email = apply_pattern(pattern, p.get("first_name", ""), last, domain)
+            email = apply_pattern(pattern, p.get("first_name", ""), last, last[:1], domain)
             if email:
                 resolved_ids.add(p["id"])
                 add(email, p.get("first_name"), last, p.get("title"), "pattern_derived", 55)
