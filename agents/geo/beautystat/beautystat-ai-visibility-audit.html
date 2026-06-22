@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BeautyStat: AI Visibility Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+  .pagefoot{ position:fixed; bottom:0.34in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:78%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:28%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>BeautyStat · AI Visibility Audit</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>BeautyStat<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI engines and search see BeautyStat today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> BeautyStat leadership</div>
+    <div><span class="k">Date</span> June 22, 2026</div>
+    <div><span class="k">Scope</span> Public site, search and AI surface, reputation</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS · Dartmouth CS · UC Berkeley MET (EECS &amp; Business) · Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded BeautyStat on five dimensions of how AI engines and search treat the brand. Each dimension is scored 0 to 100 against observed behavior across AI answer engines, the brand's own indexed pages and structured data, the review and beauty-press corpus, and the agent-commerce surface. Competitor scores are our estimates from the same public signals. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">D</div>
+      <div class="score">57 / 100</div>
+      <div class="cap">BeautyStat today</div>
+    </div>
+    <p class="grade-note"><strong>BeautyStat is the rare DTC skincare brand that did the technical basics right:</strong> real Product and Offer schema, a strong meta description, an entity on the homepage. That is why this is a D and not an F, and why the competitive set (SkinCeuticals, The Ordinary, TruSkin, averaging ~77) is within reach. The gap is the layer that actually drives an AI recommendation. Recommendability, at 32, is the lowest dimension: asked for the best vitamin C serum, AI engines name SkinCeuticals, TruSkin, and La Roche-Posay, and never BeautyStat. The award-winning reputation and the chemist's authority are real. They are just not machine-readable, so no engine reaches them.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">BeautyStat</th><th class="cmp">SkinC.</th><th class="cmp">Ordinary</th><th class="cmp">TruSkin</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:62%"></div></div></div><div class="n">62</div></td>
+      <td class="cmp">80</td><td class="cmp">82</td><td class="cmp">72</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:60%"></div></div></div><div class="n">60</div></td>
+      <td class="cmp">70</td><td class="cmp">76</td><td class="cmp">66</td>
+      <td class="what">Schema depth, structured product and review data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:32%"></div></div></div><div class="n">32</div></td>
+      <td class="cmp">90</td><td class="cmp">88</td><td class="cmp">80</td>
+      <td class="what">Inclusion in AI category answers and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:66%"></div></div></div><div class="n">66</div></td>
+      <td class="cmp">70</td><td class="cmp">80</td><td class="cmp">72</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:64%"></div></div></div><div class="n">64</div></td>
+      <td class="cmp">85</td><td class="cmp">80</td><td class="cmp">70</td>
+      <td class="what">Review presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">57 (D)</span></td>
+      <td class="cmp">79 (B+)</td><td class="cmp">81 (B+)</td><td class="cmp">72 (B-)</td>
+      <td class="what">BeautyStat trails the competitive average by about 20 points, almost all of it on recommendability and the machine-readable reputation layer.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not full audits of those brands. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>BeautyStat is a science-led skincare brand with a genuine edge: a founder who is a 20-plus-year veteran cosmetic chemist (Ron Robinson), a patented vitamin C formula, an award-winning hero product, and a celebrity following. It also did the technical groundwork most DTC brands skip. None of that is reaching the AI answers that sell vitamin C serums, because the three things that drive a recommendation are missing. When we asked AI engines for the best vitamin C serum, BeautyStat was not named once. A value brand, TruSkin, was.</p>
+  <p style="color:var(--muted);font-size:9pt">Five findings, ordered worst first.</p>
+  <ol class="short">
+    <li><strong>AI does not recommend BeautyStat for vitamin C serums.</strong> Asked for the best, engines return SkinCeuticals, TruSkin, La Roche-Posay, and CeraVe. BeautyStat is absent, and absent from the listicles those engines cite.</li>
+    <li><strong>An award-winning reputation no machine can read.</strong> The Yotpo reviews load in JavaScript and never enter the product's structured data, so there is no <code>AggregateRating</code> for Google's stars or for an AI engine to quote.</li>
+    <li><strong>The founder and the science are not a machine-readable entity.</strong> BeautyStat's whole edge is Ron Robinson and patented chemistry. On the page, yes. In schema, no. There is no <code>Organization</code> or founder entity tying the authority to the brand.</li>
+    <li><strong>The homepage title wastes the strongest signal.</strong> It reads "BeautyStat Skincare," a brand plus one generic word, with no "vitamin C" or high-intent terms, and the homepage carries no share image.</li>
+    <li><strong>The agent-commerce layer is provisioned but generic.</strong> The <code>llms.txt</code> and <code>agents.md</code> are the default Shopify boilerplate, not a content map that tells an agent what makes BeautyStat different.</li>
+  </ol>
+  <div class="darkbox">ChatGPT, Perplexity, and Google AI Mode all answer beauty queries with live retrieval now, and they lean on review schema, entity authority, and category content. BeautyStat has the product and the reputation to win those answers. It is losing them on the machine-readable layer, where a thinner but better-structured competitor wins by default.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 5 · Critical</p>
+  <h2 class="ruled">AI does not recommend BeautyStat for vitamin C serums</h2>
+  <p>AI answer engines are where skincare shoppers increasingly start. They do not browse a category; they ask "what is the best vitamin C serum" and get a short, synthesized shortlist. BeautyStat is not on it.</p>
+  <div class="ai avoid">
+    <p class="plabel">Query, web-search-backed AI answer: "best vitamin C serum, dermatologist recommended"</p>
+    <p class="resp">"SkinCeuticals C E Ferulic, the gold standard. TruSkin Vitamin C Serum, best value. La Roche-Posay Pure Vitamin C, best for sensitive skin. CeraVe Skin Renewing Vitamin C, budget-friendly..."</p>
+  </div>
+  <p>BeautyStat is not mentioned. Neither is it in the "best vitamin C serums" roundups those engines pull from (Meddu, The INKEY List's guide, dermatologist listicles, and TruSkin's own guide).</p>
+  <div class="quote">The sharpest tell: TruSkin, a value brand, earns the recommendation partly by publishing the very "best vitamin C serums 2026" guide the engines quote. BeautyStat, a more premium and more credible product, publishes no such category content and is absent from the others. <span class="src">(web-search-backed retrieval, June 22, 2026)</span></div>
+  <p class="sub-h">Why this is the most expensive finding in the deck</p>
+  <p>Vitamin C serum is the category BeautyStat was built to win: the hero Universal C Skin Refiner is 20% L-ascorbic acid with patented stabilization. Being absent at the moment of recommendation is worth more than any single ranking position, because the engine is choosing on the shopper's behalf and never offers BeautyStat as an option. The product's quality cannot rescue a recommendation it is never part of. And the gap compounds: every engine that adds live retrieval reads the same listicles and the same empty schema layer and reaches the same competitors.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is downstream of the next three findings. Machine-readable reviews, a founder and science entity, and presence in the category sources engines cite are what pull a brand into these answers. We also seed the specific roundups and comparison queries where "best vitamin C serum" gets decided.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 5 · Critical</p>
+  <h2 class="ruled">An award-winning reputation no machine can read</h2>
+  <p>This is the finding that should be encouraging. BeautyStat's reputation is its single strongest asset, and it is genuinely strong. It is also disconnected from the structured data, so no AI engine can attribute it.</p>
+  <div class="quote">An award-winning hero product, founded by a 20-plus-year veteran cosmetic chemist (Ron Robinson), featured by The Daily Beast as "a chemical peel in a bottle," associated with Hailey Bieber, called "12/10" by estheticians on Reddit, reviewed across the beauty press, and sold on Amazon and Sephora. <span class="src">(Amazon, beauty press, Reddit, the brand's own awards pages)</span></div>
+  <p>Now the problem. The product page collects reviews through Yotpo, but the rating never reaches the structured data.</p>
+  <pre class="code"><span class="c">// beautystat.com hero product, structured data found</span>
+JSON-LD: Product, Offer, Brand, availability <span class="r">InStock</span>
+AggregateRating / Review schema:   <span class="r">none</span>
+<span class="c">// the Yotpo star rating loads in JavaScript and is absent from the JSON-LD,</span>
+<span class="c">// confirmed the way an engine reads it: static HTML + structured data only.</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>No rich-result stars in Google, so the listing is a plain blue link while competitors show ratings. And when an AI engine compares vitamin C serums, it quotes the ratings it can read; BeautyStat's cannot be read, so a competitor's gets quoted instead. The reputation exists. It does no work.</p>
+  <p class="fixline"><b>The fix.</b> Emit <code>AggregateRating</code> and <code>Review</code> schema from the Yotpo data BeautyStat already collects, so the star rating becomes machine-readable for both Google rich results and AI engines. One integration, the whole catalog covered.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 5 · High severity</p>
+  <h2 class="ruled">The founder and the science are not a machine-readable entity</h2>
+  <p>BeautyStat's entire positioning is authority: a veteran cosmetic chemist and patented technology. That authority is on the page and absent from the structured data.</p>
+  <pre class="code"><span class="c">// beautystat.com homepage, entity schema</span>
+JSON-LD @types:  OnlineStore, WebSite, SearchAction
+Organization:    <span class="r">none</span>
+founder (Person, Ron Robinson):   <span class="r">none</span>
+<span class="c">// the patents and the chemist are in the copy, not in the schema.</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>AI engines weight entity authority heavily when deciding what to recommend, and in skincare the whole question is "who formulated this and are they credible." With no machine-readable founder or <code>Organization</code>, the credibility that should make BeautyStat the obvious answer to "a vitamin C serum from an actual chemist" is not legible. The brand is winning the human version of this argument and losing the machine version.</p>
+  <p class="fixline"><b>The fix.</b> <code>Organization</code> plus a founder <code>Person</code> entity (Ron Robinson and his credentials), <code>sameAs</code> links to the authoritative profiles for him and the brand, and structured references to the patents and clinical claims. This is the groundwork that turns reputation into recommendation.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 5 · High severity</p>
+  <h2 class="ruled">The homepage wastes the strongest on-page signal</h2>
+  <p>The title tag is the line Google weighs most for ranking and the line an AI engine reads first to understand a page. BeautyStat's is a brand and one generic word.</p>
+  <pre class="code"><span class="c">// beautystat.com homepage &lt;head&gt;, today</span>
+&lt;title&gt;<span class="r">BeautyStat Skincare</span>&lt;/title&gt;   <span class="c">// no "vitamin C serum", no high-intent terms</span>
+&lt;meta name="description"&gt;   present and strong (chemist, patented, proven)
+&lt;meta property="og:image"&gt;   <span class="r">missing on the homepage</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>"BeautyStat Skincare" ranks for the brand name and little else, not for the categories the brand wants to own, like "vitamin C serum" or "vitamin C serum for dark spots." The meta description is good, which is what makes the thin title the weak link. The missing share image also means links to the homepage render without a preview on social and in chat surfaces.</p>
+  <p class="fixline"><b>The fix.</b> Descriptive, keyworded title templates and an <code>https</code> share image on the homepage, carried through to collection and product titles, so the category terms BeautyStat competes on are in the signals engines read first. Theme-level and low-risk.</p>
+</section>
+
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 5 · Medium severity</p>
+  <h2 class="ruled">The agent-commerce layer is provisioned but generic</h2>
+  <p>Shopify auto-provisions an agent stack: <code>llms.txt</code>, <code>agents.md</code>, a UCP/MCP endpoint. BeautyStat has all of it, and it works. The content is the default.</p>
+  <div class="bench"><code>llms.txt</code> = the generic 4.3 KB Shopify "Agent Instructions" template with the store name filled in, routing agents to Shop Pay. Zero brand, founder, science, or product differentiation.</div>
+  <p class="sub-h">Why it matters</p>
+  <p>To an agent reading the <code>llms.txt</code> today, BeautyStat is an anonymous Shopify store, not "the patented, chemist-formulated vitamin C brand." The transaction rails work; the content that would make an agent choose BeautyStat is blank. The same gap shows up in the brand's content: a 141-post blog of skincare science from a working chemist is exactly the authority content AI engines reward, and none of it is surfaced to the agent layer or wired in with <code>Article</code> schema.</p>
+  <p class="fixline"><b>The fix.</b> Rewrite <code>llms.txt</code> and <code>agents.md</code> as a real content map (the chemist, the patents, the hero product and what makes it different, the science blog), and wire the blog in with <code>Article</code> schema, keeping the working Shopify transaction layer underneath.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The vitamin C serum set, on the signals that decide who an AI engine recommends. BeautyStat wins on founder story and product credibility. On the machine-readable and category-content layer, it is the one showing up empty.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>BeautyStat</th><th>SkinCeuticals</th><th>The Ordinary</th><th>TruSkin</th></tr>
+    <tr><td class="k1">Named in AI "best vitamin C serum" answers</td><td class="bad">no</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td></tr>
+    <tr><td class="k1">Homepage title</td><td class="bad">generic ("BeautyStat Skincare")</td><td>bot-gated</td><td class="good">descriptive</td><td class="good">descriptive</td></tr>
+    <tr><td class="k1">Review rating in product schema</td><td class="bad">none</td><td class="good">yes (est.)</td><td class="good">yes (est.)</td><td class="good">yes (est.)</td></tr>
+    <tr><td class="k1">Publishes category content engines cite</td><td class="bad">minimal</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes (own guide)</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">The only fully verified row is the first, and it is the one that matters: every competitor is named in the AI answer, BeautyStat is not. The rest are estimates from public signals. The pattern holds across them. BeautyStat has the better chemist and a patented, award-winning product, and is losing the recommendation to brands that are simply more legible to a machine.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Two phases. Phase 1 is a 30-day sprint that makes BeautyStat's reputation and authority machine-readable and gets it into the category answers. Phase 2 is ongoing AI visibility work that moves the composite from D toward B over the following months. After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 · 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Machine-readable foundation sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Five remediations, each closing a finding above.</p>
+    <ul class="rem">
+      <li><code>AggregateRating</code> and <code>Review</code> schema from the Yotpo data across the catalog (finding 2)</li>
+      <li><code>Organization</code> plus a founder <code>Person</code> entity for Ron Robinson, with <code>sameAs</code> and structured patents and claims (finding 3)</li>
+      <li>Descriptive title, meta, and share-image templates across homepage, collections, and products (finding 4)</li>
+      <li><code>llms.txt</code> and <code>agents.md</code> rewritten as a content map; the science blog wired in with <code>Article</code> schema (finding 5)</li>
+      <li>Recommendability groundwork: placement in the category sources engines cite for "best vitamin C serum" (finding 1)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite visibility score (target 57 to 70-plus, D to C); rich-result and schema-validator coverage across the catalog; presence in AI category answers for "best vitamin C serum" and "vitamin C serum for dark spots," before and after. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">Phase 2 and beyond</p>
+  <p>Phase 1 makes BeautyStat readable. Phase 2 makes it recommended, and keeps it there: continuous AI behavior monitoring per dimension, an entity and authority program that puts Ron Robinson and the science where engines treat it as a citable source, ongoing placement in the category roundups, and the protocol-evolution work as agent commerce advances. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what the brand publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled BeautyStat's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>llms.txt</code>, <code>agents.md</code>, <code>/.well-known/ucp</code>, and the product, collection, and blog sitemaps (26 products, 13 collections, roughly 140 posts), pulled June 22, 2026.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran category and brand queries through web-search-backed AI retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode use by default, and recorded which brands were named and which sources were cited. BeautyStat's absence from the vitamin C serum results and from the listicles those engines cite is the basis of finding 1.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled BeautyStat's reputation from Amazon, the beauty press, Reddit, and the brand's own awards and review surface, and checked whether any of it is linked to the product's structured data. The reputation is real; the missing schema link is finding 2.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>SkinCeuticals, The Ordinary, and TruSkin were checked the same day on the same signals. Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard. SkinCeuticals' site is behind a bot challenge, so its on-page signals are inferred from its category presence.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>llms.txt</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries. Counts pulled June 22, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises · Armaan Priyadarshan · Samarjit Deshmukh · Ethan Zhou · Shamit D'Souza · ethanpzhou@berkeley.edu</div></div>
+</section>
+
+</body>
+</html>
