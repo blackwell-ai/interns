@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GhostBed: AI Visibility Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  /* page footer, repeated by Chrome on every page */
+  .pagefoot{ position:fixed; bottom:0.34in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:78%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  /* numbered short list */
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  /* evidence */
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; } pre.code .g{ color:#8fbf93; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+
+  /* readiness + compare tables */
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:28%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  /* phases */
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>GhostBed &middot; AI Visibility Audit</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>GhostBed<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI engines and search see GhostBed today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> GhostBed leadership</div>
+    <div><span class="k">Date</span> June 22, 2026</div>
+    <div><span class="k">Scope</span> Public site, search and AI surface, reputation, agent-commerce readiness</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS &middot; Dartmouth CS &middot; UC Berkeley MET (EECS &amp; Business) &middot; Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded GhostBed on five dimensions of how AI engines and search treat the brand. Each dimension is scored 0 to 100 against observed behavior across AI answer engines, the category listicles those engines cite, third-party reputation sources, the brand's own indexed pages, and the agent-commerce surface. Competitor scores are our estimates from the same public signals. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">C</div>
+      <div class="score">61 / 100</div>
+      <div class="cap">GhostBed today</div>
+    </div>
+    <p class="grade-note"><strong>GhostBed has the best agent-commerce plumbing in its competitive set and one of the cleaner product-schema layers, yet it is the set's least visible brand in the AI answers that sell mattresses.</strong> Transactability, at 84, leads Saatva, Purple, and Nectar, none of which expose a live agent endpoint. The two dimensions that decide whether an engine ever names GhostBed to a new shopper, recommendability (38) and reputation (48), are the lowest. The rails are ready. The engines never route a buyer onto them.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">GhostBed</th><th class="cmp">Saatva</th><th class="cmp">Purple</th><th class="cmp">Nectar</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:64%"></div></div></div><div class="n">64</div></td>
+      <td class="cmp">74</td><td class="cmp">80</td><td class="cmp">64</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:70%"></div></div></div><div class="n">70</div></td>
+      <td class="cmp">66</td><td class="cmp">74</td><td class="cmp">62</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:38%"></div></div></div><div class="n">38</div></td>
+      <td class="cmp">90</td><td class="cmp">76</td><td class="cmp">82</td>
+      <td class="what">Inclusion in AI category recommendations and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:84%"></div></div></div><div class="n">84</div></td>
+      <td class="cmp">46</td><td class="cmp">46</td><td class="cmp">46</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:48%"></div></div></div><div class="n">48</div></td>
+      <td class="cmp">84</td><td class="cmp">70</td><td class="cmp">68</td>
+      <td class="what">Review aggregator presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">61 (C)</span></td>
+      <td class="cmp">74 (C)</td><td class="cmp">70 (C)</td><td class="cmp">64 (C)</td>
+      <td class="what">GhostBed trails the set average by about 9 points, all of it on recommendability and reputation, while leading every competitor on the agent-commerce layer.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not a full audit of those brands. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>GhostBed is an established cooling-mattress brand: a decade in market, a Venus Williams signature line, Costco and Amazon distribution, and a Shopify store that already runs the modern agent-commerce rails most brands have not built. The product itself reviews well. The problem is upstream of all of it. When we asked AI answer engines for the best cooling mattress, GhostBed's own category, it was not named once. Saatva, Nectar, Purple, and Helix were. The checkout an AI agent would use is live and correct. The engine never sends a buyer to it.</p>
+  <p style="color:var(--muted);font-size:9pt">Six findings, ordered worst first. The sixth is a strength.</p>
+  <ol class="short">
+    <li><strong>AI engines do not recommend GhostBed, not even for cooling.</strong> Asked for the best cooling mattress, the best online mattress, and the best mattress overall, AI answer engines named Saatva, Nectar, Purple, Helix, DreamCloud, and WinkBed. GhostBed appeared in none of the three, despite "Luxury Cooling Mattresses" being its own homepage title.</li>
+    <li><strong>The reputation a machine can read is both weak and unlinked.</strong> GhostBed's product pages advertise a 4.8 from 10,223 reviews, its own widget. The open web shows 3.5 on Trustpilot (82% one-star all time), 1.61 at the BBB, and 1.5 on ConsumerAffairs. The <code>Organization</code> in GhostBed's schema carries <code>sameAs: none</code>, so nothing connects the brand to any of it.</li>
+    <li><strong>The homepage is strong for humans and blank for machines.</strong> Good title, meta, and social cards, but zero JSON-LD on the homepage: no <code>Organization</code>, <code>WebSite</code>, or <code>Brand</code> entity, and no server-rendered <code>h1</code>. Purple ships all of it.</li>
+    <li><strong>GhostBed wrote the content AI engines quote, then hid it from them.</strong> 36 head-to-head comparison pages (GhostBed vs Saatva, vs Casper, vs Helix) and roughly 86 buying guides, with no <code>Article</code> or <code>FAQPage</code> schema, and an <code>llms.txt</code> that by its own text only "mirrors" the agent file rather than mapping any of it.</li>
+    <li><strong>Product schema is strong; the entity and policy schema around it is missing.</strong> PDPs render full <code>Product</code>, <code>Offer</code>, and <code>AggregateRating</code>. There is no <code>WebSite</code>, <code>BreadcrumbList</code>, or <code>FAQPage</code>, so an engine can read a price but not the trial or warranty terms.</li>
+    <li><strong>The agent-commerce layer is live, and ahead of the entire category.</strong> A working UCP profile, an MCP endpoint, <code>agents.md</code>, and an agentic-discovery sitemap. Saatva, Purple, and Nectar expose none of it. This is the asset to build on.</li>
+  </ol>
+  <div class="darkbox">ChatGPT, Perplexity, and Google AI Mode all default to live web retrieval in 2026. Every mattress query that hits live retrieval reads the same category listicles and the same reputation corpus, and reaches Saatva, Nectar, Purple, and Helix. GhostBed built the checkout rails for that exact moment. It is just never the brand the engine routes the buyer to.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 6 &middot; Critical</p>
+  <h2 class="ruled">AI engines do not recommend GhostBed, not even for cooling</h2>
+  <p>AI answer engines are now where many mattress shoppers start. They do not browse; they ask "what is the best cooling mattress" and get back a short, synthesized list. We ran three framings of that question through web-search-backed retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode use by default. GhostBed was absent from all three.</p>
+  <div class="ai avoid">
+    <p class="plabel">Query, web-search-backed AI answer: "best cooling mattress for hot sleepers 2026"</p>
+    <p class="resp">"Helix Midnight Luxe (best overall), Brooklyn Bedding Aurora Luxe, WinkBed, DreamCloud Premier Hybrid, Bear Elite..."</p>
+  </div>
+  <p>GhostBed is not mentioned, in the one category it names itself after. Its homepage title is "Shop GhostBed: Luxury Cooling Mattresses &amp; Bedding," and the cooling answer goes to six other brands.</p>
+  <div class="ai avoid">
+    <p class="plabel">Query, web-search-backed AI answer: "best online mattress brands 2026"</p>
+    <p class="resp">"WinkBed (the number-one pick), Casper Snow, Leesa, Nectar, DreamCloud, Saatva, Helix..."</p>
+  </div>
+  <p>Two of GhostBed's direct competitors, Nectar and Saatva, are named here. GhostBed is not. A third query, "best mattress 2026," returned more than a dozen brands (WinkBed, Helix, Amerisleep, Saatva, Casper, Avocado, Purple, Tempur-Pedic, Sealy, Serta, Beautyrest, Stearns &amp; Foster). GhostBed was in none of them.</p>
+  <div class="quote">GhostBed does surface in one situation: when the query already names it. "GhostBed vs Purple" and "GhostBed vs Saatva" return balanced comparisons, and the engines pull GhostBed's own comparison pages and Tom's Guide. That is brand defense for shoppers who already know GhostBed. It is not discovery for the shoppers who do not. <span class="src">(web-search-backed retrieval, June 22, 2026; sources cited included Sleep Foundation, Mattress Nerd, NapLab, Consumer Reports, RTINGS)</span></div>
+  <p class="sub-h">Why this is the most expensive finding in the deck</p>
+  <p>Category recommendation is the moment of intent, a shopper deciding which brand to buy. GhostBed being absent there is worth more than any single ranking position, because the engine is making the choice on the shopper's behalf and never offers GhostBed as an option. A strong product and a live checkout cannot rescue a recommendation they are never part of. And the gap compounds: each engine that leans harder on live retrieval reads the same listicles and reaches the same competitors.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is downstream of the next four findings. A machine-readable entity, a reputation linked to it, and structured comparison content are what pull a brand into these answers. We also map the specific category sources these engines cite ("best cooling mattress," "best online mattress") and build the placement plan to earn GhostBed into them.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 6 &middot; Critical</p>
+  <h2 class="ruled">The reputation a machine can read is both weak and unlinked</h2>
+  <p>GhostBed's product pages advertise a 4.8 rating over 10,223 reviews. That number is GhostBed's own first-party review widget. The reputation an independent engine reads off the open web is a different number, and nothing in GhostBed's schema links the two.</p>
+  <pre class="code"><span class="c">// On-site, in GhostBed's own product schema (Luxe Hybrid PDP)</span>
+AggregateRating:  <span class="g">4.8</span>  from  <span class="g">10,223</span>  reviews   <span class="c">(first-party widget)</span>
+Organization "GhostBed":  sameAs = <span class="r">none</span>
+
+<span class="c">// Off-site, the corpus an engine actually cross-references</span>
+Trustpilot:        <span class="r">3.5</span> / 5   (172 reviews, 82% one-star all time)
+BBB (GhostBed):    <span class="r">1.61</span> / 5   (B+, not accredited, 87 complaints in 3 yrs)
+ConsumerAffairs:   <span class="r">1.5</span> / 5   (120 reviews)
+Editorial reviews: 4.1 to 4.7   (Sleepopolis, Mattress Nerd, Mattress Clarity)
+Amazon listings:   3.9 to 4.4   (per model)</pre>
+  <p class="sub-h">Two separate problems, both fixable</p>
+  <p>First, the divergence is a credibility risk. As engines increasingly cross-reference Trustpilot, the BBB, and Reddit before they recommend, a self-reported 4.8 sitting next to a 3.5 and a 1.61 reads as unsupported, and the engine discounts it. Second, with <code>sameAs: none</code>, GhostBed is doing nothing to steer which reputation an engine attributes to it, and nothing to separate the consumer-facing GhostBed BBB profile (B+, 1.61) from the parent Nature's Sleep entity (A+). The entity is unmanaged at exactly the layer that decides trust.</p>
+  <div class="quote">The sentiment split matters and works in GhostBed's favor. Editorial reviewers rate the mattress itself 4.1 to 4.7. The negative reviews cluster on the company, returns, restocking fees, the mechanics of the 101-night trial, and warranty responsiveness, not the bed. Costco-channel buyers, who get a frictionless return path, skew positive. The reputation problem is operational and structural, not a verdict on the product. <span class="src">(Trustpilot, BBB, ConsumerAffairs, r/Mattress, observed June 22, 2026)</span></div>
+  <p class="fixline"><b>The fix.</b> What we build and deliver: <code>Organization</code> schema with a populated <code>sameAs</code> that links GhostBed to the profiles it wants attributed and consolidates the BBB entity, plus a review-management spec that targets the unsolicited platforms where the score is lowest. Claiming and responding on those platforms is GhostBed's to execute, and how sentiment moves is ultimately the reviewers'. We own the entity linkage and the playbook; acceptance criteria attach there.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 6 &middot; High severity</p>
+  <h2 class="ruled">The homepage is strong for humans and blank for machines</h2>
+  <p>The parts of the homepage a person sees are well done. The parts a machine reads to build an entity for "GhostBed" are mostly empty. This is the discoverability tax under finding 1.</p>
+  <pre class="code"><span class="c">// ghostbed.com homepage &lt;head&gt; and server HTML, June 22, 2026</span>
+&lt;title&gt;<span class="g">Shop GhostBed: Luxury Cooling Mattresses &amp; Bedding | GhostBed</span>&lt;/title&gt;   <span class="c">// good</span>
+&lt;meta name="description" ...&gt;  &lt;meta property="og:title" ...&gt;   <span class="g">present, descriptive</span>
+JSON-LD on the homepage:  <span class="r">none</span>   <span class="c">// no Organization, WebSite, SearchAction, or Brand</span>
+&lt;h1&gt; in server HTML:  <span class="r">none</span>   <span class="c">// "Our website requires JavaScript to operate properly"</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>The title says "GhostBed," but no structured entity tells a machine what GhostBed is, who makes it, what it is rated, or how its pages relate to each other. The body is JavaScript-rendered, so a crawler that does not execute scripts, which is how much AI retrieval still works, reads the head and a near-empty shell. The good news under this is real: all the major AI crawlers reach the page cleanly. GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, and Google-Extended each returned a 200. The front door is open; there is just nothing structured inside it.</p>
+  <div class="ai avoid">
+    <p class="plabel">The contrast, from the same-day competitor recon</p>
+    <p class="resp">Purple's homepage ships a full entity graph: <code>Organization</code>, <code>Brand</code>, <code>WebPage</code>, <code>ItemList</code>, and <code>ContactPoint</code>. An engine assembling "who is GhostBed" has Purple's complete record and GhostBed's empty one to work from.</p>
+  </div>
+  <p class="fixline"><b>The fix.</b> Server-rendered <code>Organization</code>, <code>WebSite</code>, <code>SearchAction</code>, and <code>Brand</code> schema on the homepage, with the <code>sameAs</code> links from finding 2, and the page's <code>h1</code> and key copy in the server HTML so non-JavaScript crawlers can read them. Theme-level and mechanical.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 6 &middot; High severity</p>
+  <h2 class="ruled">GhostBed wrote the content AI engines quote, then hid it from them</h2>
+  <p>This is the finding that should be encouraging, because the hard part is already done. GhostBed publishes exactly the content these engines pull into comparison and buying answers. It is just unstructured and unmapped, so machines cannot see it for what it is.</p>
+  <pre class="code"><span class="c">// ghostbed.com content footprint, from the sitemaps, June 22, 2026</span>
+Total /pages:         <span class="g">429</span>
+Head-to-head "vs" comparison pages:   <span class="g">36</span>   <span class="c">// ghostbed-vs-saatva, -casper, -helix, -brooklyn-bedding...</span>
+Buying guides (review / best / guide):  ~<span class="g">86</span>
+Article or FAQPage schema on them:   <span class="r">none</span>
+Blog articles in sitemap_blogs:   <span class="r">1</span>
+llms.txt:  by its own text, "mirrors" agents.md   <span class="c">// a transaction file, not a content map</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>Original, branded comparison and education content is one of the few durable advantages in AI visibility, because it is what engines quote and it is hard to fake. GhostBed has a deep library of it, including its own "GhostBed vs Saatva" and "GhostBed vs Purple" pages, the exact pages an engine wants when a shopper asks for that comparison. But none of it carries <code>Article</code> or <code>FAQPage</code> schema, none of it is mapped in a content-facing <code>llms.txt</code>, and the <code>llms.txt</code> that should do that mapping says, in its own words, that it just mirrors the agent transaction file. The work exists. It is wired to nothing.</p>
+  <p class="fixline"><b>The fix.</b> <code>Article</code> and <code>FAQPage</code> schema across the comparison and guide pages, internal links from each to the products it supports, and a rewritten <code>llms.txt</code> that is a genuine content map (the lineup, the cooling technology, the comparisons, the Venus Williams line, trial and warranty terms) kept distinct from the <code>agents.md</code> transaction file.</p>
+</section>
+
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">Product schema is strong; the entity and policy schema around it is missing</h2>
+  <p>This is the dimension GhostBed is closest to winning. Its product pages are genuinely well structured, which is why quotability scores a 70 and not lower. The gap is the layer around the product, not the product itself.</p>
+  <pre class="code"><span class="c">// GhostBed Luxe Hybrid PDP, structured data found, June 22, 2026</span>
+<span class="g">Product</span> + 7 &times; <span class="g">Offer</span>  (price $1,849 to $3,798, availability InStock)   <span class="g">present</span>
+<span class="g">AggregateRating</span> + <span class="g">Review</span> + <span class="g">Rating</span>   <span class="g">present, server-rendered</span>
+
+WebSite / SearchAction:   <span class="r">none</span>
+BreadcrumbList (navigation):   <span class="r">none</span>
+FAQPage (trial, warranty, shipping, cooling):   <span class="r">none</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>An AI shopping engine can already read GhostBed's prices and variants, which most of the catalog exposes correctly. What it cannot do is answer the questions that come right before a mattress purchase. "What is GhostBed's return policy," "is the trial really 101 nights," "is GhostBed foam or hybrid," and "how does the cooling work" have no structured answer on the page, even though GhostBed has written all of it in prose elsewhere on the site. The product is quotable; the brand and its policies are not.</p>
+  <p class="fixline"><b>The fix.</b> Extend the product template that already works with <code>BreadcrumbList</code> and <code>FAQPage</code> (trial, financing, cooling, warranty), and add the <code>WebSite</code> and <code>Organization</code> entity from finding 3. This is incremental on a strong foundation, not a rebuild.</p>
+</section>
+
+<!-- FINDING 6 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 6 of 6 &middot; Strength to build on</p>
+  <h2 class="ruled">The agent-commerce layer is live, and ahead of the entire category</h2>
+  <p>This is the one dimension where GhostBed is not behind. It is in front. The rails an AI shopping agent needs to find, cart, and check out are live and standards-correct, and none of GhostBed's named competitors run them. We verified the endpoints directly.</p>
+  <pre class="code"><span class="c">// ghostbed.com agent surface, June 22, 2026</span>
+/.well-known/ucp        <span class="g">live</span>   (UCP profile, version 2026-04-08; checkout, fulfillment, discount)
+/api/ucp/mcp            <span class="g">live</span>   (responds over MCP / JSON-RPC; agent-profile handshake required)
+agents.md  &middot;  llms.txt   <span class="g">200</span>    (branded, GhostBed-specific)
+sitemap_agentic_discovery.xml   <span class="g">present</span>
+Offer pricing for agents   <span class="g">machine-readable</span>   &middot;   Shop Pay buyer-approved checkout
+
+Saatva  &middot;  Purple  &middot;  Nectar:   <span class="r">no ucp, no agents.md, no llms.txt</span></pre>
+  <p class="sub-h">Why it matters, and the honest caveat</p>
+  <p>GhostBed gets most of this from being on Shopify, so it is a platform advantage rather than a custom build, and the MCP endpoint requires a proper agent-profile handshake before it returns its tools. We are not crediting GhostBed for engineering it. But an agent that arrives reads a live, correct commerce surface, and that is genuinely rare: the three competitors a shopper is most often steered toward instead cannot transact with an agent at all. The rails are the last step of a purchase. Findings 1 through 4 are the reason an agent or a shopper rarely reaches them for GhostBed. Close those, and GhostBed becomes the one brand in its set that an AI engine can both recommend and complete the sale through. That is a strong place to build from.</p>
+  <p class="fixline"><b>The lever.</b> Keep the Shopify agent layer current, and make the upstream entity and content legible (findings 1 to 5) so engines and agents choose GhostBed before they ever reach the checkout it has already built.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The same machine-readable signals across the four brands, all checked the same day. GhostBed is the only one that runs a live agent endpoint, and one of two showing an empty homepage entity. It leads the bottom of this table and trails the top.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>GhostBed</th><th>Saatva</th><th>Purple</th><th>Nectar</th></tr>
+    <tr><td class="k1">Homepage entity schema (JSON-LD)</td><td class="bad">none</td><td>Offer only</td><td class="good">Org, Brand, WebPage, ItemList</td><td class="bad">none</td></tr>
+    <tr><td class="k1">Homepage h1 in server HTML</td><td class="bad">none</td><td>1</td><td>1</td><td>2</td></tr>
+    <tr><td class="k1">Named in AI category answers</td><td class="bad">no</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td></tr>
+    <tr><td class="k1">Live agent endpoint (UCP / MCP)</td><td class="good">yes</td><td class="bad">no</td><td class="bad">no</td><td class="bad">no</td></tr>
+    <tr><td class="k1">Branded agents.md + llms.txt</td><td class="good">yes</td><td class="bad">no</td><td class="bad">no</td><td class="bad">no</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">GhostBed and Nectar share the empty-homepage-entity gap, but Nectar still earns the AI recommendation because its category presence and reputation carry it; GhostBed has neither the entity schema nor the recommendation. Purple is the model for the entity layer, a full graph on the homepage. None of the three built the agent rails GhostBed already runs. The reputation comparison sits in finding 2; competitor reputations here are estimates from public signals, consistent with their scorecard columns.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Two phases. Phase 1 is a 30-day stabilization sprint that makes GhostBed machine-readable as an entity, links its reputation, and structures the content it has already written. Phase 2 is ongoing AI visibility work that moves the composite from C toward B over the following months. After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 &middot; 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Stabilization sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Six remediations, each closing a finding above.</p>
+    <ul class="rem">
+      <li>Homepage <code>Organization</code>, <code>WebSite</code>, <code>SearchAction</code>, and <code>Brand</code> schema, server-rendered, with the <code>h1</code> in server HTML (findings 3, 5)</li>
+      <li><code>sameAs</code> entity linkage connecting GhostBed to the reputation it wants attributed, plus a review-management spec and BBB-entity consolidation plan (finding 2)</li>
+      <li><code>Article</code> and <code>FAQPage</code> schema across the 36 comparison and roughly 86 guide pages, with internal links to the products they support (finding 4)</li>
+      <li><code>llms.txt</code> rewritten as a real content map, kept distinct from the <code>agents.md</code> transaction file (finding 4)</li>
+      <li><code>BreadcrumbList</code> and <code>FAQPage</code> (trial, warranty, financing, cooling) on the product template (finding 5)</li>
+      <li>Category-source map and placement plan for "best cooling mattress" and "best online mattress," and keeping the live agent layer wired to the new entity (findings 1, 6)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite AI visibility score (target 61 to 72-plus, C to B-range); homepage and product schema-validator coverage including <code>Organization</code> with a populated <code>sameAs</code>; an <code>llms.txt</code> content map live and distinct from <code>agents.md</code>; a measurable lift in the linked external reputation signal; and movement toward presence in AI category answers for cooling and online mattresses. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">What is ours, what is yours, what the engines decide</p>
+  <p>We are capability-honest about scope. We build and deliver the schema, the entity linkage, the content maps, the comparison-page structuring, and the placement and review-management specs. Claiming and responding on review platforms, and publishing CMS changes, are GhostBed's to execute. Whether a third-party listicle adds GhostBed, and how sentiment moves, are decided by publishers and reviewers. Acceptance criteria attach only to what we produce.</p>
+
+  <p class="sub-h" style="margin-top:14pt">Phase 2 and beyond</p>
+  <p>Phase 1 makes GhostBed readable. Phase 2 makes it recommended, and keeps it there. This is the work that is not a one-time fix: continuous AI behavior monitoring per dimension with drift alerts; an entity establishment campaign so "GhostBed" resolves cleanly with its reputation across the engines; getting GhostBed placed in the cooling-mattress and best-online-mattress sources AI engines cite; and tracking the UCP and agent-commerce changes that move every quarter, where GhostBed already has a head start. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what GhostBed publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled GhostBed's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>agents.md</code>, <code>llms.txt</code>, <code>/.well-known/ucp</code>, the live <code>/api/ucp/mcp</code> endpoint, and the product, page, collection, and blog sitemaps. Counts (about 40 products, 429 pages, 36 comparison pages, 1 blog article) come from those sitemaps, pulled June 22, 2026. AI-crawler access was tested by fetching a product page under the GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, and Google-Extended user agents.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran category and brand queries through web-search-backed AI retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode now use by default, and recorded which brands were named and which sources were cited. GhostBed's absence from the cooling, online, and overall best-mattress answers, and its presence only in queries that already name it, is the basis of finding 1.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled GhostBed's third-party reputation from Trustpilot, the BBB, ConsumerAffairs, Amazon, Reddit, and the major mattress-review publishers, and checked whether any of it is linked to the site's entity. The on-site 4.8 is a first-party widget; the off-site corpus (3.5, 1.61, 1.5) and the missing <code>sameAs</code> are finding 2. Amazon per-model figures are live page reads and move over time.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>Saatva, Purple, and Nectar were checked the same day on the same signals (homepage entity schema, server <code>h1</code>, AI category presence, agent endpoints, <code>agents.md</code> and <code>llms.txt</code>). Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>agents.md</code>, <code>llms.txt</code>, <code>/.well-known/ucp</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries. Counts pulled June 22, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises &middot; Armaan Priyadarshan &middot; Samarjit Deshmukh &middot; Ethan Zhou &middot; Shamit D'Souza &middot; ethanpzhou@berkeley.edu</div></div>
+</section>
+
+</body>
+</html>

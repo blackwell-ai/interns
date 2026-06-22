@@ -235,3 +235,64 @@ Husqvarna GEO working files under `agents/geo/husqvarna/` (followup deck set,
 FAQ screenshots, and the feed); `AGENT.md` and this log stay at the geo root.
 Next session ingests the feed, runs the page checks feed-wide, and extends the
 PDP proposals across the catalog.
+
+## 2026-06-20 — Eclipse Sample Sales AI Visibility Audit (cold prospect)
+
+Ran the full nine-phase audit on eclipsesamplesales.com (Shopify designer
+sample sale brand, LA + NYC). Heavy house-format deck, 12 pages, Chrome
+headless render. Scorecard: Discoverability 58, Quotability 68,
+Recommendability 30, Transactability 72, Reputation 60. Composite 58, grade D
+(competitive set 260 Sample Sale ~63, Rue La La ~77, Gilt ~76, averaging ~72).
+
+The inverse of the Atlas case: Eclipse built genuinely good plumbing (full
+homepage entity schema, full Product/Offer/Brand on PDPs, live UCP/MCP, real
+agents.md) yet is still absent from AI category answers. 260 Sample Sale, the
+peer AI names first, ships zero schema. So the gap is off-site authority and
+linkage, not core schema. Flagship findings: not named in any genuine "best
+online sample sale sites" query (only surfaces when the query echoes its own
+tagline, citing the old shop.eclipse-official.com domain); brand split across
+domains (eclipse-official.com 301s in, eclipsesamplesaleswear.shop is a
+separate live lookalike); real reputation (96 Yelp reviews, repeated Time Out
+LA coverage) stranded behind an empty `sameAs: [""]`; review apps (Okendo,
+Loox, Yotpo) loaded but no AggregateRating in schema; llms.txt missing, h1
+hidden, og:image over http; Meta Conversions API token empty.
+
+Both dash gates clean (0 in HTML, 0 in PDF text); 12-page visual QA clean.
+Deliverable: brain/customers/documents/eclipse-audit.pdf. Working source:
+agents/geo/eclipse/eclipse-ai-visibility-audit.html. Findings: brain/customers/eclipse.md.
+Cold prospect, no contact yet. Open items before sending: confirm the numeric
+Yelp/Google star average, and verify whether eclipsesamplesaleswear.shop is a
+sanctioned property or a third-party lookalike. Needs human review before it
+goes to anyone.
+
+## 2026-06-22 — GhostBed AI Visibility Audit (cold prospect)
+
+Ran the full nine-phase audit on ghostbed.com (Shopify cooling-mattress brand,
+owned by Nature's Sleep, Venus Williams signature line). Scorecard: Discoverability
+64, Quotability 70, Recommendability 38, Transactability 84, Reputation 48.
+Composite 61, grade C (competitive set estimates Saatva ~74, Purple ~70, Nectar ~64,
+set average ~70).
+
+Close to the inverse of Atlas and a sharper Reuzel/Eclipse: GhostBed runs the best
+agent-commerce plumbing in its set and decent PDP schema, yet is the least
+AI-visible brand in it. Flagship: asked for "best cooling mattress," "best online
+mattress," and "best mattress 2026," web-search-backed AI named Helix, WinkBed,
+Saatva, Nectar, Purple, Casper, DreamCloud and others; GhostBed appeared in none,
+including the cooling query that is its own homepage tagline. It surfaces only when
+the query already names it. Reputation is the second weakness: on-site first-party
+4.8/10,223 diverges hard from the open web (Trustpilot 3.5 with 82% one-star, BBB
+GhostBed 1.61 / 87 complaints, ConsumerAffairs 1.5), and the Organization entity
+carries sameAs:none so nothing is linked. Homepage has zero JSON-LD and no server
+h1; 36 vs-comparison pages and ~86 guides carry no Article/FAQPage schema and the
+llms.txt only "mirrors" agents.md. Strength is Transactability: live UCP profile
+(2026-04-08), MCP endpoint responding, agents.md/llms.txt/agentic-discovery sitemap,
+none of which Saatva/Purple/Nectar expose.
+
+Both dash gates clean (0 in HTML, 0 in PDF text); 13-page visual QA clean.
+Deliverable: brain/customers/documents/ghostbed-audit.pdf. Working source:
+agents/geo/ghostbed/ghostbed-ai-visibility-audit.html. Findings: brain/customers/ghostbed.md.
+Cold prospect, no contact yet. Posted for human sign-off at
+inbox/queue/2026-06-22-review-ghostbed-audit-deck.md per the charter guardrail.
+Open before sending: re-verify Amazon per-model counts; decide whether to run the
+full six-engine battery (browsing-off and browsing-on) before delivery; confirm
+whether this stays a cold prospect or becomes a paid pilot.
