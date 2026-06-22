@@ -351,12 +351,151 @@ async def test_apollo_drops_offdomain_email():
 async def test_enrich_domains_hunter(monkeypatch):
     from skills.campaign import run as camp
 
+    respx.get("https://api.hunter.io/v2/email-count").mock(
+        return_value=httpx.Response(200, json={"data": {"total": 1}})
+    )
     respx.get("https://api.hunter.io/v2/domain-search").mock(
         return_value=httpx.Response(200, json=FAKE_HUNTER_DOMAIN_RESP)
     )
     contacts = await camp.enrich_domains(["example.com"], "hunter", "fake_key", min_score=50)
     assert len(contacts) == 1
     assert contacts[0].email == "alice@example.com"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_email_count_zero_skips_domain_search():
+    """Fix 1: when Hunter email-count returns 0 execs, domain-search is never called."""
+    from skills.campaign import run as camp
+
+    respx.get("https://api.hunter.io/v2/email-count").mock(
+        return_value=httpx.Response(200, json={"data": {"total": 0}})
+    )
+    domain_search_route = respx.get("https://api.hunter.io/v2/domain-search").mock(
+        return_value=httpx.Response(200, json=FAKE_HUNTER_DOMAIN_RESP)
+    )
+    contacts = await camp.enrich_domains(["empty.com"], "hunter", "fake_key", min_score=50)
+    assert domain_search_route.call_count == 0
+    assert contacts == []
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_email_count_nonzero_proceeds_to_domain_search():
+    """Fix 1: when Hunter email-count returns > 0, domain-search fires and returns contacts."""
+    from skills.campaign import run as camp
+
+    respx.get("https://api.hunter.io/v2/email-count").mock(
+        return_value=httpx.Response(200, json={"data": {"total": 3}})
+    )
+    domain_search_route = respx.get("https://api.hunter.io/v2/domain-search").mock(
+        return_value=httpx.Response(200, json=FAKE_HUNTER_DOMAIN_RESP)
+    )
+    contacts = await camp.enrich_domains(["example.com"], "hunter", "fake_key", min_score=50)
+    assert domain_search_route.call_count == 1
+    assert len(contacts) == 1
+    assert contacts[0].email == "alice@example.com"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_email_count_error_falls_back_to_domain_search():
+    """Fix 1: a non-200 from email-count should not skip the domain — fail safe."""
+    from skills.campaign import run as camp
+
+    respx.get("https://api.hunter.io/v2/email-count").mock(
+        return_value=httpx.Response(500, json={})
+    )
+    domain_search_route = respx.get("https://api.hunter.io/v2/domain-search").mock(
+        return_value=httpx.Response(200, json=FAKE_HUNTER_DOMAIN_RESP)
+    )
+    contacts = await camp.enrich_domains(["example.com"], "hunter", "fake_key", min_score=50)
+    assert domain_search_route.call_count == 1
+    assert len(contacts) == 1
+
+
+@pytest.mark.asyncio
+async def test_enriched_cache_skips_hunter(tmp_path, monkeypatch):
+    """Fix 2: a domain in the enriched cache never triggers a Hunter API call."""
+    import csv as csv_mod
+    from skills.campaign import run as camp
+
+    # Write a fake prior-run enriched CSV into tmp_path
+    enriched_csv = tmp_path / "enriched_abc12345.csv"
+    with enriched_csv.open("w", newline="") as f:
+        w = csv_mod.writer(f)
+        w.writerow(["enriched_at", "email", "first_name", "last_name", "title",
+                    "company", "domain", "email_score", "email_status"])
+        w.writerow(["2026-06-01T00:00:00Z", "cached@example.com", "Cached", "User",
+                    "CEO", "Example", "example.com", "90", "valid"])
+
+    cache = camp.load_enriched_cache(tmp_path)
+    assert "example.com" in cache
+
+    hunter_called = []
+
+    async def fake_email_count(client, key, domain):
+        hunter_called.append(("count", domain))
+        return 1
+
+    async def fake_domain_all(client, key, domain, **kwargs):
+        hunter_called.append(("search", domain))
+        return []
+
+    monkeypatch.setattr("toolbox.primitives.findemail.cli._hunter_email_count", fake_email_count)
+    monkeypatch.setattr("toolbox.primitives.findemail.cli._hunter_domain_all", fake_domain_all)
+    monkeypatch.setattr(camp, "_ENRICHED_PATH", None)
+
+    contacts = await camp.enrich_domains(
+        ["example.com"], "hunter", "fake_key", min_score=80, enriched_cache=cache
+    )
+    assert hunter_called == []  # no Hunter calls at all
+    assert len(contacts) == 1
+    assert contacts[0].email == "cached@example.com"
+
+
+@pytest.mark.asyncio
+async def test_enriched_cache_min_score_applied(tmp_path, monkeypatch):
+    """Fix 2: cached contacts still pass through the current run's min_score filter."""
+    import csv as csv_mod
+    from skills.campaign import run as camp
+
+    enriched_csv = tmp_path / "enriched_abc12345.csv"
+    with enriched_csv.open("w", newline="") as f:
+        w = csv_mod.writer(f)
+        w.writerow(["enriched_at", "email", "first_name", "last_name", "title",
+                    "company", "domain", "email_score", "email_status"])
+        w.writerow(["2026-06-01T00:00:00Z", "low@example.com", "Low", "Score",
+                    "CEO", "Example", "example.com", "55", "valid"])
+
+    cache = camp.load_enriched_cache(tmp_path)
+    monkeypatch.setattr(camp, "_ENRICHED_PATH", None)
+
+    contacts = await camp.enrich_domains(
+        ["example.com"], "hunter", "fake_key", min_score=70, enriched_cache=cache
+    )
+    assert contacts == []  # score 55 < 70, dropped
+
+
+def test_exclude_domains_cap_is_500():
+    """Fix 3: generate_domains passes up to 500 excluded domains to the LLM prompt."""
+    from skills.campaign import run as camp
+
+    captured_prompt = []
+    mock_result = type("R", (), {"domains": []})()
+
+    def fake_parse(prompt, schema):
+        captured_prompt.append(prompt)
+        return mock_result
+
+    with patch("toolbox.core.llm.parse", side_effect=fake_parse):
+        exclude = {f"company{i}.com" for i in range(600)}
+        camp.generate_domains("AI infra companies", exclude_domains=exclude)
+
+    prompt = captured_prompt[0]
+    # Exactly 500 domains should appear in the prompt, not 150 and not all 600.
+    mentioned = [d for d in exclude if d in prompt]
+    assert len(mentioned) == 500
 
 
 @pytest.mark.asyncio
@@ -372,6 +511,9 @@ async def test_enrich_domains_filters_low_score():
             ]
         }
     }
+    respx.get("https://api.hunter.io/v2/email-count").mock(
+        return_value=httpx.Response(200, json={"data": {"total": 1}})
+    )
     respx.get("https://api.hunter.io/v2/domain-search").mock(
         return_value=httpx.Response(200, json=low_score_resp)
     )

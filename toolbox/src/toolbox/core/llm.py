@@ -37,6 +37,25 @@ M = TypeVar("M", bound=BaseModel)
 _TIMEOUT_S = 600
 _FENCE_RE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$")
 
+# Global token/cost accumulator — call get_usage() to read, reset_usage() to clear.
+_usage: dict[str, float] = {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "calls": 0,
+    "cost_usd": 0.0,
+}
+
+
+def get_usage() -> dict[str, float]:
+    return dict(_usage)
+
+
+def reset_usage() -> None:
+    for k in _usage:
+        _usage[k] = 0
+
 
 class LLMRefusal(Exception):
     """Model safety-refused. Do not retry, do not escalate."""
@@ -78,6 +97,14 @@ def _run(prompt: str, *, system: str, model: str | None, tools: str = "") -> str
         raise LLMRefusal(data.get("result") or "refused")
     if data.get("is_error"):
         raise RuntimeError(f"claude -p error result: {str(data.get('result'))[:500]}")
+    # Accumulate token usage from this call.
+    u = data.get("usage") or {}
+    _usage["input_tokens"] += u.get("input_tokens", 0)
+    _usage["output_tokens"] += u.get("output_tokens", 0)
+    _usage["cache_read_input_tokens"] += u.get("cache_read_input_tokens", 0)
+    _usage["cache_creation_input_tokens"] += u.get("cache_creation_input_tokens", 0)
+    _usage["calls"] += 1
+    _usage["cost_usd"] += data.get("total_cost_usd") or 0.0
     return data.get("result") or ""
 
 

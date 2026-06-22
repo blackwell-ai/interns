@@ -96,28 +96,87 @@ def _refresh_token(account: str) -> str:
             pass
 
 
-def get_access_token(account: str) -> str:
-    """Return a fresh Gmail access token by exchanging gog's stored refresh token."""
-    refresh_token = _refresh_token(account)
-    client_id = _client_id()
-    client_secret = _client_secret()
+def _export_access_token(account: str) -> str:
+    """Export and return the access token gog has stored for this account, or ''."""
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+        tmp = f.name
+    try:
+        result = subprocess.run(
+            ["gog", "auth", "tokens", "export", account,
+             "--out", tmp, "--overwrite", "--no-input"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            return ""
+        data = json.loads(Path(tmp).read_text())
+        return data.get("access_token", "")
+    except Exception:
+        return ""
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
 
-    r = httpx.post(
-        _GOOGLE_TOKEN_URL,
-        data={
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-            "client_id": client_id,
-            "client_secret": client_secret,
-        },
-        timeout=15,
+
+def _is_token_fresh(account: str) -> bool:
+    """Return True if gog's cached access token has more than 5 minutes remaining."""
+    from datetime import UTC, datetime
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+        tmp = f.name
+    try:
+        result = subprocess.run(
+            ["gog", "auth", "tokens", "export", account,
+             "--out", tmp, "--overwrite", "--no-input"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            return False
+        data = json.loads(Path(tmp).read_text())
+        access_token = data.get("access_token", "")
+        expires_at_str = data.get("access_token_expires_at", "")
+        if not access_token or not expires_at_str:
+            return False
+        expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+        return (expires_at - datetime.now(UTC)).total_seconds() > 300
+    except Exception:
+        return False
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+
+def get_access_token(account: str) -> str:
+    """Return a fresh Gmail access token.
+
+    Fast path: if gog's cached token has >5 min remaining, return it directly.
+    Otherwise, let gog refresh it by making a lightweight Gmail API call, then
+    re-export. This avoids needing the OAuth client_secret ourselves.
+    """
+    if _is_token_fresh(account):
+        token = _export_access_token(account)
+        if token:
+            return token
+
+    # Token is expired or missing — force gog to refresh it internally.
+    result = subprocess.run(
+        ["gog", "gmail", "list", "in:inbox", "--account", account,
+         "--limit", "1", "--no-input"],
+        capture_output=True, text=True, timeout=30,
     )
-    if r.status_code != 200:
+    if result.returncode != 0:
         raise RuntimeError(
-            f"Token exchange failed ({r.status_code}): {r.text[:200]}\n"
+            f"gog failed to refresh token for {account}: {result.stderr[:200]}\n"
             f"Run: gog auth add {account} --services gmail"
         )
-    token = r.json().get("access_token", "")
+
+    token = _export_access_token(account)
     if not token:
-        raise RuntimeError("Token exchange succeeded but access_token was empty")
+        raise RuntimeError(
+            f"Token refresh succeeded but access_token missing for {account}.\n"
+            f"Run: gog auth add {account} --services gmail"
+        )
     return token

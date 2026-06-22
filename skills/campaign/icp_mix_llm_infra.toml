@@ -1,0 +1,19 @@
+# Target distribution for local LLM + data center/infra campaign.
+# weights must sum to 1.0.
+# Both segments use template_b as the primary template (no A/B split).
+
+[[segments]]
+label          = "Local and on-device LLM"
+weight         = 0.5
+icp            = "Companies building software, runtimes, or hardware for running large language models locally or on-device — includes local inference engines (Ollama, LM Studio), edge AI SDKs, on-device AI chipmakers, and apps that run models without cloud connectivity"
+template_a     = "templates/template_b.md"
+template_b     = "templates/template_b.md"
+segment_phrase = "running AI models locally or on-device"
+
+[[segments]]
+label          = "Data center and AI infrastructure"
+weight         = 0.5
+icp            = "Companies building or operating GPU clusters, AI data centers, or cloud compute for AI workloads — includes GPU cloud providers (CoreWeave, Lambda Labs, RunPod), AI networking, HPC hardware vendors, and data center operators focused on AI/ML workloads"
+template_a     = "templates/template_b.md"
+template_b     = "templates/template_b.md"
+segment_phrase = "building or operating AI data center infrastructure"

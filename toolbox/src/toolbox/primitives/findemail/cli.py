@@ -171,6 +171,55 @@ async def _hunter_domain(client: httpx.AsyncClient, key: str, domain: str,
     }
 
 
+async def _hunter_email_count(client: httpx.AsyncClient, key: str, domain: str) -> int:
+    """Return the number of executive emails Hunter has indexed for a domain.
+
+    Calls /v2/email-count which is free (no credit cost). Returns 0 if Hunter
+    has no executive emails, so the caller can skip the paid domain-search.
+    Returns 1 on any error so we never skip a domain due to a transient failure.
+    """
+    r = await client.get(
+        "https://api.hunter.io/v2/email-count",
+        params={"domain": domain, "api_key": key, "type": "personal", "seniority": "executive"},
+    )
+    if r.status_code != 200:
+        return 1  # assume non-zero on error
+    return int((r.json().get("data") or {}).get("total") or 0)
+
+
+async def _hunter_domain_all(client: httpx.AsyncClient, key: str, domain: str,
+                             limit: int = 10, executives_only: bool = True) -> list[dict]:
+    """Domain search → all valid contacts, sorted by seniority then confidence.
+
+    Same credit cost as _hunter_domain (1 credit for limit=10) but returns every
+    contact instead of just the top one. The caller is responsible for applying
+    domain-count caps so the same company isn't over-contacted.
+    """
+    params = {"domain": domain, "api_key": key, "limit": limit, "type": "personal"}
+    if executives_only:
+        params["seniority"] = "executive"
+    r = await client.get("https://api.hunter.io/v2/domain-search", params=params)
+    if r.status_code in (429,) or r.status_code >= 500:
+        r.raise_for_status()
+    if r.status_code != 200:
+        return []
+    emails = (r.json().get("data") or {}).get("emails") or []
+    candidates = [e for e in emails if (e.get("value") or "").strip()]
+    candidates.sort(key=lambda e: (_decision_maker_rank(e.get("position", ""), e.get("seniority", "")),
+                                   -(e.get("confidence") or 0)))
+    return [
+        {
+            "email": e["value"].strip().lower(),
+            "first_name": (e.get("first_name") or "").strip(),
+            "last_name": (e.get("last_name") or "").strip(),
+            "title": (e.get("position") or "").strip(),
+            "email_score": int(e.get("confidence") or 0),
+            "email_status": (e.get("verification") or {}).get("status") or "unknown",
+        }
+        for e in candidates
+    ]
+
+
 @app.command()
 def find(
     in_: str = typer.Option(..., "--in", help="candidates CSV: domain + first_name/last_name or name"),

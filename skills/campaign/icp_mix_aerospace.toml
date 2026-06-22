@@ -1,0 +1,18 @@
+# Target distribution for aerospace fabrication and advanced materials campaign.
+# weights must sum to 1.0.
+
+[[segments]]
+label          = "Aerospace fabrication and precision manufacturing"
+weight         = 0.5
+icp            = "Companies that fabricate, machine, or manufacture aerospace-grade components and structures — includes precision machining shops, composites fabricators, sheet metal and structural assembly houses, additive manufacturing firms serving aerospace, and tier-1/tier-2 aerospace suppliers focused on parts production"
+template_a     = "templates/template_b_berkeley.md"
+template_b     = "templates/template_b_berkeley.md"
+segment_phrase = "fabricating or manufacturing aerospace components"
+
+[[segments]]
+label          = "Advanced materials for aerospace and defense"
+weight         = 0.5
+icp            = "Companies developing or supplying advanced materials used in aerospace and defense — includes carbon fiber and composite material makers, specialty alloy and titanium producers, thermal protection and coating companies, lightweight structural materials startups, and materials testing and certification firms serving aerospace OEMs"
+template_a     = "templates/template_b_berkeley.md"
+template_b     = "templates/template_b_berkeley.md"
+segment_phrase = "developing or supplying advanced materials for aerospace"

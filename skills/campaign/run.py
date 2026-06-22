@@ -42,6 +42,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 import uuid
 from datetime import UTC, datetime
@@ -69,6 +70,10 @@ class _DomainList(BaseModel):
     domains: list[str]
 
 
+class _SubcategoryList(BaseModel):
+    subcategories: list[str]
+
+
 class _VariantTemplate(BaseModel):
     subject: str
     body: str
@@ -83,8 +88,15 @@ class _VariantTemplate(BaseModel):
 # domain generation is capped at 1 in flight. The speedup instead comes from
 # running every segment as one job (not six separate invocations) and letting
 # Hunter enrichment, which is real parallel HTTP, overlap the serial LLM calls.
+def _banner(label: str) -> None:
+    """Print a phase header so stage transitions are visible in streamed output."""
+    bar = "─" * max(0, 60 - len(label) - 4)
+    print(f"\n── {label} {bar}", flush=True)
+
+
 _DOMAIN_CHUNK = 50
 _LLM_CONCURRENCY = 1  # concurrent claude -p HURTS; serialize, overlap enrichment
+_FILL_TOLERANCE = 3   # don't fire another LLM/Hunter round when this few contacts short
 _DOMAIN_VARIATIONS = [
     "",
     "Focus on smaller and mid-market companies, not just the biggest brands.",
@@ -94,19 +106,137 @@ _DOMAIN_VARIATIONS = [
     "Focus on specialized or sub-category players within this space.",
 ]
 
+_SUBCAT_DIR          = Path.home() / ".blackwell" / "subcats"
+_SUBCAT_COUNT        = 25   # sub-categories to generate per ICP
+_SUBCAT_DOMAIN_COUNT = 20   # domains to request per sub-category
 
-def generate_domains(icp: str, count: int = 30, variation: str = "") -> list[str]:
+
+class SubcategoryCache:
+    """Persist which sub-categories have been generated and searched for an ICP.
+
+    Stored at ~/.blackwell/subcats/<icp_hash>.json so runs across sessions pick
+    up where the previous run left off — unexplored niches first, never repeating
+    a sub-category whose domains have already gone to Hunter.
+    """
+
+    def __init__(self, icp: str) -> None:
+        import hashlib
+        slug = hashlib.md5(icp.encode()).hexdigest()[:12]
+        self._path = _SUBCAT_DIR / f"{slug}.json"
+        self._data: dict = self._load(icp)
+
+    def _load(self, icp: str) -> dict:
+        if self._path.exists():
+            try:
+                return json.loads(self._path.read_text())
+            except Exception:
+                pass
+        return {"icp": icp, "subcategories": []}
+
+    def _save(self) -> None:
+        _SUBCAT_DIR.mkdir(parents=True, exist_ok=True)
+        self._path.write_text(json.dumps(self._data, indent=2))
+
+    def all_labels(self) -> list[str]:
+        return [s["label"] for s in self._data["subcategories"]]
+
+    def unsearched(self) -> list[str]:
+        return [s["label"] for s in self._data["subcategories"] if not s.get("searched")]
+
+    def add(self, labels: list[str]) -> None:
+        existing = {s["label"] for s in self._data["subcategories"]}
+        for label in labels:
+            if label.strip() and label not in existing:
+                self._data["subcategories"].append({"label": label, "searched": False})
+        self._save()
+
+    def mark_searched(self, label: str) -> None:
+        for s in self._data["subcategories"]:
+            if s["label"] == label:
+                s["searched"] = True
+        self._save()
+
+
+def generate_subcategories(icp: str, count: int = _SUBCAT_COUNT,
+                           exclude_labels: list[str] | None = None) -> list[str]:
+    """Ask Claude to map the ICP into specific, narrow sub-categories.
+
+    `exclude_labels` are already-known niches passed verbatim into the prompt so
+    a second call (when all sub-categories are exhausted) returns fresh niches.
+    """
+    exclude_note = ""
+    if exclude_labels:
+        exclude_note = (
+            "\n\nDo NOT suggest any of these already-explored sub-categories:\n"
+            + ", ".join(exclude_labels[:60])
+        )
+    result = llm_mod.parse(
+        f"Map this market into specific, narrow sub-categories: {icp}\n\n"
+        f"Generate {count} sub-categories. Each must be narrow enough that there are "
+        "10-30 real companies in it — not hundreds. Make them distinct with no overlap. "
+        "Do not name any specific companies.\n"
+        "Example for 'DTC brands': 'DTC maternity clothing', 'DTC men's grooming', "
+        "'DTC pet supplements', 'DTC functional beverages'."
+        + exclude_note,
+        _SubcategoryList,
+    )
+    return [s.strip() for s in result.subcategories if s.strip()]
+
+
+def generate_domains_for_subcat(
+    subcat: str,
+    count: int = _SUBCAT_DOMAIN_COUNT,
+    exclude_domains: set[str] | None = None,
+) -> list[str]:
+    """Generate domains for one specific niche sub-category.
+
+    Narrow sub-categories let Claude enumerate real companies without padding;
+    20 domains per niche is the reliable ceiling before Claude invents names.
+    """
+    exclude_note = ""
+    if exclude_domains:
+        sample = sorted(exclude_domains)[:300]
+        exclude_note = (
+            "\n\nDo NOT return any of these — already contacted:\n"
+            + ", ".join(sample)
+        )
+    result = llm_mod.parse(
+        f"List {count} real company website domains in this specific niche: {subcat}\n"
+        "Real companies only. No www prefix, no paths. Return only the domains "
+        "(e.g. 'glossier.com')."
+        + exclude_note,
+        _DomainList,
+    )
+    return [d.strip().lower() for d in result.domains if "." in d.strip()]
+
+
+def generate_domains(
+    icp: str,
+    count: int = 30,
+    variation: str = "",
+    exclude_domains: set[str] | None = None,
+) -> list[str]:
     """One claude -p call for real company domains matching the ICP.
 
     `variation` is an optional nudge appended to the prompt so that fanning out
     several calls returns different companies instead of the same top brands.
+    `exclude_domains` is passed verbatim into the prompt so the LLM never
+    regenerates domains we have already contacted.
     """
     extra = f"\n{variation}" if variation else ""
+    exclude_note = ""
+    if exclude_domains:
+        sample = sorted(exclude_domains)[:500]  # cap prompt length
+        exclude_note = (
+            f"\n\nDo NOT return any of these domains — they have already been contacted:\n"
+            + ", ".join(sample)
+        )
     result = llm_mod.parse(
         f"List {count} real company website domains (e.g. 'glossier.com') that fit this "
         f"ideal customer profile: {icp}\n\n"
         "Return actual, real companies. Prefer DTC/e-commerce. No www prefix, no paths."
-        + extra,
+        + extra
+        + exclude_note,
         _DomainList,
     )
     return [d.strip().lower() for d in result.domains if "." in d.strip()]
@@ -184,6 +314,9 @@ def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
     return contacts
 
 
+# Hunter credit counter — 1 credit per domain search call.
+_hunter_credits: int = 0
+
 # Generated domains are streamed to a repo-local CSV as each claude -p call
 # returns, so the slow generation step is visible (and its rate is measurable,
 # which helps diagnose throttling). Set in main(); None = disabled.
@@ -246,6 +379,27 @@ def _write_enriched_row(domain: str, res: dict) -> None:
         events.emit("campaign.enriched_write_failed", level="warn", reason=str(e)[:120])
 
 
+def load_enriched_cache(enriched_dir: Path) -> dict[str, list[dict]]:
+    """Read all prior enriched_*.csv files → {domain: [result dicts]}.
+
+    Used to skip Hunter API calls for domains already searched in a previous run.
+    The current run's file does not exist yet when this is called, so it is
+    naturally excluded.
+    """
+    cache: dict[str, list[dict]] = {}
+    for csv_path in sorted(enriched_dir.glob("enriched_*.csv")):
+        try:
+            with csv_path.open(encoding="utf-8") as f:
+                for row in csv.DictReader(f):
+                    domain = (row.get("domain") or "").strip().lower()
+                    if not domain:
+                        continue
+                    cache.setdefault(domain, []).append(row)
+        except OSError:
+            continue
+    return cache
+
+
 async def _enrich_batch(
     client: httpx.AsyncClient,
     domains: list[str],
@@ -253,23 +407,75 @@ async def _enrich_batch(
     key: str,
     min_score: int,
     sem: asyncio.Semaphore | None = None,
+    enriched_cache: dict | None = None,
 ) -> list[models.Contact]:
     """Enrich one batch of domains — returns contacts that passed the score filter.
 
     `sem` caps concurrent provider calls. Pass a shared one so that several
     segments enriching at the same time still respect a single global rate cap.
+    `enriched_cache` is a {domain: [result dicts]} map built from prior enriched
+    CSVs; domains found there skip the Hunter API call entirely.
     """
-    domain_fn = (
-        findemail_cli._apollo_domain if provider == "apollo" else findemail_cli._hunter_domain
-    )
+    use_all = provider == "hunter"
     contacts: list[models.Contact] = []
     if sem is None:
         sem = asyncio.Semaphore(3)
 
+    def _apply_results(domain: str, results: list[dict]) -> None:
+        for res in results:
+            if not res.get("email"):
+                continue
+            try:
+                score = int(res.get("email_score") or 0)
+            except (ValueError, TypeError):
+                score = 0
+            if score < min_score:
+                events.emit("campaign.low_score", domain=domain, score=score)
+                continue
+            if res.get("email_status") == "accept_all":
+                events.emit("campaign.accept_all_skip", level="warn", domain=domain)
+                continue
+            try:
+                contacts.append(models.Contact(
+                    email=res["email"],
+                    first_name=res.get("first_name", ""),
+                    last_name=res.get("last_name", ""),
+                    title=res.get("title", ""),
+                    company=domain.split(".")[0].title(),
+                    domain=domain,
+                ))
+            except ValueError as e:
+                events.emit("campaign.bad_email", level="warn", email=res.get("email"), reason=str(e))
+                continue
+            _write_enriched_row(domain, res)
+            print(f"  + {res['email']}  ({res.get('email_status', '')})  {domain}", flush=True)
+
     async def one(domain: str) -> None:
+        global _hunter_credits
+
+        # Fix 2: use cached results from a prior run — skip the paid Hunter call.
+        if enriched_cache and domain in enriched_cache:
+            events.emit("campaign.cache_hit", domain=domain)
+            _apply_results(domain, enriched_cache[domain])
+            return
+
         async with sem:
             try:
-                res = await domain_fn(client, key, domain, limit=10, executives_only=True)
+                if use_all:
+                    # Fix 1: free pre-check — skip if Hunter has no executive emails.
+                    exec_count = await findemail_cli._hunter_email_count(client, key, domain)
+                    if exec_count == 0:
+                        events.emit("campaign.email_count_skip", domain=domain)
+                        return
+                    results = await findemail_cli._hunter_domain_all(
+                        client, key, domain, limit=10, executives_only=True
+                    )
+                    _hunter_credits += 1
+                else:
+                    single = await findemail_cli._apollo_domain(
+                        client, key, domain, limit=10, executives_only=True
+                    )
+                    results = [single] if single and single.get("email") else []
             except Exception as e:
                 msg = str(e)
                 if "429" in msg:
@@ -277,27 +483,12 @@ async def _enrich_batch(
                 else:
                     events.emit("campaign.enrich_error", level="warn", domain=domain, reason=msg[:120])
                 return
-        if not res or not res.get("email"):
+
+        if not results:
             events.emit("campaign.no_contact", domain=domain)
             return
-        if int(res.get("email_score") or 0) < min_score:
-            events.emit("campaign.low_score", domain=domain, score=res.get("email_score"))
-            return
-        try:
-            contacts.append(models.Contact(
-                email=res["email"],
-                first_name=res.get("first_name", ""),
-                last_name=res.get("last_name", ""),
-                title=res.get("title", ""),
-                company=domain.split(".")[0].title(),
-                domain=domain,
-            ))
-        except ValueError as e:
-            events.emit("campaign.bad_email", level="warn", email=res.get("email"), reason=str(e))
-            return
-        # Stream the hit: append to the live CSV and print it to the terminal.
-        _write_enriched_row(domain, res)
-        print(f"  + {res['email']}  ({res.get('email_status', '')})  {domain}", flush=True)
+
+        _apply_results(domain, results)
 
     await asyncio.gather(*(one(d) for d in domains))
     return contacts
@@ -308,10 +499,12 @@ async def enrich_domains(
     provider: str,
     key: str,
     min_score: int = 80,
+    enriched_cache: dict | None = None,
 ) -> list[models.Contact]:
     """Enrich all domains at once. Used when --domains is provided (pool already fixed)."""
     async with httpx.AsyncClient(timeout=60) as client:
-        return await _enrich_batch(client, domains, provider, key, min_score)
+        return await _enrich_batch(client, domains, provider, key, min_score,
+                                   enriched_cache=enriched_cache)
 
 
 async def source_contacts_incremental(
@@ -324,6 +517,7 @@ async def source_contacts_incremental(
     batch_size: int = 20,
     hunter_sem: asyncio.Semaphore | None = None,
     label: str = "",
+    enriched_cache: dict | None = None,
 ) -> list[models.Contact]:
     """Enrich domains in batches, ledger-checking each batch before continuing.
 
@@ -337,7 +531,8 @@ async def source_contacts_incremental(
     async with httpx.AsyncClient(timeout=60) as client:
         for i in range(0, len(domains), batch_size):
             batch = domains[i : i + batch_size]
-            raw = await _enrich_batch(client, batch, provider, key, min_score, hunter_sem)
+            raw = await _enrich_batch(client, batch, provider, key, min_score, hunter_sem,
+                                      enriched_cache=enriched_cache)
 
             # Ledger-check this batch concurrently.
             sem = asyncio.Semaphore(10)
@@ -363,13 +558,223 @@ async def source_contacts_incremental(
                 flush=True,
             )
 
-            if limit and len(accumulated) >= limit:
+            if limit and limit - len(accumulated) <= _FILL_TOLERANCE:
                 break
 
     await ldg.aclose()
+    return accumulated
 
-    if limit:
-        accumulated = accumulated[:limit]
+
+# ---- Domain-count soft filter ------------------------------------------
+
+def load_domain_counts(session_token: str) -> dict[str, int]:
+    """One Supabase round-trip → {domain: times_already_contacted}."""
+    try:
+        r = httpx.get(
+            f"{config.supabase_url()}/rest/v1/contacted",
+            headers={
+                "apikey": config.supabase_anon_key(),
+                "Authorization": f"Bearer {session_token}",
+            },
+            params={"select": "recipient", "channel": "eq.email"},
+            timeout=30,
+        )
+        if r.status_code != 200:
+            return {}
+        counts: dict[str, int] = {}
+        for row in r.json():
+            recipient = row.get("recipient", "")
+            if "@" in recipient:
+                domain = recipient.split("@")[1].lower()
+                counts[domain] = counts.get(domain, 0) + 1
+        return counts
+    except Exception:
+        return {}
+
+
+def filter_by_domain_count(
+    items: list,
+    domain_counts: dict[str, int],
+    max_count: int,
+) -> list:
+    """Drop items whose domain has already been contacted >= max_count times.
+
+    Works for both Contact objects and plain domain strings.
+    """
+    if max_count <= 0 or not domain_counts:
+        return items
+
+    def _domain(x) -> str:
+        if isinstance(x, str):
+            return x.lower()
+        d = getattr(x, "domain", "") or ""
+        if not d:
+            email = getattr(x, "email", "")
+            d = email.split("@")[-1] if "@" in email else ""
+        return d.lower()
+
+    kept, dropped = [], 0
+    for item in items:
+        if domain_counts.get(_domain(item), 0) >= max_count:
+            dropped += 1
+        else:
+            kept.append(item)
+    if dropped:
+        print(f"  {dropped} skipped (domain already contacted >= {max_count}x)")
+    return kept
+
+
+# ---- Pipeline: interleave LLM generation with Hunter enrichment ---------
+
+async def source_contacts_pipeline(
+    icp: str,
+    provider: str,
+    key: str,
+    session_token: str,
+    limit: int,
+    min_score: int = 80,
+    domain_counts: dict | None = None,
+    max_domain_count: int = 0,
+    llm_sem: asyncio.Semaphore | None = None,
+    hunter_sem: asyncio.Semaphore | None = None,
+    label: str = "",
+    enriched_cache: dict | None = None,
+) -> list[models.Contact]:
+    """Generate domains via sub-category decomposition and enrich in a pipeline.
+
+    Phase 1 (one LLM call): decompose the ICP into ~25 narrow niches and persist
+    them to ~/.blackwell/subcats/. Subsequent runs load the cache and skip niches
+    already searched — only fresh niches get new LLM + Hunter calls.
+
+    Phase 2 (interleaved): while Hunter enriches batch N, the LLM generates
+    domains for the next niche (batch N+1). Stops when `limit` new contacts
+    clear the ledger dedup check — no wasted credits past that point.
+    """
+    if llm_sem is None:
+        llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
+    if hunter_sem is None:
+        hunter_sem = asyncio.Semaphore(8)
+
+    accumulated: list[models.Contact] = []
+    seen_domains: set[str] = set()
+    ldg = ledger.Ledger(session_token)
+    batch_num = 0
+    niche_num = 0
+    tag = f"[{label}] " if label else ""
+
+    # ---- Phase 1: load or generate sub-categories ----------------------
+    subcat_cache = SubcategoryCache(icp)
+    if not subcat_cache.all_labels():
+        n_subcats = min(_SUBCAT_COUNT, max(5, math.ceil(limit / 5)))
+        print(f"{tag}generating {n_subcats} sub-categories for ICP...", flush=True)
+        async with llm_sem:
+            subcats = await asyncio.to_thread(generate_subcategories, icp, n_subcats)
+        subcat_cache.add(subcats)
+        preview = ", ".join(subcats[:5])
+        suffix = f" +{len(subcats)-5} more" if len(subcats) > 5 else ""
+        print(f"{tag}  {len(subcats)} niches: {preview}{suffix}", flush=True)
+    else:
+        pending = subcat_cache.unsearched()
+        print(f"{tag}loaded sub-category cache — {len(pending)} niches unsearched", flush=True)
+
+    # ---- Inner helpers -------------------------------------------------
+
+    async def _gen_batch() -> tuple[list[str], str]:
+        """Pick the next unsearched sub-category and generate domains for it.
+
+        Returns (domains, subcat_label). When all sub-categories are exhausted,
+        generates a fresh set (passing existing labels as exclusions) and
+        continues. Returns ([], "") only if generation truly fails.
+        """
+        pending = subcat_cache.unsearched()
+        if not pending:
+            print(f"{tag}all sub-categories searched — generating more...", flush=True)
+            known = subcat_cache.all_labels()
+            async with llm_sem:
+                new = await asyncio.to_thread(generate_subcategories, icp,
+                                              _SUBCAT_COUNT, known)
+            fresh = [s for s in new if s not in set(known)]
+            if not fresh:
+                return [], ""
+            subcat_cache.add(fresh)
+            pending = fresh
+
+        subcat = pending[0]
+        exclude = set(domain_counts.keys()) if domain_counts else None
+        async with llm_sem:
+            try:
+                domains = await asyncio.to_thread(
+                    generate_domains_for_subcat, subcat, _SUBCAT_DOMAIN_COUNT, exclude
+                )
+                return domains, subcat
+            except Exception as e:
+                events.emit("campaign.domaingen_error", level="warn",
+                            reason=str(e)[:120], subcat=subcat)
+                return [], subcat
+
+    async def _ledger_filter(contacts: list[models.Contact]) -> list[models.Contact]:
+        sem = asyncio.Semaphore(10)
+        new: list[models.Contact] = []
+
+        async def check(c: models.Contact) -> None:
+            async with sem:
+                if await ldg.check("email", c.email) == "new":
+                    new.append(c)
+
+        await asyncio.gather(*(check(c) for c in contacts))
+        return new
+
+    # ---- Phase 2: interleaved generation + enrichment ------------------
+    try:
+        raw_next, next_subcat = await _gen_batch()
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            while len(accumulated) < limit:
+                current = [d for d in raw_next if d not in seen_domains]
+                current_subcat = next_subcat
+                seen_domains.update(current)
+
+                if not current:
+                    if not current_subcat:  # truly exhausted
+                        break
+                    # Empty batch (all domains already seen) — advance to next niche.
+                    if current_subcat:
+                        subcat_cache.mark_searched(current_subcat)
+                    raw_next, next_subcat = await _gen_batch()
+                    continue
+
+                if domain_counts and max_domain_count > 0:
+                    current = filter_by_domain_count(current, domain_counts, max_domain_count)
+
+                # Mark this niche searched now that its domains go to Hunter.
+                if current_subcat:
+                    niche_num += 1
+                    bar = "─" * max(0, 54 - len(current_subcat) - len(tag))
+                    print(f"\n{tag}── niche {niche_num} · {current_subcat} {bar}", flush=True)
+                    subcat_cache.mark_searched(current_subcat)
+
+                # Fire next niche LLM call concurrently with Hunter enrichment.
+                next_gen = asyncio.create_task(_gen_batch())
+
+                enriched = await _enrich_batch(client, current, provider, key, min_score,
+                                               sem=hunter_sem, enriched_cache=enriched_cache)
+                new_contacts = await _ledger_filter(enriched)
+                accumulated.extend(new_contacts)
+                batch_num += 1
+                pct = int(len(accumulated) / limit * 100)
+                print(f"{tag}  {len(enriched)} enriched, {len(new_contacts)} new "
+                      f"— {len(accumulated)}/{limit} contacts ({pct}%)", flush=True)
+
+                if limit - len(accumulated) <= _FILL_TOLERANCE:
+                    next_gen.cancel()
+                    break
+
+                raw_next, next_subcat = await next_gen
+    finally:
+        await ldg.aclose()
+
+    print(f"\n{tag}sourced {len(accumulated)}/{limit} contacts across {niche_num} niches",
+          flush=True)
     return accumulated
 
 
@@ -420,6 +825,13 @@ def _mix_quotas(limit: int, segments: list[dict]) -> list[tuple[dict, int]]:
     return [(s, q) for s, q in quotas if q > 0]
 
 
+_DOMAINS_DIR = Path(__file__).parent / "domains"
+
+
+def _segment_slug(label: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+
+
 async def _source_from_mix(
     provider: str,
     key: str,
@@ -428,49 +840,91 @@ async def _source_from_mix(
     from_name: str = "",
     min_score: int = 80,
     enrich_concurrency: int = 8,
-) -> list[models.OutboxRow]:
+    domain_counts: dict | None = None,
+    max_domain_count: int = 0,
+    experiment: bool = False,
+    enriched_cache: dict | None = None,
+) -> tuple[list[models.OutboxRow], list[models.OutboxRow]]:
     """Source and compose outbox rows across segments per icp_mix.toml.
 
     All segments are sourced concurrently. Two shared semaphores keep the
     fan-out from overwhelming the providers: `llm_sem` caps concurrent domain
     generation (claude -p subprocesses) and `hunter_sem` caps concurrent
     enrichment calls, both globally across every segment.
+
+    Returns (outbox_a, outbox_b). outbox_b is non-empty only when experiment=True.
     """
     segments = _load_mix()
     quotas = _mix_quotas(limit, segments)
     llm_sem = asyncio.Semaphore(_LLM_CONCURRENCY)
     hunter_sem = asyncio.Semaphore(enrich_concurrency)
 
-    async def source_segment(seg: dict, quota: int) -> list[models.OutboxRow]:
+    async def source_segment(seg: dict, quota: int) -> tuple[list[models.OutboxRow], list[models.OutboxRow]]:
         label = seg["label"]
         icp = seg["icp"]
         template_path = _ICP_MIX_PATH.parent / seg["template_a"]
         segment_phrase = seg.get("segment_phrase", label.lower())
 
-        print(f"[{label}] target {quota}: generating domains...")
-        domains = await generate_domain_pool(icp, max(30, quota * 3), llm_sem, label=label)
-        print(f"[{label}] {len(domains)} domains; enriching...")
-        contacts = await source_contacts_incremental(
-            domains, provider, key, session_token,
-            limit=quota, min_score=min_score, hunter_sem=hunter_sem, label=label,
-        )
+        domain_file = _DOMAINS_DIR / f"{_segment_slug(label)}.csv"
+        if domain_file.exists():
+            domain_rows = io.read_csv(str(domain_file), models.Domain)
+            domains = [r.domain for r in domain_rows]
+            print(f"[{label}] loaded {len(domains)} domains from {domain_file.name}")
+            if domain_counts and max_domain_count > 0:
+                domains = filter_by_domain_count(domains, domain_counts, max_domain_count)
+            print(f"[{label}] {len(domains)} domains; enriching...")
+            contacts = await source_contacts_incremental(
+                domains, provider, key, session_token,
+                limit=quota, min_score=min_score, hunter_sem=hunter_sem, label=label,
+                enriched_cache=enriched_cache,
+            )
+        else:
+            print(f"[{label}] target {quota}: pipeline (LLM + Hunter interleaved)...")
+            contacts = await source_contacts_pipeline(
+                icp, provider, key, session_token,
+                limit=quota, min_score=min_score,
+                domain_counts=domain_counts, max_domain_count=max_domain_count,
+                llm_sem=llm_sem, hunter_sem=hunter_sem, label=label,
+                enriched_cache=enriched_cache,
+            )
         print(f"[{label}] sourced {len(contacts)} contacts", flush=True)
-        subject_t, body_t = load_template(str(template_path))
-        return compose_outbox(contacts, subject_t, body_t, from_name,
-                              extra_values={"segment_phrase": segment_phrase})
+        subject_a, body_a = load_template(str(template_path))
+        extra = {"segment_phrase": segment_phrase}
 
-    seg_rows = await asyncio.gather(*(source_segment(s, q) for s, q in quotas))
+        if experiment and len(contacts) >= 2:
+            mid = max(1, len(contacts) // 2)
+            contacts_a, contacts_b = contacts[:mid], contacts[mid:]
+            template_b_rel = seg.get("template_b", "")
+            if template_b_rel:
+                template_b_path = _ICP_MIX_PATH.parent / template_b_rel
+                subject_b, body_b = load_template(str(template_b_path))
+            else:
+                subject_b, body_b = await asyncio.to_thread(generate_variant_b, subject_a, body_a)
+            rows_a = compose_outbox(contacts_a, subject_a, body_a, from_name, extra_values=extra)
+            rows_b = compose_outbox(contacts_b, subject_b, body_b, from_name, extra_values=extra)
+        else:
+            rows_a = compose_outbox(contacts, subject_a, body_a, from_name, extra_values=extra)
+            rows_b = []
+
+        return rows_a, rows_b
+
+    seg_pairs = await asyncio.gather(*(source_segment(s, q) for s, q in quotas))
 
     # Concurrent segments can't see each other's not-yet-sent picks in the
-    # ledger, so dedup by email across segments before sending.
+    # ledger, so dedup by email across all A and B rows before sending.
     seen: set[str] = set()
-    all_rows: list[models.OutboxRow] = []
-    for rows in seg_rows:
-        for r in rows:
+    all_a: list[models.OutboxRow] = []
+    all_b: list[models.OutboxRow] = []
+    for rows_a, rows_b in seg_pairs:
+        for r in rows_a:
             if r.email not in seen:
                 seen.add(r.email)
-                all_rows.append(r)
-    return all_rows
+                all_a.append(r)
+        for r in rows_b:
+            if r.email not in seen:
+                seen.add(r.email)
+                all_b.append(r)
+    return all_a, all_b
 
 
 # ---- Compose -----------------------------------------------------------
@@ -486,6 +940,26 @@ def _html_to_text(html: str) -> str:
     text = re.sub(r"<[^>]+>", "", text)
     text = _html_module.unescape(text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def _text_to_html(text: str) -> str:
+    """Convert plain-text email body to Gmail-safe HTML.
+
+    Uses <br><br> for paragraph breaks and a <div> wrapper — avoids <p> tag
+    spacing issues and Gmail stripping <body> styles.
+    """
+    escaped = (
+        text.strip()
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+    html_body = escaped.replace("\n\n", "<br><br>").replace("\n", "<br>")
+    return (
+        '<div style="font-family:Arial,sans-serif;font-size:14px;'
+        'line-height:1.6;color:#222">'
+        f"{html_body}</div>"
+    )
 
 
 def compose_outbox(
@@ -507,7 +981,7 @@ def compose_outbox(
         try:
             rendered_body = compose_lib.render(body_t, values)
             body = _html_to_text(rendered_body) if is_html else rendered_body
-            body_html = rendered_body if is_html else ""
+            body_html = rendered_body if is_html else _text_to_html(rendered_body)
             rows.append(models.OutboxRow(
                 email=c.email,
                 subject=compose_lib.render(subject_t, values),
@@ -615,6 +1089,7 @@ def _finalize(
     sent_at: str,
     counts_a: dict,
     counts_b: dict,
+    elapsed: float = 0.0,
 ) -> None:
     if not args.dry_run:
         _write_campaign_to_supabase(
@@ -661,10 +1136,11 @@ def _finalize(
     )
     write_campaign_log(log_path, [meta_entry] + contact_entries)
 
-    print(f"\nResult: sent={total_sent}" + (f", dry_run_preview={total_dry}" if args.dry_run else ""))
-    print(f"Log   : {log_path}")
-    print(f"Replies: python3 skills/campaign/reply_scan.py --log {log_path}")
-    print(f"Report : python3 skills/campaign/reply_report.py --log {log_path}")
+    print(f"Log    : {log_path}")
+    if _hunter_credits > 0:
+        print(f"Hunter : {_hunter_credits} credits used")
+    if elapsed:
+        print(f"Time   : {elapsed / 60:.1f} min ({elapsed:.0f}s)")
 
 
 # ---- Preflight ---------------------------------------------------------
@@ -752,6 +1228,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
+    parser.add_argument("--config", default="",
+                        help="Alternative ICP mix TOML (default: icp_mix.toml)")
     parser.add_argument("--icp", default="",
                         help="ICP description: Claude generates target domains from this")
     parser.add_argument("--provider", default="hunter",
@@ -778,11 +1256,21 @@ def main() -> None:
                         help="Max contacts to send to (0 = no cap)")
     parser.add_argument("--min-score", type=int, default=80,
                         help="Minimum Hunter/Apollo email confidence (0-100)")
+    parser.add_argument("--max-domain-count", type=int, default=3,
+                        help="Skip domains already contacted this many times (0 = off)")
+    parser.add_argument("--segment-phrase", default="",
+                        dest="segment_phrase",
+                        help="Value for {{segment_phrase}} template slot (used with --leads)")
     parser.add_argument("--log", default="",
                         help="Campaign log path for reply tracking (default: /tmp/campaign_<id>.jsonl)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be sent without actually sending")
     args = parser.parse_args()
+
+    global _ICP_MIX_PATH
+    if args.config:
+        p = Path(args.config)
+        _ICP_MIX_PATH = p if p.is_absolute() else (_REPO_ROOT / p)
 
     if args.provider in ("clay", "origami") and not args.leads:
         parser.error(f"--provider {args.provider} requires --leads <exported_csv>")
@@ -795,8 +1283,10 @@ def main() -> None:
 
     _preflight(args.from_, args.provider)
 
+    t_start = time.monotonic()
     run_id = str(uuid.uuid4())
     run_dir = tempfile.mkdtemp(prefix=f"campaign_{run_id[:8]}_")
+    _banner("Setup")
     print(f"run_id : {run_id}")
     print(f"run_dir: {run_dir}")
 
@@ -809,14 +1299,22 @@ def main() -> None:
     _ENRICHED_PATH = str(enriched_dir / f"enriched_{run_id[:8]}.csv")
     print(f"domains: {_DOMAINS_PATH} (written live as domains are generated)")
     print(f"emails : {_ENRICHED_PATH} (written live as contacts are enriched)")
+    enriched_cache = load_enriched_cache(enriched_dir)
+    if enriched_cache:
+        print(f"cache  : {len(enriched_cache)} domains from prior runs (Hunter skipped for these)")
 
     # 1. Source contacts --------------------------------------------------
     session_token = auth.session_token()
+    domain_counts = load_domain_counts(session_token)
+    if domain_counts and args.max_domain_count > 0:
+        print(f"Domain filter: skip any domain contacted >= {args.max_domain_count}x "
+              f"({len(domain_counts)} domains in ledger)")
 
     if args.leads:
         # CSV import: all contacts are known upfront, just ledger-filter.
         contacts = load_leads_csv(args.leads, min_score=args.min_score)
         print(f"Loaded {len(contacts)} contacts from {args.leads}")
+        contacts = filter_by_domain_count(contacts, domain_counts, args.max_domain_count)
         print("Checking ledger...")
         contacts = asyncio.run(_filter_new_contacts(contacts, session_token))
         print(f"  {len(contacts)} new (not yet contacted)")
@@ -827,10 +1325,12 @@ def main() -> None:
         domain_rows = io.read_csv(args.domains, models.Domain)
         domains = [r.domain for r in domain_rows]
         print(f"Loaded {len(domains)} domains from {args.domains}")
+        domains = filter_by_domain_count(domains, domain_counts, args.max_domain_count)
         key = auth.get_token(args.provider)
         print(f"Enriching via {args.provider}...")
         contacts = asyncio.run(
-            enrich_domains(domains, args.provider, key, min_score=args.min_score)
+            enrich_domains(domains, args.provider, key, min_score=args.min_score,
+                           enriched_cache=enriched_cache)
         )
         print(f"  {len(contacts)} contacts found")
         print("Checking ledger...")
@@ -839,19 +1339,15 @@ def main() -> None:
         if args.limit:
             contacts = contacts[: args.limit]
     elif args.icp:
-        # Focused ICP path: generate a large domain pool, enrich + ledger-check
-        # in batches of 20, stop as soon as --limit new contacts are found.
-        domain_count = max(60, (args.limit or 30) * 3)
-        print(f"Generating domains for: {args.icp[:80]}")
-        domains = asyncio.run(generate_domain_pool(args.icp, domain_count))
-        print(f"  {len(domains)} domains generated")
         key = auth.get_token(args.provider)
-        print(f"Enriching via {args.provider} (incremental, stop at limit)...")
+        _banner(f"Sourcing contacts  [target: {args.limit or 20}  provider: {args.provider}]")
         contacts = asyncio.run(
-            source_contacts_incremental(
-                domains, args.provider, key, session_token,
-                limit=args.limit, min_score=args.min_score,
+            source_contacts_pipeline(
+                args.icp, args.provider, key, session_token,
+                limit=args.limit or 20, min_score=args.min_score,
+                domain_counts=domain_counts, max_domain_count=args.max_domain_count,
                 hunter_sem=asyncio.Semaphore(args.concurrency),
+                enriched_cache=enriched_cache,
             )
         )
     else:
@@ -859,23 +1355,27 @@ def main() -> None:
         # Each segment uses its own template; outbox rows are returned pre-composed.
         limit = args.limit or 20
         key = auth.get_token(args.provider)
-        print(f"Sourcing {limit} contacts across ICP mix ({_ICP_MIX_PATH.name})...")
-        outbox_a = asyncio.run(
+        _banner(f"Sourcing contacts  [target: {limit}  mix: {_ICP_MIX_PATH.name}]")
+        outbox_a, outbox_b = asyncio.run(
             _source_from_mix(
                 args.provider, key, session_token,
                 limit=limit, from_name=args.from_name, min_score=args.min_score,
                 enrich_concurrency=args.concurrency,
+                domain_counts=domain_counts, max_domain_count=args.max_domain_count,
+                experiment=args.experiment,
+                enriched_cache=enriched_cache,
             )
         )
-        outbox_b = []
-        print(f"\nComposed: {len(outbox_a)} contacts across all segments")
-        if not outbox_a:
+        _banner(f"Composed  {len(outbox_a)} variant-A  {len(outbox_b)} variant-B")
+        if not outbox_a and not outbox_b:
             print("No new contacts — exiting.")
             sys.exit(0)
-        # Skip the standard compose block below.
+        n_mix = len(outbox_a) + len(outbox_b)
+        dry_tag = "  [dry run]" if args.dry_run else ""
+        _banner(f"Sending{dry_tag}  {n_mix} emails")
         if args.dry_run:
-            print("\n[dry-run] Sample sends:")
-            for row in outbox_a[:5]:
+            print("Sample:")
+            for row in (outbox_a + outbox_b)[:5]:
                 print(f"  TO: {row.email}")
                 print(f"      {row.subject}")
             print()
@@ -884,14 +1384,21 @@ def main() -> None:
             _send_batch(outbox_a, args.from_, args.from_name, run_id, run_dir,
                         args.dry_run, args.cc, args.concurrency)
         )
-        counts_b = {}
-        total_sent = counts_a.get("sent", 0)
-        total_dry = counts_a.get("dry_run", 0)
+        counts_b = (
+            asyncio.run(
+                _send_batch(outbox_b, args.from_, args.from_name, run_id, run_dir,
+                            args.dry_run, args.cc, args.concurrency)
+            )
+            if outbox_b else {}
+        )
+        total_sent = counts_a.get("sent", 0) + counts_b.get("sent", 0)
+        total_dry = counts_a.get("dry_run", 0) + counts_b.get("dry_run", 0)
         template_name = "icp_mix"
         sender_name = args.from_name or args.from_.split("@")[0].title()
         icp_label = "ICP mix"
+        elapsed = time.monotonic() - t_start
         _finalize(args, run_id, sender_name, total_sent, total_dry, template_name,
-                  icp_label, outbox_a, outbox_b, sent_at, counts_a, counts_b)
+                  icp_label, outbox_a, outbox_b, sent_at, counts_a, counts_b, elapsed)
         return
 
     if not contacts:
@@ -899,6 +1406,7 @@ def main() -> None:
         sys.exit(0)
 
     # 2. Load template A --------------------------------------------------
+    _banner("Composing")
     subject_a, body_a = load_template(args.template)
 
     # 3. Experiment split -------------------------------------------------
@@ -913,15 +1421,19 @@ def main() -> None:
         subject_b = body_b = ""
 
     # 4. Compose ----------------------------------------------------------
-    outbox_a = compose_outbox(contacts_a, subject_a, body_a, from_name=args.from_name)
+    extra = {"segment_phrase": args.segment_phrase} if args.segment_phrase else None
+    outbox_a = compose_outbox(contacts_a, subject_a, body_a, from_name=args.from_name, extra_values=extra)
     outbox_b = (
-        compose_outbox(contacts_b, subject_b, body_b, from_name=args.from_name)
+        compose_outbox(contacts_b, subject_b, body_b, from_name=args.from_name, extra_values=extra)
         if contacts_b else []
     )
-    print(f"Composed: {len(outbox_a)} variant-A, {len(outbox_b)} variant-B")
+    print(f"  {len(outbox_a)} variant-A  {len(outbox_b)} variant-B")
 
+    n_total = len(outbox_a) + len(outbox_b)
+    dry_tag = "  [dry run]" if args.dry_run else ""
+    _banner(f"Sending{dry_tag}  {n_total} emails")
     if args.dry_run:
-        print("\n[dry-run] Sample sends:")
+        print("Sample:")
         for row in (outbox_a + outbox_b)[:5]:
             print(f"  TO: {row.email}")
             print(f"      {row.subject}")
@@ -945,8 +1457,9 @@ def main() -> None:
     total_dry = counts_a.get("dry_run", 0) + counts_b.get("dry_run", 0)
     template_name = Path(args.template).stem
     sender_name = args.from_name or args.from_.split("@")[0].title()
+    elapsed = time.monotonic() - t_start
     _finalize(args, run_id, sender_name, total_sent, total_dry, template_name,
-              args.icp, outbox_a, outbox_b, sent_at, counts_a, counts_b)
+              args.icp, outbox_a, outbox_b, sent_at, counts_a, counts_b, elapsed)
 
 
 if __name__ == "__main__":
