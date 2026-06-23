@@ -399,6 +399,11 @@ The exploration question for each node is the same: where does a real business n
 a hand adapting to this, concretely enough that they will pay? We answer it by
 talking to merchants at each node, not by reasoning about it here.
 
+External view worth noting: a May 2026 PwC article argues for entering this chain
+at merchandising first and describes an "autonomous merchandising operating model"
+that matches the "AI store manager" framing above. It is one consulting opinion,
+filed and assessed in [[2026-06-19-pwc-merchant-ai-value-chain]].
+
 ## How we drill down from here
 
 This map is breadth. Depth comes node by node, each becoming its own file with real
