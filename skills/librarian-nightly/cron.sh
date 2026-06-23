@@ -1,36 +1,42 @@
 #!/usr/bin/env bash
-# Nightly librarian: an autonomous repo-cleanup pass.
+# Nightly librarian: autonomous repo cleanup, isolated from concurrent work.
 #
-# Unlike the researcher digest (a deterministic toolbox flow), the librarian
-# needs judgment -- is this brain entry a duplicate, is this file junk or
-# load-bearing -- so this runner drives headless Claude Code (`claude -p`) inside
-# the repo with the librarian's nightly checklist (PROMPT.md), then enforces a
-# deterministic safety gate in bash before anything is committed.
+# Two phases, deliberately split so the agent can NEVER touch a teammate's or
+# another session's uncommitted work:
 #
-# Duties are split on purpose:
-#   - claude -p does the file operations, writes agents/librarian/LOG.md, stages
-#     its changes (git add -A), and writes a commit message to
-#     runs/librarian-commit-msg.txt. It does NOT commit or push.
-#   - this script enforces the protected-path + runaway guard on the STAGED diff,
-#     then makes one scoped commit on main and pushes. If the guard trips it
-#     hard-reverts the working tree, files an inbox alert, and lands nothing.
+#   Phase A -- disk hygiene, on the MAIN checkout. Deletes only gitignored,
+#     regenerable junk (caches, *.pyc, editor backups, old runs/ dirs). It never
+#     stages and never commits, and it only removes files git already ignores, so
+#     it is safe to run while anything else is going on.
 #
-# Recovery is git: every change is one revertible commit on main. Nothing is
-# archived; stale tracked files are deleted and live on in history.
+#   Phase B -- tracked-content cleanup, in an ISOLATED git worktree checked out
+#     from origin/main. Headless Claude Code (`claude -p`) prunes finished inbox
+#     tasks, repairs indexes + cross-links, flags judgment calls, writes
+#     agents/librarian/LOG.md, and stages its changes. Because the worktree is a
+#     separate directory holding only committed content, the agent cannot see or
+#     delete the main checkout's uncommitted files. This script runs the safety
+#     gate on the worktree's staged diff, commits, and pushes HEAD:main. On any
+#     abort the whole worktree is just removed -- the main checkout is never
+#     reset or cleaned, so there is no path to destroying in-progress work.
 #
-# SCHEDULED via a systemd USER timer (Arch has no cron daemon), installed on
-# Armaan's machine at ~/.config/systemd/user/librarian-nightly.{service,timer}
-# (OnCalendar=*-*-* 03:00, Persistent=true) with `loginctl enable-linger armaan`
-# so it runs while logged out. Manage: `systemctl --user {start,disable --now}
-# librarian-nightly.timer`. See SKILL.md "Operations" to rebuild from scratch.
-# (On a real cron host instead:  0 3 * * *  <abs path to this script>)
+# This replaces the first design, which guarded with "skip if the tree is dirty"
+# (so any leftover untracked file disabled it) and reverted with a repo-wide
+# `git reset --hard` + `git clean` (which could delete a concurrent session's
+# work). See brain/decisions/2026-06-22-librarian-nightly-agent.md for the why.
 #
-# Requires a logged-in `claude` CLI on this machine (subscription auth); see
-# brain/decisions/2026-06-10-llm-via-claude-code.md.
+# SCHEDULED via a systemd USER timer (Arch has no cron daemon):
+#   ~/.config/systemd/user/librarian-nightly.{service,timer}
+#   (OnCalendar=*-*-* 03:00, Persistent=true) + `loginctl enable-linger armaan`.
+#   Manage: systemctl --user {start,disable --now} librarian-nightly.timer
+#
+# Requires a logged-in `claude` CLI (subscription auth; see
+# brain/decisions/2026-06-10-llm-via-claude-code.md) and push access to origin.
 #
 # Flags:
-#   --dry      run the full cleanup pass but commit nothing (reverts the tree)
-#   --no-push  commit locally but do not push
+#   --dry      both phases read-only: report disk junk without deleting; build
+#              the worktree + run the pass; print the staged diff; commit nothing.
+#   --no-push  commit inside the worktree but do not push (the commit is then
+#              discarded with the worktree, so this is an inspection mode).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 ROOT="$PWD"
@@ -46,114 +52,120 @@ while [ $# -gt 0 ]; do case "$1" in
   *) echo "unknown arg: $1"; exit 2;;
 esac; done
 
-# Runaway-guard thresholds (env-overridable).
+# Runaway-guard thresholds and run-dir retention (env-overridable).
 MAX_DELETE="${LIBRARIAN_MAX_DELETE:-15}"
 MAX_CHANGE="${LIBRARIAN_MAX_CHANGE:-40}"
+RUNS_KEEP="${LIBRARIAN_RUNS_KEEP:-7}"
 
-# Paths the librarian must never touch. A staged change matching this aborts the
-# whole run, even if the agent decided otherwise.
+# Staged paths the librarian must never change; a hit aborts the commit.
 PROTECTED='^(credentials/|CLAUDE\.md$|\.mcp\.json$|toolbox/(src|tests)/|agents/[^/]+/AGENT\.md$|brain/company/overview\.md$|brain/decisions/|\.claude/|\.agents/|skills/librarian-nightly/(cron\.sh|SKILL\.md|PROMPT\.md)$)'
 
 LOG="$ROOT/runs/cron-librarian.log"
 mkdir -p "$ROOT/runs"
 DATE="$(date +%F)"
-MSG_FILE="$ROOT/runs/librarian-commit-msg.txt"
-rm -f "$MSG_FILE"
 
-# Discard everything the agent did this run (tracked + untracked), back to a
-# clean tree. Gitignored files (runs/, credentials/.env) are preserved.
-revert_all() { git reset --hard -q || true; git clean -fdq || true; }
-
-# File a human-facing alert into the inbox queue and commit just that file.
-# Assumes the tree was already reverted to clean.
-alert() {
-  local f="$ROOT/inbox/queue/${DATE}-librarian-alert.md"
-  {
-    echo "# Librarian alert ($DATE)"; echo
-    echo "The nightly librarian aborted and landed nothing: $1"; echo
-    echo "Check runs/cron-librarian.log and agents/librarian/LOG.md, then rerun"
-    echo "by hand once it looks right:"; echo
-    echo '    skills/librarian-nightly/cron.sh --dry'
-  } > "$f"
-  git add "$f" 2>/dev/null || return 0
-  git commit -q -F - <<EOF || return 0
-librarian: alert ($DATE), aborted run
-
-$1
-
-Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
-EOF
-  [ -z "$NOPUSH" ] && git push -q 2>/dev/null || true
+WT=""
+cleanup() {
+  if [ -n "${WT:-}" ]; then
+    [ -d "$WT" ] && git worktree remove --force "$WT" 2>/dev/null || true
+    rmdir "$(dirname "$WT")" 2>/dev/null || true
+  fi
 }
+trap cleanup EXIT
 
 {
   echo "=== librarian-nightly $(date -Is) (dry=${DRY:-0}) ==="
 
-  # Never sweep a human's uncommitted work into an autonomous commit. A dirty
-  # tree at start means someone is mid-edit; skip tonight.
-  if [ -n "$(git status --porcelain)" ]; then
-    echo "working tree dirty at start; skipping to avoid committing human WIP"
-    git status --short
-    exit 0
+  # ---- Phase A: disk hygiene on the main checkout (gitignored junk only) ----
+  echo "-- phase A: disk hygiene --"
+  # Skip .git, virtualenvs, and node_modules: fast, and we never churn those.
+  PRUNE=( -path "$ROOT/.git" -o -name .venv -o -name node_modules )
+  junk_dirs()  { find "$ROOT" \( "${PRUNE[@]}" \) -prune -o -type d \
+      \( -name __pycache__ -o -name .ruff_cache -o -name .pytest_cache \) -print 2>/dev/null; }
+  junk_files() { find "$ROOT" \( "${PRUNE[@]}" \) -prune -o -type f \
+      \( -name '*.pyc' -o -name '.DS_Store' -o -name '*~' -o -name '*.orig' \) -print 2>/dev/null; }
+  old_runs()   { ls -1dt "$ROOT"/runs/*/ 2>/dev/null | tail -n +$((RUNS_KEEP + 1)); }
+
+  nd=$(junk_dirs | grep -c . || true)
+  nf=$(junk_files | grep -c . || true)
+  nr=$(old_runs | grep -c . || true)
+  echo "  found caches:$nd junk-files:$nf old-run-dirs:$nr (keep newest $RUNS_KEEP runs)"
+  if [ -z "$DRY" ]; then
+    junk_dirs  | while read -r d; do [ -n "$d" ] && rm -rf "$d"; done
+    junk_files | while read -r f; do [ -n "$f" ] && rm -f "$f"; done
+    old_runs   | while read -r d; do [ -n "$d" ] && { echo "  prune $d"; rm -rf "$d"; }; done
+    echo "  disk hygiene applied"
+  else
+    echo "  dry: nothing deleted"
   fi
 
-  # Headless secrets if any flow needs them (gitignored, never echoed).
-  [ -f credentials/.env ] && { set -a; . credentials/.env; set +a; }
+  # ---- Phase B: tracked-content cleanup in an isolated worktree ----
+  echo "-- phase B: tracked-content cleanup (isolated worktree) --"
+  git worktree prune -q 2>/dev/null || true
+  if ! git fetch -q origin main 2>/dev/null; then
+    echo "  git fetch failed; skipping phase B (disk hygiene already done)"
+    exit 0
+  fi
+  WT="$(mktemp -d)/lib-wt"
+  if ! git worktree add -q --detach "$WT" origin/main; then
+    echo "  worktree add failed; skipping phase B"
+    exit 1
+  fi
+  mkdir -p "$WT/runs"
+  echo "  worktree $WT @ $(git -C "$WT" rev-parse --short HEAD) (origin/main)"
 
-  # 1) the judgment pass: headless Claude Code cleans up and stages its changes.
-  if ! timeout 20m "$CLAUDE" -p "$(cat "$ROOT/skills/librarian-nightly/PROMPT.md")" \
-        --dangerously-skip-permissions --output-format text; then
-    echo "claude run failed or timed out; reverting"
-    revert_all
+  MSG="$WT/runs/librarian-commit-msg.txt"; rm -f "$MSG"
+
+  # The judgment pass runs with its cwd INSIDE the worktree, so every file op and
+  # `git add` it does is confined to the worktree, not the main checkout.
+  if ! ( cd "$WT" && timeout 20m "$CLAUDE" -p "$(cat "$WT/skills/librarian-nightly/PROMPT.md")" \
+          --dangerously-skip-permissions --output-format text ); then
+    echo "  claude run failed or timed out; discarding worktree"
     exit 1
   fi
 
-  # 2) deterministic safety gate on the STAGED diff.
-  STAGED="$(git diff --cached --name-only)"
+  # Safety gate on the worktree's staged diff.
+  STAGED="$(git -C "$WT" diff --cached --name-only)"
   if [ -z "$STAGED" ]; then
-    echo "nothing staged; clean night, nothing to commit"
-    revert_all   # drop any unstaged disk churn so the tree stays clean
+    echo "  nothing staged; clean night, nothing to commit"
     exit 0
   fi
-
-  # 2a) protected paths
   if echo "$STAGED" | grep -qE "$PROTECTED"; then
-    echo "staged changes touch protected paths:"
-    echo "$STAGED" | grep -E "$PROTECTED"
-    revert_all
-    alert "staged a change to a protected path"
+    echo "  ABORT: staged a protected path:"
+    echo "$STAGED" | grep -E "$PROTECTED" | sed 's/^/    /'
     exit 1
   fi
-
-  # 2b) runaway thresholds
-  N_DEL="$(git diff --cached --name-only --diff-filter=D | grep -c . || true)"
-  N_ALL="$(printf '%s\n' "$STAGED" | grep -c . || true)"
-  echo "staged: $N_ALL changed, $N_DEL deleted (caps: change=$MAX_CHANGE delete=$MAX_DELETE)"
+  N_DEL=$(git -C "$WT" diff --cached --name-only --diff-filter=D | grep -c . || true)
+  N_ALL=$(printf '%s\n' "$STAGED" | grep -c . || true)
+  echo "  staged: $N_ALL changed, $N_DEL deleted (caps: change=$MAX_CHANGE delete=$MAX_DELETE)"
   if [ "$N_DEL" -gt "$MAX_DELETE" ] || [ "$N_ALL" -gt "$MAX_CHANGE" ]; then
-    echo "changeset exceeds runaway cap; aborting for human review"
-    revert_all
-    alert "changeset too large ($N_ALL changed, $N_DEL deleted)"
+    echo "  ABORT: changeset exceeds runaway cap; discarding worktree"
     exit 1
   fi
 
   if [ -n "$DRY" ]; then
-    echo "dry run: would commit these:"
-    git diff --cached --stat
-    revert_all
+    echo "  dry run: would commit:"
+    git -C "$WT" diff --cached --stat | sed 's/^/    /'
     exit 0
   fi
 
-  # 3) one scoped, revertible commit on main.
-  if [ -s "$MSG_FILE" ]; then
-    git commit -q -F "$MSG_FILE" \
+  # One scoped, revertible commit, then push the detached HEAD to main.
+  if [ -s "$MSG" ]; then
+    git -C "$WT" commit -q -F "$MSG" \
       -m "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
   else
-    git commit -q -m "librarian: nightly cleanup ${DATE}" \
+    git -C "$WT" commit -q -m "librarian: nightly cleanup ${DATE}" \
       -m "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
   fi
-  echo "committed: $(git log -1 --format='%h %s')"
+  echo "  committed $(git -C "$WT" rev-parse --short HEAD)"
 
-  if [ -z "$NOPUSH" ]; then
-    if git push -q; then echo "pushed"; else echo "push failed (commit is local)"; fi
+  if [ -n "$NOPUSH" ]; then
+    echo "  --no-push: commit stays in the worktree and is discarded on cleanup"
+    exit 0
+  fi
+  if git -C "$WT" push -q origin HEAD:main; then
+    echo "  pushed to origin/main (local main fast-forwards on next pull)"
+  else
+    echo "  push rejected (origin/main moved); landing nothing, retry next run"
   fi
 } >> "$LOG" 2>&1

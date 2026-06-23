@@ -43,21 +43,27 @@ work itself and flags the judgment calls for a human instead of guessing.
 The nightly flow is the `librarian-nightly` skill
 (`skills/librarian-nightly/`). Its full checklist lives in that skill's
 `PROMPT.md` (the durable "what to do each night"); the charter is the "why and
-within what limits." Each night, driven by `cron.sh`:
+within what limits." It runs in two phases so it can never touch work in
+progress, driven by `cron.sh`:
 
-1. Refuse to run if the working tree is dirty at start. A dirty tree means a
-   human is mid-edit; sweeping that into an autonomous commit is not worth the
-   convenience.
-2. Read /CLAUDE.md and this charter, then run the checklist in `PROMPT.md`:
-   delete cruft, repair indexes and links, file flags, write the run report to
-   `LOG.md`.
-3. Stage the changes (`git add -A`) and write a commit message to
-   `runs/librarian-commit-msg.txt`. Do not commit or push (the runner does the
-   gated commit).
-4. `cron.sh` runs the deterministic safety gate on the staged diff (protected
-   paths + runaway caps), then makes one scoped, revertible commit on `main` and
-   pushes it. If the gate trips, it reverts everything, files an inbox alert,
-   and lands nothing.
+1. **Disk hygiene, on the main checkout** (deterministic bash, no agent). Deletes
+   only gitignored, regenerable junk: caches, `*.pyc`, editor backups, and old
+   `runs/` dirs past the retention window. It never stages or commits, and only
+   removes files git already ignores, so it is safe to run while anything else is
+   going on.
+2. **Tracked-content cleanup, in an isolated git worktree** checked out from
+   `origin/main`. The agent reads /CLAUDE.md and this charter, then runs the
+   checklist in `PROMPT.md` against committed content only: prune finished inbox
+   tasks, repair indexes and links, file flags, write the run report to `LOG.md`,
+   stage with `git add -A`, and write a commit message. It does not commit or
+   push. Because the worktree is a separate directory holding only committed
+   files, the agent cannot see or delete the main checkout's uncommitted work.
+3. `cron.sh` runs the deterministic safety gate on the worktree's staged diff
+   (protected paths + runaway caps), then makes one scoped, revertible commit and
+   pushes it to `main`. On any abort, or if the push is rejected because
+   `origin/main` moved, it discards the entire worktree and lands nothing; the
+   main checkout is never reset or cleaned, so there is no path to destroying
+   in-progress work. The next run retries on fresh `origin/main`.
 
 ## Reporting
 
@@ -69,6 +75,13 @@ on `main` and that log are the audit trail; recovery for anything it removed is
 
 ## Guardrails
 
+- **Isolation, not a dirty-tree veto.** The cleanup runs in a worktree off
+  `origin/main`, so it operates on committed content and cannot reach anyone's
+  uncommitted work. It therefore runs every night regardless of what is checked
+  out, and an abort just deletes the worktree. This replaced an earlier guard
+  that skipped whenever the tree was dirty and reverted with a repo-wide
+  `git reset --hard` plus `git clean`, which both refused to run too often and
+  could delete a concurrent session's work.
 - **Recovery model is git.** Stale tracked files are deleted, not archived; the
   single nightly commit is easy to revert. Because there is no archive net, the
   runaway cap and protected set below are the real safety, not an afterthought.

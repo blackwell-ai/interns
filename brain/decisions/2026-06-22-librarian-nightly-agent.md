@@ -60,3 +60,39 @@ human. Charter: `agents/librarian/AGENT.md`. Nightly flow:
   as every other `claude -p` flow here. Logged out, the run fails closed and
   lands nothing.
 - Spends subscription usage nightly for the agent pass.
+
+## Update 2026-06-23: worktree isolation replaces the dirty-tree guard
+
+The first build guarded with "skip the night if the working tree is dirty" and,
+on any abort, reverted with a repo-wide `git reset --hard` plus `git clean -fdq`.
+Validating it in a live shared checkout exposed two flaws:
+
+- **It would rarely run.** The guard tripped on any uncommitted change, tracked
+  or not. This repo routinely has untracked agent output sitting around (for
+  example GEO audit files), so the tree is often dirty at 3am and the librarian
+  would skip almost every night, defeating the point.
+- **It could destroy concurrent work.** The dirty-tree check is time-of-check;
+  the revert is time-of-use. If a session started writing after the check, the
+  `git clean -fdq` on an abort would delete its untracked files. During the test
+  run this very likely grazed a concurrent GEO session's early files (it was
+  still running and regenerated them, so no confirmed permanent loss).
+
+The fix removes the dependence on the main checkout's cleanliness entirely. The
+flow is now two phases:
+
+- **Disk hygiene** runs on the main checkout in plain bash, deleting only
+  gitignored regenerable junk (caches, `*.pyc`, editor backups, old `runs/`
+  dirs). It never commits and only removes files git already ignores, so it is
+  safe alongside any concurrent work.
+- **Tracked-content cleanup** runs the `claude -p` pass inside an isolated git
+  worktree checked out from `origin/main`. It sees only committed content, so it
+  cannot read or delete anyone's uncommitted work; it commits there and pushes
+  the detached HEAD to `main`. Any abort, a rejected push (`origin/main` moved),
+  or a clean night just removes the worktree. The main checkout is never `reset`
+  or `clean`'d.
+
+Result: the librarian runs every night regardless of what is checked out, and the
+class of "autonomous job destroys in-progress work" is gone. The protected-path
+and runaway-cap gates are unchanged and now run against the worktree's staged
+diff. The posture choices above (delete-not-archive, push to `main`, mechanical
+on brain) are unchanged.
