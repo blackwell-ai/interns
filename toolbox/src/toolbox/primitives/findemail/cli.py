@@ -203,7 +203,9 @@ async def _hunter_domain_all(client: httpx.AsyncClient, key: str, domain: str,
         r.raise_for_status()
     if r.status_code != 200:
         return []
-    emails = (r.json().get("data") or {}).get("emails") or []
+    data = r.json().get("data") or {}
+    organization = (data.get("organization") or "").strip()
+    emails = data.get("emails") or []
     candidates = [e for e in emails if (e.get("value") or "").strip()]
     candidates.sort(key=lambda e: (_decision_maker_rank(e.get("position", ""), e.get("seniority", "")),
                                    -(e.get("confidence") or 0)))
@@ -215,6 +217,7 @@ async def _hunter_domain_all(client: httpx.AsyncClient, key: str, domain: str,
             "title": (e.get("position") or "").strip(),
             "email_score": int(e.get("confidence") or 0),
             "email_status": (e.get("verification") or {}).get("status") or "unknown",
+            "company": organization,
         }
         for e in candidates
     ]

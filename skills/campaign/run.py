@@ -441,7 +441,7 @@ async def _enrich_batch(
                     first_name=res.get("first_name", ""),
                     last_name=res.get("last_name", ""),
                     title=res.get("title", ""),
-                    company=domain.split(".")[0].title(),
+                    company=res.get("company") or domain.split(".")[0].title(),
                     domain=domain,
                 ))
             except ValueError as e:
