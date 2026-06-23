@@ -13,6 +13,9 @@ charter at any time.
   conferences; surfaces anything relevant to us.
 - `geo/` — owns all GEO (AI visibility) work: audits, implementation,
   re-benchmarks, per `brain/company/audit-methodology.md`.
+- `librarian/` — night-shift custodian: one autonomous cleanup pass per night
+  (delete cruft, tidy structure, repair indexes and links, flag the judgment
+  calls), one scoped commit on `main`. Runs the `librarian-nightly` skill.
 
 ## Adding an agent
 

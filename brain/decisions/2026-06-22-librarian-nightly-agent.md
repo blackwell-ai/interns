@@ -1,0 +1,62 @@
+# Decision: a nightly librarian agent maintains the repo autonomously
+
+**Date:** 2026-06-22 · **Source:** internal decision (Armaan, in session).
+
+## What was decided
+
+A new agent, the librarian, runs one autonomous cleanup pass every night and
+commits the result to `main`. It deletes the cruft that accumulates (stale
+`runs/` dirs, caches, old finished inbox tasks), keeps the file structure and
+indexes tidy, repairs internal cross-links, and flags the judgment calls for a
+human. Charter: `agents/librarian/AGENT.md`. Nightly flow:
+`skills/librarian-nightly/`.
+
+## How it works
+
+- It runs as a systemd user timer (`librarian-nightly`, OnCalendar `*-*-* 03:00`,
+  `Persistent=true`), the same scheduling pattern as the researcher digest.
+- Cleanup needs judgment, not a fixed pipeline, so the runner drives headless
+  Claude Code (`claude -p`) with a checklist (`PROMPT.md`) rather than a
+  deterministic toolbox flow. This reuses the `claude -p` LLM path decided in
+  `2026-06-10-llm-via-claude-code.md`, but at the agent level (full tools,
+  in-repo) instead of the harness `llm.py` level.
+- The agent does the file work and stages it; `cron.sh` owns a deterministic
+  safety gate (protected paths + a runaway cap) and the single commit + push, so
+  the limits are enforced in bash, not left to the model.
+
+## The three posture choices (Armaan, in session)
+
+- **Recovery is git, not an archive.** Stale tracked files are deleted, not moved
+  to an archive folder; the nightly commit is the revert point. Chosen for a
+  cleaner tree. The cost is that there is no in-tree safety net, which is why the
+  protected set and runaway cap do the real work.
+- **Commit and push to `main` nightly.** One scoped, revertible commit, pushed,
+  so the cleanup is shared. Not a branch-and-PR; the point is full autonomy.
+- **Mechanical on the brain, editorial flagged.** The librarian fixes dead links,
+  index drift, and missing dates in `brain/`, but never merges, rewrites, or
+  prunes brain prose on its own. Duplicates and contradictions become a single
+  inbox task for a human. The brain is the company's durable asset; an
+  unsupervised agent edits its plumbing, not its meaning.
+
+## Guardrails (the reason this is safe to leave running)
+
+- **Protected paths**, re-checked against the staged diff in `cron.sh`, abort the
+  run if touched: `credentials/`, `CLAUDE.md`, `.mcp.json`, `toolbox/src|tests/`,
+  `agents/*/AGENT.md`, `brain/company/overview.md`, `brain/decisions/`,
+  `.claude/`, `.agents/`, and the librarian's own skill files.
+- **Runaway cap**: deleting more than 15 tracked files or changing more than 40
+  in one night aborts the run and files an alert, on the logic that a huge
+  changeset is a malfunction, not a big cleanup.
+- **Dirty-tree refusal**: it will not run if the working tree has uncommitted
+  work, so it never sweeps a human's edits into an autonomous commit.
+- **Flag, do not guess**: anything ambiguous becomes an inbox task instead of an
+  action.
+
+## Tradeoffs accepted
+
+- Autonomous pushes to `main` every night. Mitigated by the gate, the single
+  revertible commit, and the per-run report in `agents/librarian/LOG.md`.
+- Needs a logged-in `claude` CLI on the host (subscription auth), same constraint
+  as every other `claude -p` flow here. Logged out, the run fails closed and
+  lands nothing.
+- Spends subscription usage nightly for the agent pass.
