@@ -56,3 +56,34 @@ Two follow-ups left, both need a human-driven session (not blockers for delivery
 Armaan has reviewed the deck, flagged any corrections, decided whether to run the
 human-assisted engine battery, and either approved it for the customer or sent
 edits back to the GEO agent.
+
+## Finalization update (2026-06-22, GEO agent, at Ethan's request)
+
+Both open follow-ups are closed and the deck is finalized at the canonical path.
+What changed:
+
+- Microsoft Copilot captured (June 22, guest mode, web search on, no CAPTCHA this
+  time). Reuzel is absent: Copilot returned an Amazon-sourced shopping carousel
+  naming Uppercut Deluxe (top pick), Brickell, Aveda, JVR, CrownNaturally. A clean
+  second category miss alongside Gemini. Screenshot:
+  `agents/geo/reuzel/assets/copilot-best-pomade-2026-06-22.png`.
+- Search-off (parametric) pass: attempted, left as a documented limit. Logged-out
+  ChatGPT refused to answer from memory and force-grounded in live product data, so
+  a clean from-memory read needs logged-in sessions with search toggled off or API
+  access. Noted in the deck's method section. Not a blocker.
+- Honest re-grade: the sixth engine is a second miss, so Recommendability went 80
+  -> 76 and the composite 80 -> 79. Per the refund-clause guardrail, new negative
+  evidence pulls the score down rather than leaving it flat.
+
+Canonical deliverable: `brain/customers/documents/reuzel-audit.pdf` (13 pages,
+zero em/en dashes in HTML and PDF, 13-page rasterized visual check clean). Working
+source: `agents/geo/reuzel/reuzel-ai-visibility-audit.html`. The June 18 draft
+(composite 80) is kept as history at `agents/geo/reuzel/reuzel-audit-2026-06-18.*`.
+
+Remaining gate (this task stays in queue): a human approves the finalized deck
+before it goes to the customer. Two things to decide at that point: (1) confirm the
+engagement/pricing stage (the brain has no engagement letter; this is still a
+prospecting audit), and (2) confirm the cover contact, currently Armaan's email.
+Notion mirror pending: the Notion MCP is configured but not authenticated this
+session, so this update lives in `inbox/` and should be mirrored to the Notion
+Tasks entry next interactive session.

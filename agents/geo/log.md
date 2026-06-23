@@ -1,5 +1,45 @@
 # GEO agent log
 
+## 2026-06-22: Reuzel audit finalized for delivery (Ethan's request)
+
+Customer: Reuzel. Phase: prospecting audit, finalized. Closed the two open
+follow-ups from the June 18 draft and rendered the canonical deliverable.
+Deliverable: `brain/customers/documents/reuzel-audit.pdf` (13 pages, house format,
+Chrome print-to-PDF). Working source: `agents/geo/reuzel/reuzel-ai-visibility-audit.html`.
+
+Scorecard movement: composite 80 -> 79; Recommendability 80 -> 76; the other four
+dimensions unchanged (Discoverability 80, Quotability 70, Transactability 90,
+Reputation 78). The move is honest, not a position change: the sixth engine added
+to the battery is a second clean category miss, so the dimension came down rather
+than staying flat (refund-clause guardrail).
+
+What got done this session:
+- Microsoft Copilot captured (the named gap), via the Playwright browser in guest
+  mode, web search on, no CAPTCHA this time. Query "best men's pomade for strong
+  hold". Reuzel absent; Copilot returned an Amazon-sourced shopping carousel
+  (Uppercut Deluxe top pick, then Brickell, Aveda, JVR, CrownNaturally). A second
+  clean miss alongside Gemini, and consistent with the audit thesis: the engines
+  that lean on third-party commerce data do not surface Reuzel, while the one that
+  read reuzel.com (ChatGPT) ranked it first. Screenshot under `assets/`.
+- Search-off (parametric) pass: attempted and left as a documented limitation.
+  Logged-out ChatGPT refused a from-memory answer and force-grounded in live
+  product data, so a clean parametric read needs logged-in sessions with the search
+  tool off, or model API access. Captured the behavior (assets/) and wrote it into
+  the deck's method section honestly rather than faking the pass.
+- Deck updated (engine table now six rows, scorecard, narrative, method), rendered
+  to the canonical path, and validated: zero em/en dashes in HTML and PDF text,
+  13-page rasterized visual QA clean (cover date, scorecard, engine table, method
+  all checked).
+- Records: `brain/customers/reuzel.md` audit-status section rewritten;
+  `inbox/queue/2026-06-18-review-reuzel-audit-deck.md` updated with the close-out.
+
+Open: final human sign-off before this goes to the customer (the review task stays
+in queue). At sign-off, confirm the engagement/pricing stage (still a prospecting
+audit, no engagement letter) and the cover contact (currently Armaan's email).
+Notion mirror pending (Notion MCP configured but not authenticated this session).
+The June 18 draft (composite 80) is kept as history at
+`agents/geo/reuzel/reuzel-audit-2026-06-18.*`.
+
 ## 2026-06-17 — Reuzel audit kickoff (recon + frozen truth table)
 
 Customer: Reuzel (reuzel.com), men's grooming, Schorem barbershop heritage. Phase:
