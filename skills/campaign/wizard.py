@@ -42,6 +42,9 @@ SENDERS = [
     ("shamit",   "Shamit",              "shamitd@stanford.edu"),
 ]
 
+# Senders used in "all three" mode (excludes shamit).
+STUDENT_SENDERS = [s for s in SENDERS if s[0] != "shamit"]
+
 def _cc_for(key: str) -> str:
     return ",".join(addr for k, _, addr in SENDERS if k != key)
 
@@ -231,31 +234,144 @@ async def _send_test_email(
         )
         resp.raise_for_status()
 
+# ── Hunter credit check ───────────────────────────────────────────────────────
+
+def _check_hunter_credits(needed: int) -> None:
+    """Warn (and optionally abort) if remaining Hunter credits look insufficient.
+
+    'needed' is an estimate — actual usage depends on how many domains pass
+    the free pre-check. Uses ~1.5x as a buffer. Silently skips if the key is
+    missing or the API call fails.
+    """
+    key = os.environ.get("TOOLBOX_TOKEN_HUNTER", "")
+    if not key:
+        return
+    try:
+        import httpx  # noqa: PLC0415
+        r = httpx.get(
+            "https://api.hunter.io/v2/account",
+            params={"api_key": key},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            return
+        remaining = int(
+            (r.json().get("data") or {})
+            .get("requests", {})
+            .get("credits", {})
+            .get("remaining") or 0
+        )
+    except Exception:
+        return
+
+    # Credits are per domain searched, not per email. Use 1.5x as a buffer
+    # to account for domains that cost a credit but yield nothing.
+    estimated = int(needed * 1.5)
+    print(f"\n  Hunter credits remaining: {remaining}")
+    print(f"  Estimated needed (~1.5x emails as buffer): {estimated}")
+
+    if remaining < estimated:
+        print(
+            f"\n  Warning: {remaining} credits may not cover {estimated} estimated "
+            f"domain searches for {needed} emails."
+        )
+        if not _confirm("  Proceed anyway?", default=False):
+            print("Aborted.")
+            sys.exit(0)
+
+# ── Command builder ───────────────────────────────────────────────────────────
+
+def _build_cmd(
+    sender_email: str,
+    sender_name: str,
+    cc: str,
+    limit: int,
+    provider: str,
+    icp_arg: str,
+    config_arg: str,
+    template_arg: str,
+    segment_phrase: str,
+    experiment: bool,
+    dry_run: bool,
+) -> list[str]:
+    cmd = [
+        str(PYTHON), "-u", str(RUN_PY),
+        "--from",      sender_email,
+        "--from-name", sender_name,
+        "--cc",        cc,
+        "--limit",     str(limit),
+        "--provider",  provider,
+    ]
+    if icp_arg:
+        cmd += ["--icp", icp_arg]
+    if config_arg:
+        cmd += ["--config", config_arg]
+    if template_arg:
+        cmd += ["--template", template_arg]
+    if segment_phrase:
+        cmd += ["--segment-phrase", segment_phrase]
+    if experiment:
+        cmd.append("--experiment")
+    if dry_run:
+        cmd.append("--dry-run")
+    return cmd
+
+# ── Runner ────────────────────────────────────────────────────────────────────
+
+def _run_cmd(cmd: list[str]) -> int:
+    """Stream a run.py process to stdout. Returns exit code."""
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=os.environ.copy(),
+        text=True,
+        bufsize=1,
+    )
+    assert proc.stdout
+    for line in proc.stdout:
+        sys.stdout.write(line)
+        sys.stdout.flush()
+    proc.wait()
+    return proc.returncode
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
     print("\nCampaign Wizard")
     print("=" * 48)
 
-    # 1. Sender
-    sender_opts = [(name, email) for _, name, email in SENDERS]
-    sender_idx  = _choose("Who is sending", sender_opts, default=1)
-    sender_key, sender_name, sender_email = SENDERS[sender_idx]
-    cc = _cc_for(sender_key)
+    # 0. Send mode: single sender or split across all three
+    mode_idx = _choose("Send mode", [
+        ("Single sender",      "choose one account to send from"),
+        ("All three senders",  "split N evenly across Samarjit, Armaan, Ethan"),
+    ], default=1)
+    all_senders_mode = (mode_idx == 1)
+
+    # 1. Sender(s)
+    if not all_senders_mode:
+        sender_opts = [(name, addr) for _, name, addr in SENDERS]
+        sender_idx  = _choose("Who is sending", sender_opts, default=1)
+        active_senders = [SENDERS[sender_idx]]
+    else:
+        active_senders = STUDENT_SENDERS
+
+    # preview + test email always come from the first active sender
+    _, preview_sender_name, preview_sender_email = active_senders[0]
 
     # 2. ICP mode
     mode_opts = [
         ("ICP mix file", "distribute N emails across pre-defined segments"),
         ("Custom ICP",   "describe your target in natural language"),
     ]
-    mode = _choose("Target mode", mode_opts, default=1)
+    icp_mode = _choose("Target mode", mode_opts, default=1)
 
     icp_arg        = ""
     config_arg     = ""
     template_arg   = ""
     segment_phrase = ""
 
-    if mode == 0:
+    if icp_mode == 0:
         mixes    = sorted(SKILL_DIR.glob("icp_mix*.toml"))
         mix_opts = [(p.name, _mix_summary(p)) for p in mixes]
         mix_idx  = _choose("ICP mix file", mix_opts, default=1)
@@ -284,11 +400,20 @@ def main() -> None:
 
     # 3. Number of emails
     print()
-    limit_raw = _ask("Number of emails to send", "20")
+    if all_senders_mode:
+        limit_raw = _ask(
+            f"Total emails to send (split evenly across {len(active_senders)} senders)", "60"
+        )
+    else:
+        limit_raw = _ask("Number of emails to send", "20")
     try:
         limit = int(limit_raw)
     except ValueError:
         print("Must be a number.")
+        sys.exit(1)
+
+    if all_senders_mode and limit < len(active_senders):
+        print(f"Need at least {len(active_senders)} emails to split across {len(active_senders)} senders.")
         sys.exit(1)
 
     # 4. Provider
@@ -305,14 +430,19 @@ def main() -> None:
     # 6. Dry run?
     dry_run = _confirm("Dry run (compose without sending)", default=True)
 
-    # ── Compose example + preview ────────────────────────────────────────────
+    # ── Load env + check Hunter credits ──────────────────────────────────────
 
     _load_dotenv(DOTENV)
     _bootstrap_imports()
 
+    if provider == "hunter":
+        _check_hunter_credits(limit)
+
+    # ── Compose example + preview ────────────────────────────────────────────
+
     try:
         subject, body_text, body_html = _compose_example(
-            template_arg, config_arg, sender_name, segment_phrase
+            template_arg, config_arg, preview_sender_name, segment_phrase
         )
         if subject:
             _show_preview(subject, body_text)
@@ -322,28 +452,13 @@ def main() -> None:
         print(f"\n(preview failed: {e})")
         subject, body_text, body_html = "", "", ""
 
-    # ── Build run.py command ─────────────────────────────────────────────────
+    # ── Per-sender limits ────────────────────────────────────────────────────
 
-    cmd = [
-        str(PYTHON), "-u", str(RUN_PY),
-        "--from",      sender_email,
-        "--from-name", sender_name,
-        "--cc",        cc,
-        "--limit",     str(limit),
-        "--provider",  provider,
-    ]
-    if icp_arg:
-        cmd += ["--icp", icp_arg]
-    if config_arg:
-        cmd += ["--config", config_arg]
-    if template_arg:
-        cmd += ["--template", template_arg]
-    if segment_phrase:
-        cmd += ["--segment-phrase", segment_phrase]
-    if experiment:
-        cmd.append("--experiment")
-    if dry_run:
-        cmd.append("--dry-run")
+    n = len(active_senders)
+    per = limit // n
+    remainder = limit - per * n
+    # first sender absorbs the remainder (e.g. 2101 -> 701, 700, 700)
+    per_limits = [per + (remainder if i == 0 else 0) for i in range(n)]
 
     # ── Summary ──────────────────────────────────────────────────────────────
 
@@ -358,9 +473,18 @@ def main() -> None:
         print(f"  Template:    {Path(template_arg).name}")
     if segment_phrase:
         print(f"  Seg phrase:  {segment_phrase}")
-    print(f"  From:        {sender_name} <{sender_email}>")
-    print(f"  CC:          {cc}")
-    print(f"  Emails:      {limit}")
+
+    if all_senders_mode:
+        print(f"  Senders:")
+        for (_, sn, se), lim in zip(active_senders, per_limits):
+            print(f"    {sn} <{se}>  ({lim} emails)")
+    else:
+        _, sn, se = active_senders[0]
+        cc = _cc_for(active_senders[0][0])
+        print(f"  From:        {sn} <{se}>")
+        print(f"  CC:          {cc}")
+
+    print(f"  Emails:      {limit}{' total' if all_senders_mode else ''}")
     print(f"  Provider:    {provider}")
     print(f"  A/B:         {'yes' if experiment else 'no'}")
     print(f"  Dry run:     {'YES' if dry_run else 'NO — live send'}")
@@ -370,12 +494,15 @@ def main() -> None:
         print("Aborted.")
         sys.exit(0)
 
-    # ── Test email ───────────────────────────────────────────────────────────
+    # ── Test email (from first sender) ───────────────────────────────────────
 
     if subject and body_html:
-        print(f"\nSending test email to {TEST_EMAIL}...", flush=True)
+        label = f" (from {preview_sender_name})" if all_senders_mode else ""
+        print(f"\nSending test email to {TEST_EMAIL}{label}...", flush=True)
         try:
-            asyncio.run(_send_test_email(sender_email, sender_name, subject, body_text, body_html))
+            asyncio.run(_send_test_email(
+                preview_sender_email, preview_sender_name, subject, body_text, body_html
+            ))
             print(f"Test sent to {TEST_EMAIL}.")
             if not _confirm("Email looks good? Proceed with full campaign", default=True):
                 print("Aborted.")
@@ -386,28 +513,62 @@ def main() -> None:
     else:
         print(f"\n(skipping test email — could not compose preview)\n")
 
-    # ── Run pipeline ─────────────────────────────────────────────────────────
+    # ── Run pipeline(s) ──────────────────────────────────────────────────────
 
-    print("--- Pipeline starting ---\n", flush=True)
+    if not all_senders_mode:
+        sender_key, sender_name, sender_email = active_senders[0]
+        cc  = _cc_for(sender_key)
+        cmd = _build_cmd(
+            sender_email, sender_name, cc, limit, provider,
+            icp_arg, config_arg, template_arg, segment_phrase,
+            experiment, dry_run,
+        )
+        print("--- Pipeline starting ---\n", flush=True)
+        rc = _run_cmd(cmd)
+        status = "Done" if rc == 0 else f"Failed (exit {rc})"
+        print(f"\n--- {status} ---")
+        sys.exit(rc)
 
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        env=os.environ.copy(),
-        text=True,
-        bufsize=1,
-    )
-    assert proc.stdout
-    for line in proc.stdout:
-        sys.stdout.write(line)
-        sys.stdout.flush()
-    proc.wait()
+    else:
+        results: list[tuple[str, int]] = []  # (sender_name, exit_code)
+        for i, ((sk, sn, se), lim) in enumerate(zip(active_senders, per_limits)):
+            cc  = _cc_for(sk)
+            cmd = _build_cmd(
+                se, sn, cc, lim, provider,
+                icp_arg, config_arg, template_arg, segment_phrase,
+                experiment, dry_run,
+            )
+            print(f"\n{'='*48}")
+            print(f"Sender {i+1}/{n}: {sn} ({lim} emails)")
+            print(f"{'='*48}\n")
 
-    rc     = proc.returncode
-    status = "Done" if rc == 0 else f"Failed (exit {rc})"
-    print(f"\n--- {status} ---")
-    sys.exit(rc)
+            rc = _run_cmd(cmd)
+            results.append((sn, rc))
+
+            if rc != 0:
+                print(f"\n  {sn} run exited with code {rc}.")
+                if rc == 2:
+                    # Preflight failure — likely auth or missing key.
+                    # No point continuing; remaining senders will hit the same issue.
+                    print("  Preflight failed — stopping. Fix the issue above and retry.")
+                    break
+                print("  Continuing with next sender...\n")
+
+        # Final summary
+        print(f"\n{'='*48}")
+        print("All-senders summary")
+        print(f"{'='*48}")
+        all_ok = True
+        for sn, rc in results:
+            status = "ok" if rc == 0 else f"failed (exit {rc})"
+            print(f"  {sn}: {status}")
+            if rc != 0:
+                all_ok = False
+        skipped = n - len(results)
+        if skipped:
+            print(f"  ({skipped} sender(s) skipped due to preflight failure)")
+        print(f"{'='*48}")
+        sys.exit(0 if all_ok else 1)
 
 # ── Mix helpers ───────────────────────────────────────────────────────────────
 
