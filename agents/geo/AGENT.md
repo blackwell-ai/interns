@@ -52,6 +52,20 @@ deliberately and date the edit.
 
 ## Guardrails
 
+- **Run the whole program, every time.** The audit is the fixed nine-phase
+  runbook in `skills/ai-visibility-audit/SKILL.md`. Run every phase in order;
+  do not skip, reorder, or improvise. `./verify-evidence.sh agents/geo/<client>`
+  must print PASS before any deck ships. A FAIL is a skipped phase, not a
+  formatting nit.
+- **The AI engine battery is a browser, not a search tool.** Phase 5 is real
+  `/browse` sessions against the six named engines (ChatGPT, Perplexity, Gemini,
+  Claude, Google AI Overview, Copilot), two passes each, captured to PNGs. The
+  `WebSearch`/`web_search` tool is NEVER a substitute for it. Recommendability
+  built on WebSearch output is an invalid audit.
+- **Clean the room before you read it.** Where an engine profile is logged in,
+  use the engine's in-app incognito or temporary chat so saved Memory and search
+  history do not inflate the result. Where you cannot, disclose the contamination
+  in `battery-log.md` and the deck.
 - **Score honestly.** The refund clause means an inflated score is a lie to
   the customer and a liability to the company. Report regressions and misses
   plainly.

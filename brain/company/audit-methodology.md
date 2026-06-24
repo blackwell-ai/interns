@@ -2,9 +2,16 @@
 
 Last updated June 10, 2026. Source: founder-provided canonical context.
 
-> This is Blackwell's core repeatable flow. Candidate for codifying as a
-> step-by-step skill in `skills/ai-visibility-audit/` once an agent runs one
-> end-to-end.
+> This is Blackwell's core repeatable flow. The deterministic runbook and the
+> evidence gate that enforces it now live in `skills/ai-visibility-audit/`
+> (`SKILL.md` for the nine phases, `recon.sh` for phases 1-2, `verify-evidence.sh`
+> for the artifact gate). Run the skill; this file is the why behind it.
+>
+> Anti-shortcut rule (added 2026-06-22 after two audits, GhostBed and BeautyStat,
+> shipped recommendability findings built on the `WebSearch` tool instead of the
+> browser battery): phase 5 is real `/browse` sessions against the six engines,
+> two passes, captured to PNGs, with in-app incognito where logged in. WebSearch
+> is never the battery. `verify-evidence.sh` must print PASS before a deck ships.
 
 ## The audit methodology
 

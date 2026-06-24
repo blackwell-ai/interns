@@ -31,59 +31,139 @@ about Meta ads.
 Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Estimate
 competitor scores from the same public signals and label them as estimates.
 
-## Steps
+## How to run it: the same program every time
 
-1. **Technical truth table.** Run `./recon.sh <domain>` for the target and each
-   competitor: title/meta/h1/og, homepage and product JSON-LD `@type`s, robots and
-   llms.txt state, product/collection/blog counts from the sitemaps, the pixel
-   stack, and the UCP endpoint. Capture raw numbers; every technical claim traces
-   back to one.
-2. **AI behavior and recommendability.** Run web-search-backed category and brand
-   queries ("best <category> shops <region>", "best online <category> shops",
-   "where to buy <brand>"). Record which shops are named, which sources are cited,
-   and whether the client appears in the listicles those engines pull from. This
-   is the flagship evidence and what the WebSearch tool returns is itself a
-   retrieval-AI answer, so quote it honestly.
-3. **Reputation corpus.** Pull the client's Yelp, Birdeye, and Google ratings and
-   review counts, official-dealer or directory listings, and sentiment, then check
-   whether any of it is linked to the site entity via `sameAs`. Yelp and Trustpilot
-   often 403 a bot; the rating usually still comes back through search snippets.
-4. **Adapt `template.html`** (the heavy house style: sans-serif black-on-white
-   cover, AI Visibility Scorecard with competitor columns and a red grade card,
-   "the short version" with numbered findings and a dark callout, findings
-   worst-first with real AI-output boxes and review quotes, optional
-   paid-readiness section, competitive position, two-phase $1,000 close with
-   benchmarks, methodology section, repeated page footer). Replace all copy,
-   numbers, and evidence with this client's verified recon.
-5. **Render to PDF** with headless Chrome:
-   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
-   --disable-gpu --no-pdf-header-footer --run-all-compositor-stages-before-draw \
-   --virtual-time-budget=8000 --print-to-pdf=out.pdf file://$PWD/audit.html`.
-   WeasyPrint is the documented renderer but needs pango/cairo native libs and
-   failed to import here even after `brew install pango cairo gdk-pixbuf`, so Chrome
-   is used. The cover needs `break-after:page`; the footer is a `position:fixed`
-   element Chrome repeats on every page.
-6. **Verify before shipping.** Two hard gates:
-   - Dash scan (CLAUDE.md Writing rule): the HTML source and the extracted PDF text
-     must each contain zero em or en dashes. Scan with
-     `python3 -c "t=open('audit.html').read();print(sum(t.count(c) for c in [chr(0x2014),chr(0x2013)]))"`
-     (and the same over `pdftotext out.pdf -`); both must print 0.
-   - Visual QA: rasterize with `pdftoppm -png -r 100 out.pdf qa` and read every page
-     for overflow, collisions, broken color fills, and bad page breaks. Use
-     `print-color-adjust: exact` so backgrounds print.
-7. **Place and record.** PDF to `brain/customers/documents/<client>-audit.pdf`,
-   working HTML under `agents/geo/<client>/`, durable findings to
-   `brain/customers/<client>.md`. Mirror state into Notion Tasks if interactive.
+This is a fixed nine-phase program, not a menu. Run every phase, in order, for
+every audit. Each phase writes an artifact to `agents/geo/<client>/`, and
+`./verify-evidence.sh agents/geo/<client>` must print PASS before the deck ships.
+The gate exists because past runs skipped the live battery and wrote prose
+instead. Do not narrate a phase you did not run.
+
+**Hard prohibition.** The `WebSearch` tool, `web_search`, and "web-search-backed
+retrieval" are NOT the AI engine battery and never substitute for it. Phase 5 is
+real browser sessions against the six named engines through `/browse`, captured to
+PNGs. An audit whose recommendability rests on WebSearch output is invalid, full
+stop. If `/browse` cannot reach an engine, that is a documented limitation in
+`battery-log.md`, not a reason to fall back to WebSearch.
+
+### Phase 1+2. Truth table and crawlability (frozen first)
+
+Run recon for the target and EACH competitor, before any engine query:
+
+```
+./recon.sh <domain> [product-handle] | tee agents/geo/<client>/recon-<YYYY-MM-DD>.md
+```
+
+`recon.sh` now covers phase 1 (title/meta/h1/og, homepage and product JSON-LD
+`@type`s, robots/llms.txt, sitemap counts, pixel stack) and phase 2 (the agentic
+layer probe over `/agents.md`, `/.well-known/ucp`, `/api/ucp/mcp`,
+`sitemap_agentic_discovery.xml`, and the AI bot-UA crawlability matrix: GPTBot,
+OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, Amazonbot, Bingbot).
+Every technical claim in the deck traces back to a line in this file.
+
+### Phase 3. Reputation corpus (live, captured)
+
+Drive `/browse` through this FIXED source list and screenshot each to
+`agents/geo/<client>/assets/reputation-<source>-<YYYY-MM-DD>.png`. The gate
+requires all six: **Trustpilot, BBB, ConsumerAffairs, Reddit, YouTube, and
+retailer** (the retailer the brand actually sells through: Amazon, Sephora, Ulta,
+Sally Beauty, and so on; name it in the filename, for example
+`reputation-retailer-amazon-...`). Record each rating, review count,
+claimed/unclaimed status, and the sentiment split in `reputation-<YYYY-MM-DD>.md`.
+A source with no profile gets an explicit `N/A` line naming the source in that file
+(the gate accepts a documented N/A; it does not accept silence). Then check whether
+the site entity links to any of it via `sameAs` in the recon output. Cloudflare or a
+login wall is handled with headed stealth or an in-app view, not skipped.
+
+### Phase 5. Two-pass AI engine battery (the flagship evidence)
+
+Six engines, two passes each, through `/browse` in headed mode (`--headed`, which
+clears most Cloudflare walls with stealth). Engines: ChatGPT, Perplexity, Gemini,
+Claude, Google AI Overview, Microsoft Copilot.
+
+- **Pass A, browsing OFF** (parametric / from-memory): the engine answers from
+  training, web tool disabled. Shows whether the brand exists in the model's
+  priors.
+- **Pass B, browsing ON** (forced web retrieval): the live category answer.
+
+**Incognito / clean profile is mandatory where the profile is logged in.** A
+logged-in account carries Memory and search history that biases the engine toward
+brands you searched before, which silently inflates recommendability. Before each
+engine, use its in-app private mode: ChatGPT Temporary Chat, Perplexity Incognito
+(account menu), Copilot/Gemini a fresh chat with personalization/memory off. If an
+engine has no private mode and is logged in, note it in `battery-log.md` and read
+the result as contaminated.
+
+Queries are fixed per audit and written down: the category query ("best <category>
+for <use case> <year>"), one or two adjacent category queries, and a brand-defense
+query ("<brand> vs <competitor>"). Run the SAME query string on every engine.
+
+Capture every engine and pass to
+`assets/<engine>-<query-slug>-<pass>-<YYYY-MM-DD>.png`, where `<engine>` is one of
+`chatgpt perplexity gemini claude googleaio copilot` and `<pass>` is `on` or
+`off`. Log each row in `battery-log.md`: engine, pass, incognito yes/no, query,
+whether the client and each competitor was named, sources cited, timestamp. Where
+an engine refuses a pass (for example a logged-out engine that will not disable
+browsing), write the limitation in `battery-log.md`; the gate accepts a documented
+limitation but not a missing row.
+
+### Phase 6. Competitor recon and scorecard
+
+Run `recon.sh` on each competitor the same day and save the combined output to
+`agents/geo/<client>/competitors-<YYYY-MM-DD>.md` (the gate requires at least two
+competitor recon blocks in that file). Grade all five dimensions against the FROZEN
+truth table from phase 1, never against anything an engine said. Competitor cells
+are estimates from the same public signals, labeled as estimates.
+
+### Phase 7-8. Deck and PDF
+
+Adapt `template.html` (sans-serif black-on-white cover, AI Visibility Scorecard
+with competitor columns and a red grade card, "the short version" with numbered
+findings and a dark callout, findings worst-first with real AI-output boxes and
+review quotes, optional paid-readiness section, competitive position, two-phase
+$1,000 close, methodology section, repeated footer). Every AI-output box and
+review quote embeds or links the matching capture from phases 3 and 5. Replace all
+copy, numbers, and evidence with this client's verified recon.
+
+Render with headless Chrome (WeasyPrint is the documented renderer but needs
+pango/cairo native libs that are often missing, so Chrome is the working path):
+`google-chrome --headless --disable-gpu --no-pdf-header-footer
+--run-all-compositor-stages-before-draw --virtual-time-budget=8000
+--print-to-pdf=out.pdf file://$PWD/audit.html`. The cover needs `break-after:page`;
+the footer is a `position:fixed` element Chrome repeats on every page; use
+`print-color-adjust: exact` so backgrounds print.
+
+### Phase 9. Verify, place, record
+
+Three hard gates, all must pass:
+
+1. **Evidence gate:** `./verify-evidence.sh agents/geo/<client>` prints PASS. This
+   is the anti-shortcut gate; a FAIL lists the exact artifact missing.
+2. **Dash scan:** the HTML source and the extracted PDF text each contain zero em
+   or en dashes.
+   `python3 -c "t=open('audit.html').read();print(sum(t.count(c) for c in [chr(0x2014),chr(0x2013)]))"`
+   and the same over `pdftotext out.pdf -`; both print 0.
+3. **Visual QA:** rasterize with `pdftoppm -png -r 100 out.pdf qa` and read every
+   page for overflow, collisions, broken fills, and bad page breaks.
+
+Then place: PDF to `brain/customers/documents/<client>-audit.pdf`, working HTML and
+`assets/` under `agents/geo/<client>/`, durable findings to
+`brain/customers/<client>.md`, and post the draft location to `inbox/queue/` for
+human sign-off (no deck reaches a customer without it). Mirror state into Notion
+Tasks if interactive.
 
 ## Acceptance checks
 
+- `./verify-evidence.sh agents/geo/<client>` prints PASS (recon, reputation
+  captures, and all six engines with an ON capture plus an OFF capture or a
+  documented limitation).
+- Recommendability rests on phase-5 browser captures, never on the WebSearch tool.
+- Engine sessions used in-app incognito where the profile was logged in, or the
+  contamination is disclosed in `battery-log.md` and the deck.
 - Zero em or en dashes in the HTML source and the extracted PDF text.
-- Every technical claim traces to a same-day recon command; every AI-behavior and
-  reputation claim is reproducible by re-running the same public query.
-- Competitor cells are verified the same day, not asserted from memory or a prior
-  deck.
-- The deck renders with nothing overflowing or colliding (the cover needs its own
-  page break).
+- Every technical claim traces to a same-day recon line; every competitor cell is
+  verified the same day, not asserted from memory or a prior deck.
+- The deck renders with nothing overflowing or colliding.
 
 ## Worked example
 

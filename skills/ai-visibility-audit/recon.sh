@@ -16,7 +16,7 @@ echo "# Recon: $BASE   ($(date -u +%Y-%m-%dT%H:%MZ))"
 get -o "$W/home.html" "$BASE/"
 echo "## Homepage"
 echo -n "platform shopify: "; grep -c -i "cdn.shopify.com" "$W/home.html"
-echo -n "title: "; grep -o -i "<title>[^<]*</title>" "$W/home.html" | head -1
+echo -n "title: "; grep -o -i -E "<title[^>]*>[^<]*</title>" "$W/home.html" | head -1; echo -n "(empty title above = no server-rendered <title>, itself a discoverability finding) "; echo
 echo -n "meta desc: "; grep -o -i '<meta name="description" content="[^"]*"' "$W/home.html" | head -1
 echo -n "h1 count: "; grep -o -i "<h1" "$W/home.html" | wc -l | tr -d ' '
 echo -n "og:image: "; grep -o -i '<meta property="og:image"[^>]*>' "$W/home.html" | head -1
@@ -50,3 +50,30 @@ if [ -n "${HANDLE:-}" ]; then
 else
   echo "(no product handle; pass one as arg 2 for non-Shopify sites)"
 fi
+
+echo "## Agentic commerce layer (HTTP status per surface)"
+for p in "/agents.md" "/llms-full.txt" "/.well-known/ucp" "/api/ucp/mcp" "/sitemap_agentic_discovery.xml"; do
+  code=$(get -o /dev/null -w "%{http_code}" "$BASE$p")
+  echo "  $p -> HTTP $code"
+done
+
+echo "## Crawlability: AI bot user-agents (HTTP status on a product page)"
+# A 200 means the bot reaches the page; 403/429 means it is walled. This is
+# phase 2 of the methodology and must be captured per run, never assumed.
+PROD_URL="$BASE/"
+[ -n "${HANDLE:-}" ] && PROD_URL="$BASE/products/$HANDLE"
+while IFS='|' read -r name ua; do
+  [ -z "$name" ] && continue
+  code=$(curl -sS -A "$ua" -L --max-time 25 -o /dev/null -w "%{http_code}" "$PROD_URL")
+  echo "  $name -> HTTP $code"
+done <<'BOTS'
+GPTBot|Mozilla/5.0 (compatible; GPTBot/1.1; +https://openai.com/gptbot)
+OAI-SearchBot|Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)
+ClaudeBot|Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)
+PerplexityBot|Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)
+Google-Extended|Mozilla/5.0 (compatible; Google-Extended/1.0)
+Amazonbot|Mozilla/5.0 (compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot)
+Bingbot|Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
+BOTS
+
+echo "# End recon. Save this whole output to agents/geo/<client>/recon-<YYYY-MM-DD>.md"
