@@ -32,13 +32,24 @@ below is externally reproducible.
 
 - **Recommendability is the failing dimension (flagship), score 38.** Asked for the
   "best cooling mattress for hot sleepers 2026," "best online mattress brands 2026,"
-  and "best mattress 2026," web-search-backed AI answers named Helix, Brooklyn
-  Bedding, WinkBed, DreamCloud, Bear, Saatva, Nectar, Casper, Leesa, Purple,
-  Amerisleep, Tempur-Pedic, and more. GhostBed appeared in none of the three,
-  including the cooling query, which is its own homepage tagline. It surfaces only
-  when the query already names it ("GhostBed vs Purple/Saatva"), where engines pull
-  GhostBed's own comparison pages and Tom's Guide. That is brand defense, not
-  discovery. Named competitors Saatva and Nectar are both in the open answers.
+  and "best mattress 2026," AI answers named Helix, Brooklyn Bedding, WinkBed,
+  DreamCloud, Bear, Saatva, Nectar, Casper, Leesa, Purple, Amerisleep,
+  Tempur-Pedic, and more. GhostBed appeared in none of the three, including the
+  cooling query, which is its own homepage tagline. It surfaces only when the query
+  already names it ("GhostBed vs Purple/Saatva"), where engines pull GhostBed's own
+  comparison pages and Tom's Guide. That is brand defense, not discovery. Named
+  competitors Saatva and Nectar are both in the open answers.
+
+  **Verified live 2026-06-22 with the full six-engine two-pass browser battery**
+  (see `agents/geo/ghostbed/battery-log.md`, captures in `assets/`). Eight of nine
+  passes do not name GhostBed, including every browsing-ON pass across ChatGPT,
+  Perplexity (incognito), Gemini, Claude, Google AI Overview, and Copilot. The one
+  appearance is **Claude's browsing-OFF parametric pass**, which names "GhostBed
+  Luxe, built around a cooling cover, their coldest model" from training memory.
+  That single contrast (Claude knows GhostBed from priors, then omits it on live
+  retrieval) is the sharpest evidence of the gap: the problem is not that engines
+  have never heard of GhostBed, it is that the retrieval layer they recommend from
+  never surfaces it. Use this as the flagship AI-output box.
 
 - **Reputation is weak and unlinked, score 48.** GhostBed's Luxe Hybrid PDP carries
   a first-party `AggregateRating` of 4.8 over 10,223 reviews. The open-web corpus is
@@ -129,10 +140,15 @@ extracted PDF text); 13-page visual QA clean.
   `inbox/queue/2026-06-22-review-ghostbed-audit-deck.md`.
 - Re-verify the Amazon per-model star counts at delivery time (they were live DOM
   reads and move; Amazon's /product-reviews/ pages now gate behind sign-in).
-- The live AI battery was run via web-search-backed retrieval, not a six-engine
-  browser run with browsing-off and browsing-on passes. If this converts toward a
-  pilot, run the full per-engine battery (ChatGPT, Perplexity, Gemini, Claude,
-  Google AI Mode, Copilot) to put a real engine table in the Recommendability
-  section, as the Reuzel deck did.
+- ~~The live AI battery was run via web-search-backed retrieval, not a six-engine
+  browser run.~~ **Resolved 2026-06-22:** the full six-engine two-pass browser
+  battery has now been run and passes the evidence gate
+  (`./skills/ai-visibility-audit/verify-evidence.sh agents/geo/ghostbed` = PASS).
+  Recon, reputation, and battery artifacts are all on disk and dated. The deck's
+  Recommendability section should be rebuilt around the real engine table in
+  `battery-log.md`, not the prior web-search summary.
+- ConsumerAffairs reputation (1.5/5, 120) could not be re-confirmed live (PerimeterX
+  wall); cite as prior recon. BBB customer-review star average (1.61/36) sits behind
+  a sub-tab and was not re-extracted; B+ and 87 complaints are live-confirmed.
 - No contact captured yet. Confirm whether this stays a cold prospecting audit or
   becomes a paid pilot, which changes the framing of the close.

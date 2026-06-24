@@ -85,6 +85,9 @@
   pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; } pre.code .g{ color:#8fbf93; }
   .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
   .fixline b{ color:var(--red); }
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+  table.grid .pill{ display:inline-block; }
 
   /* readiness + compare tables */
   table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
@@ -203,18 +206,25 @@
 <section class="sec">
   <p class="eyebrow red">Finding 1 of 6 &middot; Critical</p>
   <h2 class="ruled">AI engines do not recommend GhostBed, not even for cooling</h2>
-  <p>AI answer engines are now where many mattress shoppers start. They do not browse; they ask "what is the best cooling mattress" and get back a short, synthesized list. We ran three framings of that question through web-search-backed retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode use by default. GhostBed was absent from all three.</p>
+  <p>AI answer engines are now where many mattress shoppers start. They do not browse; they ask "what is the best cooling mattress" and get back a short, synthesized list. We ran the full six-engine battery, each in two passes: from the model's own memory with web search off, then with live web retrieval on. The query was GhostBed's own category, "best cooling mattress for hot sleepers 2026." GhostBed was named in one of nine passes.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Claude</td><td><span class="pill yes">names GhostBed Luxe</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Gemini</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Perplexity (incognito)</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Copilot</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+  </table>
+  <p>Where GhostBed's homepage title is "Shop GhostBed: Luxury Cooling Mattresses &amp; Bedding," every live answer went to other brands. Helix, Brooklyn Bedding, Saatva, and Nectar recur across all six engines.</p>
   <div class="ai avoid">
-    <p class="plabel">Query, web-search-backed AI answer: "best cooling mattress for hot sleepers 2026"</p>
-    <p class="resp">"Helix Midnight Luxe (best overall), Brooklyn Bedding Aurora Luxe, WinkBed, DreamCloud Premier Hybrid, Bear Elite..."</p>
+    <p class="plabel">Google AI Overview, live retrieval: "best cooling mattress for hot sleepers 2026"</p>
+    <p class="resp">"Best Overall: The Helix Midnight Luxe is highly rated for its GlacioTex cooling pillow-top. Best Gel Cooling and Best Value: The Brooklyn Bedding Aurora Luxe."</p>
   </div>
-  <p>GhostBed is not mentioned, in the one category it names itself after. Its homepage title is "Shop GhostBed: Luxury Cooling Mattresses &amp; Bedding," and the cooling answer goes to six other brands.</p>
-  <div class="ai avoid">
-    <p class="plabel">Query, web-search-backed AI answer: "best online mattress brands 2026"</p>
-    <p class="resp">"WinkBed (the number-one pick), Casper Snow, Leesa, Nectar, DreamCloud, Saatva, Helix..."</p>
-  </div>
-  <p>Two of GhostBed's direct competitors, Nectar and Saatva, are named here. GhostBed is not. A third query, "best mattress 2026," returned more than a dozen brands (WinkBed, Helix, Amerisleep, Saatva, Casper, Avocado, Purple, Tempur-Pedic, Sealy, Serta, Beautyrest, Stearns &amp; Foster). GhostBed was in none of them.</p>
-  <div class="quote">GhostBed does surface in one situation: when the query already names it. "GhostBed vs Purple" and "GhostBed vs Saatva" return balanced comparisons, and the engines pull GhostBed's own comparison pages and Tom's Guide. That is brand defense for shoppers who already know GhostBed. It is not discovery for the shoppers who do not. <span class="src">(web-search-backed retrieval, June 22, 2026; sources cited included Sleep Foundation, Mattress Nerd, NapLab, Consumer Reports, RTINGS)</span></div>
+  <img class="eviv" src="assets/googleaio-best-cooling-mattress-on-2026-06-22.png" alt="Google AI Overview for best cooling mattress, GhostBed absent">
+  <p class="cap-img">Google AI Overview for GhostBed's own category. GhostBed is absent from the recommendation; its only appearance on the page is a Home Depot shopping card at 3.5 stars. Captured June 22, 2026.</p>
+  <p>The sharpest signal is the split inside a single engine. Asked from memory, Claude names "GhostBed Luxe, built around a cooling cover, their coldest model." The same Claude, asked to retrieve the live web, drops GhostBed and returns Helix, Brooklyn Bedding, Saatva, Nectar, and Leesa. The brand sits in the model's knowledge. It is missing from the sources the model recommends from, which is the exact layer this engagement fixes.</p>
+  <div class="quote">GhostBed does surface in one situation: when the query already names it. "GhostBed vs Purple" and "GhostBed vs Saatva" return balanced comparisons pulled from GhostBed's own pages and Tom's Guide. That is brand defense for shoppers who already know GhostBed, not discovery for the shoppers who do not. <span class="src">(six-engine two-pass battery, captured June 22, 2026; full per-engine log in the working files)</span></div>
   <p class="sub-h">Why this is the most expensive finding in the deck</p>
   <p>Category recommendation is the moment of intent, a shopper deciding which brand to buy. GhostBed being absent there is worth more than any single ranking position, because the engine is making the choice on the shopper's behalf and never offers GhostBed as an option. A strong product and a live checkout cannot rescue a recommendation they are never part of. And the gap compounds: each engine that leans harder on live retrieval reads the same listicles and reaches the same competitors.</p>
   <p class="fixline"><b>The fix.</b> Recommendability is downstream of the next four findings. A machine-readable entity, a reputation linked to it, and structured comparison content are what pull a brand into these answers. We also map the specific category sources these engines cite ("best cooling mattress," "best online mattress") and build the placement plan to earn GhostBed into them.</p>
@@ -362,7 +372,7 @@ Saatva  &middot;  Purple  &middot;  Nectar:   <span class="r">no ucp, no agents.
   <p class="sub-h">Truth table, frozen first</p>
   <p>Before querying any engine, we pulled GhostBed's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>agents.md</code>, <code>llms.txt</code>, <code>/.well-known/ucp</code>, the live <code>/api/ucp/mcp</code> endpoint, and the product, page, collection, and blog sitemaps. Counts (about 40 products, 429 pages, 36 comparison pages, 1 blog article) come from those sitemaps, pulled June 22, 2026. AI-crawler access was tested by fetching a product page under the GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, and Google-Extended user agents.</p>
   <p class="sub-h">AI behavior and recommendability</p>
-  <p>We ran category and brand queries through web-search-backed AI retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode now use by default, and recorded which brands were named and which sources were cited. GhostBed's absence from the cooling, online, and overall best-mattress answers, and its presence only in queries that already name it, is the basis of finding 1.</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. Logged-in engines were run in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) so saved history did not bias the result; Copilot ran as a guest. Each engine and pass was captured to a screenshot. GhostBed was named in one of nine passes, only Claude's from-memory pass, and in none of the live-retrieval passes. That is the basis of finding 1.</p>
   <p class="sub-h">Reputation corpus</p>
   <p>We pulled GhostBed's third-party reputation from Trustpilot, the BBB, ConsumerAffairs, Amazon, Reddit, and the major mattress-review publishers, and checked whether any of it is linked to the site's entity. The on-site 4.8 is a first-party widget; the off-site corpus (3.5, 1.61, 1.5) and the missing <code>sameAs</code> are finding 2. Amazon per-model figures are live page reads and move over time.</p>
   <p class="sub-h">Competitive set</p>
