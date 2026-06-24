@@ -46,6 +46,24 @@ logged-out ChatGPT declined and grounded in live product data anyway. A clean
 parametric read now needs logged-in sessions with the search tool toggled off, or
 direct model API access. Not a blocker for delivery.
 
+**Clean re-run, 2026-06-22 (resolves the contamination question).** The full
+six-engine two-pass battery was re-run with in-app incognito/temporary/guest
+sessions and passes the evidence gate
+(`./skills/ai-visibility-audit/verify-evidence.sh agents/geo/reuzel` = PASS; see
+`agents/geo/reuzel/battery-log.md`, captures dated 2026-06-22). Reuzel's
+recommendability is genuine, not a logged-in artifact: ChatGPT in a Temporary Chat
+makes Reuzel Extreme Hold Matte its outright top pick on the ON pass; Perplexity in
+Incognito (no memory) names Reuzel's strong-hold pomade as a best pick and cites
+reuzel.com (better than the earlier "only the Liquid Death collab" read); Copilot
+as guest names it. The deck's Claude claim holds for the browsing-ON pass (web
+retrieval surfaces Reuzel, cites reuzel.com) though Claude's parametric pass does
+not name it. Two corrections for the deck: Google AI Overview is non-deterministic
+for this query (Reuzel was absent from the AIO in one same-evening render and
+present in another, so say "in some renders," not "the AIO pick"); and Gemini could
+not be run clean (logged-in Rishi profile carries prior Reuzel searches), so its
+mentions are discounted. Net: composite 79 / Recommendability 76 is justified, and
+the gap is schema/aggregateRating, not basic recommendability.
+
 Working files under `agents/geo/reuzel/`:
 - `reuzel-ai-visibility-audit.html`, the finalized deck source (canonical PDF at
   `brain/customers/documents/reuzel-audit.pdf`)

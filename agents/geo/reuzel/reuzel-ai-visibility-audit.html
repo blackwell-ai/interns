@@ -142,9 +142,10 @@ changes.
   <div class="scorebig">79<span class="den">out of 100</span></div>
   <div class="scoretext">
     Strong foundation, a few high-leverage content gaps. Transactability is the
-    standout, solved by the Shopify agent stack. Recommendability is solid but
-    uneven: across the six engines we queried live, Reuzel's flagship is a top
-    pick for strong hold in half of them, weak in one, and absent in two.
+    standout, solved by the Shopify agent stack. Recommendability is solid: in a
+    clean six-engine battery (incognito or temporary chat where logged in), Reuzel's
+    flagship is named in ChatGPT, Perplexity, Claude, and Copilot, with a volatile
+    Google AI Overview and an unmeasured Gemini the only soft spots.
     Quotability is the soft spot: the rating and brand entity are absent or wrong
     in the structured data, which is exactly the data engines quote from. Every
     gap below is a field-level fix, not a rebuild.
@@ -167,7 +168,7 @@ changes.
 <tr>
   <td class="dim">Recommendability</td>
   <td><div class="track"><div class="fill f-green" style="width:1.29in"></div></div><span class="scoreval">76</span></td>
-  <td>Tested live across six engines: Reuzel's Extreme Hold Matte is a top or matte pick for strong hold in ChatGPT, Google's AI Overview, and Claude. The headroom is source authority, the engines often cite third-party listicles rather than reuzel.com, plus clean misses in Gemini and Copilot.</td>
+  <td>Tested live with a clean six-engine battery (incognito or temporary chat where logged in). Reuzel's Extreme Hold Matte is the top pick in ChatGPT, and a best pick in Perplexity and Claude, all citing reuzel.com; Copilot names it too. The headroom is source authority and two soft spots: a volatile Google AI Overview and a Gemini that could not be measured clean.</td>
 </tr>
 <tr>
   <td class="dim">Transactability</td>
@@ -377,63 +378,69 @@ audit.
 <h2>Recommendability</h2>
 <p>
 Recommendability asks whether the brand gets named when a shopper asks by
-category rather than by name. We tested this directly. We asked six answer
-engines "what is the best men's pomade for strong hold" and read what each
-returned, with web search on. The result is good, better than most brands and
-better than the two brands we audited before, with two clear gaps.
+category rather than by name. We tested this directly with the full six-engine
+battery, two passes each (from the model's own memory with web search off, then
+with live retrieval on), on "best men's pomade for strong hold". Logged-in engines
+ran in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito)
+and Copilot ran as a guest, so saved history did not inflate the result. The
+result is strong, better than most brands and well ahead of the two we audited
+before. The gaps that remain are narrow and specific.
 </p>
 
-<h3>What the engines said, June 2026</h3>
+<h3>What the engines said, clean re-run June 22, 2026</h3>
 <table>
-<thead><tr><th>Engine</th><th>Named Reuzel</th><th>Product it picked</th><th>Cited reuzel.com</th></tr></thead>
+<thead><tr><th>Engine (clean session)</th><th>Named Reuzel</th><th>Pick, on live retrieval</th><th>Cited reuzel.com</th></tr></thead>
 <tbody>
-<tr><td>ChatGPT (web search)</td><td class="good">Yes, top pick</td><td>Extreme Hold Matte</td><td class="good">Yes</td></tr>
-<tr><td>Google AI Overview</td><td class="good">Yes, category winner</td><td>Extreme Hold Matte</td><td class="warn">mixed</td></tr>
-<tr><td>Claude (web search)</td><td class="good">Yes, matte pick</td><td>Extreme Hold</td><td class="bad">No</td></tr>
-<tr><td>Perplexity</td><td class="warn">Weak</td><td>Liquid Death collab only</td><td class="bad">No</td></tr>
-<tr><td>Gemini</td><td class="bad">No</td><td>none</td><td>n/a</td></tr>
-<tr><td>Microsoft Copilot</td><td class="bad">No</td><td>none</td><td>n/a</td></tr>
+<tr><td>ChatGPT (Temporary Chat)</td><td class="good">Yes, top pick</td><td>Extreme Hold Matte</td><td class="good">Yes</td></tr>
+<tr><td>Perplexity (Incognito)</td><td class="good">Yes, best pick</td><td>strong-hold pomade</td><td class="good">Yes</td></tr>
+<tr><td>Claude (web retrieval)</td><td class="good">Yes</td><td>Reuzel pomade</td><td class="good">Yes</td></tr>
+<tr><td>Copilot (guest)</td><td class="good">Yes</td><td>named with Suavecito</td><td class="warn">No (Bing carousel)</td></tr>
+<tr><td>Google AI Overview</td><td class="warn">Varies by render</td><td>present in some, absent in others</td><td class="warn">mixed</td></tr>
+<tr><td>Gemini</td><td class="warn">Not measured clean</td><td>logged-in only</td><td>n/a</td></tr>
 </tbody>
 </table>
 <p>
-The first five were captured June 18, 2026; Microsoft Copilot was added June 22,
-2026 on a follow-up pass, after a human-verification check blocked it the first
-time. ChatGPT made Reuzel its top pick and quoted Reuzel's own "10 out of 10
-hold" spec. Google's AI Overview named the Extreme Hold Matte as the winner for
-thick and coarse hair. Claude picked the Extreme Hold as its matte recommendation.
-Copilot returned a shopping carousel built from Amazon product data and named
-Uppercut, Brickell, Aveda, and two budget brands, with Reuzel absent, even though
-Reuzel sells on Amazon with thousands of strong reviews. The brand is recommended
-with its flagship in half the engines a shopper now asks, and it is the
-commerce-carousel engines, Copilot here and Perplexity, where it under-surfaces.
+This is a clean re-run: each logged-in engine used incognito or a temporary chat so
+that no saved history could push Reuzel up. It still lands. ChatGPT made Reuzel
+Extreme Hold Matte its outright top pick and quoted the brand's own "11 out of 10
+hold" spec. Perplexity in incognito named Reuzel's strong-hold pomade as a best pick
+and cited reuzel.com. Claude does not name Reuzel from memory, but on live retrieval
+it surfaces the brand and cites reuzel.com. Copilot as a guest named Reuzel
+alongside Suavecito. Two honest caveats: Google's AI Overview is non-deterministic
+for this query, present in one same-day render and absent in another, so it is shown
+as variable rather than a guaranteed win; and Gemini could not be run in a clean
+session, so its result is left unmeasured rather than counted either way.
 </p>
+<img src="assets/chatgpt-best-pomade-on-2026-06-22.png" alt="ChatGPT names Reuzel Extreme Hold Matte as the top pick" style="width:100%;border:0.75pt solid #cfcfcf;border-radius:2pt;margin:6pt 0 2pt;display:block;">
+<p style="font-size:7.8pt;color:#777;line-height:1.4;margin:2pt 0 10pt;">ChatGPT in a Temporary Chat (no saved history), asked for the best strong-hold pomade, names Reuzel Extreme Hold Matte as its top pick and quotes Reuzel's own hold spec. Captured June 22, 2026.</p>
 
 <div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>The recommendation is built from other sites, not reuzel.com</div>
+  <div class="fh"><span class="badge b-medium">Medium</span>The recommendation is borrowed, not owned</div>
   <p>
-  Look at the last column. Only ChatGPT cited reuzel.com. Claude built its Reuzel
-  pick from third-party guides (Magnus Supply, Hairfinest, The Trend Spotter), and
-  Perplexity cited a reseller and surfaced only the Liquid Death collab, not the
-  flagship line. So the engines like the product, and they are learning it from
-  everyone except the brand. That is the cost of the missing rating and the wrong
-  brand name in the schema: reuzel.com is not yet the authoritative source for its
-  own products. The Quotability fixes are what convert "recommended from
-  listicles" into "recommended and cited from reuzel.com".
+  Look at the last column. ChatGPT, Perplexity, and Claude all cite reuzel.com when
+  they name the brand, which is the strong case. Copilot still builds its answer from
+  an Amazon-sourced Bing shopping carousel and names Reuzel without crediting
+  reuzel.com. So where the brand is named, the better engines now read it from its
+  own site, but the commerce-carousel path still learns it from resellers. That is
+  the cost of the missing server-rendered rating and the mislabeled brand entity in
+  the schema: reuzel.com is not yet the single authoritative source for its own
+  products. The Quotability fixes convert "recommended from listicles" into
+  "recommended and cited from reuzel.com" everywhere, including the carousel engines.
   </p>
 </div>
 
 <div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>Three specific gaps to close: Gemini, Copilot, and Perplexity</div>
+  <div class="fh"><span class="badge b-medium">Medium</span>Two narrow gaps: Google AI Overview volatility and an unmeasured Gemini</div>
   <p>
-  Gemini named Suavecito, Layrite, Imperial, and Baxter, and left Reuzel out
-  entirely. Copilot built its answer from an Amazon-sourced shopping carousel and
-  named Uppercut, Brickell, and Aveda, again with no Reuzel. Perplexity surfaced
-  only the niche Liquid Death collaboration, not the Blue, Red, Pink, or Extreme
-  Hold the brand is known for. These are the three engines where the brand is
-  under-represented, and the pattern is consistent: they lean on third-party
-  commerce and listicle data rather than reuzel.com, so they are the clearest
-  targets for the content and entity work, since the others already pick the
-  flagship.
+  The clean re-run closed the gaps the earlier draft flagged: Copilot and Perplexity
+  now both name Reuzel. What remains is narrower. Google's AI Overview is
+  non-deterministic for this category: in two same-day renders it named Reuzel in
+  one and omitted it in the other (favoring Suavecito, Blind Barber, and Duke
+  Cannon), so the brand's place there is not yet stable. And Gemini could not be run
+  in a clean session, because the test profile carried prior Reuzel searches that
+  would bias the read, so it is reported as unmeasured rather than counted. Both are
+  reasons to keep the entity and category-source work going until the position holds
+  across every render, not just most of them.
   </p>
 </div>
 
@@ -628,17 +635,19 @@ For reputation we used named retailer ratings from Amazon and Ulta and the brand
 own review pages.
 </p>
 <p>
-For Recommendability we queried six answer engines live with web search on:
-ChatGPT, Google's AI Overview, Claude, Perplexity, and Gemini on June 18, 2026,
-and Microsoft Copilot on June 22, 2026, each asked for the best men's pomade for
-strong hold, with what each named and cited recorded against the frozen truth
-table. One read is left as a documented limit. The search-off pass, which tests
-what the models recommend from memory with the web turned off, is hard to obtain
-cleanly now: asked to answer from its own knowledge with no web search, ChatGPT
-declined and grounded the answer in live product data anyway, the behavior we saw
-on June 22. A clean from-memory read needs logged-in sessions with the search
-tool switched off, or direct model API access, which is the natural next pass.
-Everything else in this document was verified live between June 17 and 22, 2026.
+For Recommendability we ran a clean six-engine battery on June 22, 2026: ChatGPT,
+Perplexity, Claude, Gemini, Google AI Overview, and Microsoft Copilot, each asked
+for the best men's pomade for strong hold, in two passes where possible (from the
+model's memory with web search off, then with live retrieval on). To keep saved
+history from inflating the result, logged-in engines ran in incognito or a
+temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) and Copilot ran as a
+guest. What each named and cited was recorded against the frozen truth table, and
+each engine and pass was captured. Three honest limits are noted in the
+Recommendability section rather than smoothed over: Claude names Reuzel only on the
+retrieval pass, not from memory; Google's AI Overview returned Reuzel in one
+same-day render and omitted it in another; and Gemini could not be run in a clean
+session, so it is reported as unmeasured. Everything else in this document was
+verified live between June 17 and 22, 2026.
 </p>
 <p class="methodnote">
 Prepared by Blackwell Enterprises. Figures are point-in-time and will shift as
