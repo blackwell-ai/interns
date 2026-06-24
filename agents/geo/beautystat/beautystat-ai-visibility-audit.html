@@ -75,6 +75,11 @@
   pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; }
   .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
   .fixline b{ color:var(--red); }
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+  .pill{ display:inline-block; font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
   table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
   table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
   table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
@@ -184,13 +189,24 @@
 <section class="sec">
   <p class="eyebrow red">Finding 1 of 5 · Critical</p>
   <h2 class="ruled">AI does not recommend BeautyStat for vitamin C serums</h2>
-  <p>AI answer engines are where skincare shoppers increasingly start. They do not browse a category; they ask "what is the best vitamin C serum" and get a short, synthesized shortlist. BeautyStat is not on it.</p>
+  <p>AI answer engines are where skincare shoppers increasingly start. They do not browse a category; they ask "what is the best vitamin C serum" and get a short, synthesized shortlist. We ran the full six-engine battery, two passes each (from the model's memory with search off, then live web retrieval on), on "best vitamin C serum 2026." BeautyStat was named in zero of nine passes.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Claude</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Gemini</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Perplexity (incognito)</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Copilot</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+  </table>
+  <p>This is a harder absence than a simple ranking miss. The engines that can answer from memory alone (ChatGPT, Claude, Gemini) do not name BeautyStat even there. The brand is thin in the models' priors and absent from the sources they retrieve. SkinCeuticals C E Ferulic is the near-universal benchmark across all six engines.</p>
   <div class="ai avoid">
-    <p class="plabel">Query, web-search-backed AI answer: "best vitamin C serum, dermatologist recommended"</p>
-    <p class="resp">"SkinCeuticals C E Ferulic, the gold standard. TruSkin Vitamin C Serum, best value. La Roche-Posay Pure Vitamin C, best for sensitive skin. CeraVe Skin Renewing Vitamin C, budget-friendly..."</p>
+    <p class="plabel">Google AI Overview, live retrieval: "best vitamin C serum 2026"</p>
+    <p class="resp">"The best vitamin C serums of 2026 balance potency, stability, and skin tolerability. Leading options include the ultra-potent SkinCeuticals C E Ferulic ($182), Sunday Riley C.E.O. Brightening Serum ($85), and TruSkin Vitamin C Serum (approx. $20) as an affordable beginner option."</p>
   </div>
-  <p>BeautyStat is not mentioned. Neither is it in the "best vitamin C serums" roundups those engines pull from (Meddu, The INKEY List's guide, dermatologist listicles, and TruSkin's own guide).</p>
-  <div class="quote">The sharpest tell: TruSkin, a value brand, earns the recommendation partly by publishing the very "best vitamin C serums 2026" guide the engines quote. BeautyStat, a more premium and more credible product, publishes no such category content and is absent from the others. <span class="src">(web-search-backed retrieval, June 22, 2026)</span></div>
+  <img class="eviv" src="assets/googleaio-best-vitamin-c-serum-on-2026-06-22.png" alt="Google AI Overview for best vitamin C serum, BeautyStat absent">
+  <p class="cap-img">Google AI Overview for BeautyStat's hero category. BeautyStat is absent; the named picks span premium (SkinCeuticals) to value (TruSkin), and the cited sources are Forbes and New York Times roundups. Captured June 22, 2026.</p>
+  <div class="quote">The sharpest tell: TruSkin, a value brand, earns the recommendation partly by publishing the very "best vitamin C serums" guide the engines quote. BeautyStat, a more premium and more credible product, publishes no such category content and is absent from the others. <span class="src">(six-engine two-pass battery, captured June 22, 2026)</span></div>
   <p class="sub-h">Why this is the most expensive finding in the deck</p>
   <p>Vitamin C serum is the category BeautyStat was built to win: the hero Universal C Skin Refiner is 20% L-ascorbic acid with patented stabilization. Being absent at the moment of recommendation is worth more than any single ranking position, because the engine is choosing on the shopper's behalf and never offers BeautyStat as an option. The product's quality cannot rescue a recommendation it is never part of. And the gap compounds: every engine that adds live retrieval reads the same listicles and the same empty schema layer and reaches the same competitors.</p>
   <p class="fixline"><b>The fix.</b> Recommendability is downstream of the next three findings. Machine-readable reviews, a founder and science entity, and presence in the category sources engines cite are what pull a brand into these answers. We also seed the specific roundups and comparison queries where "best vitamin C serum" gets decided.</p>
@@ -298,9 +314,9 @@ founder (Person, Ron Robinson):   <span class="r">none</span>
   <p class="sub-h">Truth table, frozen first</p>
   <p>Before querying any engine, we pulled BeautyStat's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>llms.txt</code>, <code>agents.md</code>, <code>/.well-known/ucp</code>, and the product, collection, and blog sitemaps (26 products, 13 collections, roughly 140 posts), pulled June 22, 2026.</p>
   <p class="sub-h">AI behavior and recommendability</p>
-  <p>We ran category and brand queries through web-search-backed AI retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode use by default, and recorded which brands were named and which sources were cited. BeautyStat's absence from the vitamin C serum results and from the listicles those engines cite is the basis of finding 1.</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. Logged-in engines ran in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) so saved history did not bias the result; Copilot ran as a guest. Each engine and pass was captured. BeautyStat was named in zero of nine passes, the basis of finding 1.</p>
   <p class="sub-h">Reputation corpus</p>
-  <p>We pulled BeautyStat's reputation from Amazon, the beauty press, Reddit, and the brand's own awards and review surface, and checked whether any of it is linked to the product's structured data. The reputation is real; the missing schema link is finding 2.</p>
+  <p>We pulled BeautyStat's reputation live from Trustpilot, the BBB, Reddit, YouTube, Sephora, and the brand's own review surface, and checked whether any of it is linked to the product's structured data. The on-site Yotpo reviews and the roughly 4.5-star Sephora rating are real; the missing <code>AggregateRating</code> schema link is finding 2.</p>
   <p class="sub-h">Competitive set</p>
   <p>SkinCeuticals, The Ordinary, and TruSkin were checked the same day on the same signals. Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard. SkinCeuticals' site is behind a bot challenge, so its on-page signals are inferred from its category presence.</p>
   <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>llms.txt</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries. Counts pulled June 22, 2026.

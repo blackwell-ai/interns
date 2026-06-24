@@ -31,6 +31,17 @@ it lands a D rather than an F.
   CeraVe. Even value brand TruSkin is named, partly because it publishes its own
   "best vitamin C serums" guide that the engines cite. BeautyStat publishes no
   such category content.
+
+  **Verified live 2026-06-22 with the full six-engine two-pass browser battery**
+  (`agents/geo/beautystat/battery-log.md`, captures in `assets/`, gate PASS). All
+  nine passes omit BeautyStat, including every browsing-OFF parametric pass, so
+  the brand is absent from model priors AND from live retrieval (a harder absence
+  than GhostBed, which at least surfaced in Claude's memory). SkinCeuticals C E
+  Ferulic is the near-universal benchmark; TruSkin's self-published category guide
+  is confirmed as the reason a value brand outranks BeautyStat. Reputation phase
+  confirmed the mirror finding: strong organic Reddit/esthetician sentiment, but
+  zero machine-readable aggregator presence (Trustpilot 0/unclaimed, no BBB
+  profile). See `reputation-2026-06-22.md`.
 - **Reputation real but not machine-readable**: award-winning, Ron Robinson's
   chemist authority, Hailey Bieber association, Daily Beast feature, estheticians
   calling it "12/10," sold on Amazon and Sephora, Yotpo reviews on-site. But the
