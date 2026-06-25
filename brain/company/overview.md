@@ -4,10 +4,11 @@
 > answering questions about the business. Only deliberate edits to this file
 > change the company's identity — see "Context weighting" in /CLAUDE.md.
 
-Last updated June 14, 2026. Sources: founder-provided canonical context (June
-10) and a June 14 founder session on company stage (see
-[[2026-06-14-company-is-in-exploration-phase]], `brain/decisions/`). Facts and
-delivered work only.
+Last updated June 24, 2026 (SF and batch status corrected). Sources:
+founder-provided canonical context (June 10), a June 14 founder session on
+company stage (see [[2026-06-14-company-is-in-exploration-phase]],
+`brain/decisions/`), and a June 24 founder note that the team is now in SF and
+the batch has started. Facts and delivered work only.
 
 ## What Blackwell is
 
@@ -34,7 +35,7 @@ How the audits are produced: [[audit-methodology]] (`brain/company/audit-methodo
 - Customers acquired in roughly two weeks of cold outreach with paid contracted
   pilots
 - Revenue to date is one-time project fees
-- Team is relocating to SF for the batch
+- Team is in SF and the YC Summer 2026 batch has started (founder, June 24, 2026)
 - YC group partner: Diana (per Armaan, June 10, 2026)
 
 ## Commercial model to date

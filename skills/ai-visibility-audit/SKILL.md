@@ -159,6 +159,17 @@ Every AI-output box and review quote embeds or links its capture from phases 3 a
 evidence with this client's verified recon, and write the methodology section to
 describe the real six-engine two-pass battery, never "web-search-backed retrieval".
 
+**Standard Phase 2 service to include in every deck.** The "The work" / Phase 2
+section names Blackwell's creator panel as one of the ongoing services: a vetted
+panel of independent reviewers and UGC creators, scored for neutrality (built from
+the `platform/` social-proof pipeline), that seeds genuine third-party reviews of
+the client's product across YouTube, Reddit, and short-form video. Frame it as a
+capability we are standing up for Phase 2 design partners, not a finished network,
+and tie it to why it matters: off-site mentions are the strongest correlate of AI
+visibility and are the part of reputation that on-site schema fixes cannot move.
+Keep the wording honest to the current state (see [[reviewer-ugc-panel]]); do not
+claim a guaranteed product send or a specific headcount the panel cannot yet back.
+
 Render with headless Chrome or Chromium (WeasyPrint is the documented renderer but
 needs pango/cairo native libs that are often missing, so Chrome/Chromium is the
 working path; the binary is `google-chrome` on macOS and often `chromium` on

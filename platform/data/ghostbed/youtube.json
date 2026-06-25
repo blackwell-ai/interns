@@ -1,0 +1,165 @@
+[
+  {
+    "source_type": "youtube",
+    "product": "ghostbed",
+    "video_id": "1kM6lR8h2WM",
+    "url": "https://www.youtube.com/watch?v=1kM6lR8h2WM",
+    "title": "GhostBed Mattress Reviews | Classic vs Luxe vs Flex (FULL GUIDE)",
+    "channel": "CNET Home",
+    "view_count": 15761,
+    "like_count": 109,
+    "upload_date": "20241231",
+    "duration_s": 366,
+    "has_transcript": true,
+    "rule_flags": {
+      "free_product": true,
+      "sponsored": false,
+      "affiliate": false
+    },
+    "verdict": {
+      "recommended": true,
+      "score_0_10": 8.5,
+      "summary": "The GhostBed Luxe offers excellent cooling and comfort, making it a top choice for hot sleepers. Its unique construction provides a balanced feel suitable for various sleep styles.",
+      "pros": [
+        "Excellent cooling features",
+        "Comfortable for all sleep styles",
+        "Good motion isolation",
+        "Long warranty period"
+      ],
+      "cons": [
+        "Higher price point",
+        "May not suit those preferring firmer beds"
+      ],
+      "key_quote": "The Lux gets rid of the latex foam and adds more memory foam Comfort layers and the Brand's ghost ice technology to help cool the bed down far more.",
+      "neutrality": {
+        "independence": "incentivized_free_product",
+        "disclosed": true,
+        "evidence": "The products featured in this video have been provided to CNET free of charge.",
+        "confidence_0_1": 0.8
+      }
+    },
+    "model": "gpt-4o-mini"
+  },
+  {
+    "source_type": "youtube",
+    "product": "ghostbed",
+    "video_id": "YRAMkV1cWqM",
+    "url": "https://www.youtube.com/watch?v=YRAMkV1cWqM",
+    "title": "GhostBed Luxe Review - 9 Tests + 35 Data Points Analyzed",
+    "channel": "NapLab",
+    "view_count": 5335,
+    "like_count": 54,
+    "upload_date": "20211220",
+    "duration_s": 656,
+    "has_transcript": true,
+    "rule_flags": {
+      "free_product": true,
+      "sponsored": false,
+      "affiliate": true
+    },
+    "verdict": {
+      "recommended": true,
+      "score_0_10": 9.0,
+      "summary": "The GhostBed Luxe excels in cooling and motion transfer, making it a great choice for most sleepers, though its deep sinkage may not suit everyone.",
+      "pros": [
+        "Excellent cooling performance",
+        "Fast response time",
+        "Limited motion transfer",
+        "Good pressure relief"
+      ],
+      "cons": [
+        "Deep sinkage may not suit all sleepers",
+        "Higher price point"
+      ],
+      "key_quote": "The GhostBed Luxe has excellent cooling performance for a memory foam style mattress.",
+      "neutrality": {
+        "independence": "affiliate_only",
+        "disclosed": true,
+        "evidence": "The channel mentions earning a commission from purchases made through their links.",
+        "confidence_0_1": 0.8
+      }
+    },
+    "model": "gpt-4o-mini"
+  },
+  {
+    "source_type": "youtube",
+    "product": "ghostbed",
+    "video_id": "GlWtExVDnMU",
+    "url": "https://www.youtube.com/watch?v=GlWtExVDnMU",
+    "title": "GhostBed Luxe Hybrid Unbiased Review \u2013 Pros, Cons & Who It\u2019s Best For",
+    "channel": "Yawnder",
+    "view_count": 1559,
+    "like_count": 15,
+    "upload_date": "20251208",
+    "duration_s": 255,
+    "has_transcript": true,
+    "rule_flags": {
+      "free_product": true,
+      "sponsored": false,
+      "affiliate": false
+    },
+    "verdict": {
+      "recommended": true,
+      "score_0_10": 8.5,
+      "summary": "The GhostBed Luxe Hybrid mattress offers excellent cooling and support, making it a great choice for various sleepers, though it may not feel as cool to the touch as advertised.",
+      "pros": [
+        "Great cooling features",
+        "Good support for various sleeping positions",
+        "Easy setup",
+        "Excellent edge support"
+      ],
+      "cons": [
+        "Not as cool to the touch as claimed",
+        "Pricey compared to competitors"
+      ],
+      "key_quote": "The Ghost Bed Lux Hybrid is a great option if you are a sleeper who prefers a medium to medium firm mattress that will keep you cooler throughout the night.",
+      "neutrality": {
+        "independence": "incentivized_free_product",
+        "disclosed": true,
+        "evidence": "The review mentions a free product and includes affiliate links.",
+        "confidence_0_1": 0.8
+      }
+    },
+    "model": "gpt-4o-mini"
+  },
+  {
+    "source_type": "youtube",
+    "product": "ghostbed",
+    "video_id": "uQcSK8lBga4",
+    "url": "https://www.youtube.com/watch?v=uQcSK8lBga4",
+    "title": "GhostBed Luxe Mattress Review | Best Cooling Bed? (UPDATED)",
+    "channel": "CNET Home",
+    "view_count": 10288,
+    "like_count": 101,
+    "upload_date": "20230329",
+    "duration_s": 502,
+    "has_transcript": true,
+    "rule_flags": {
+      "free_product": true,
+      "sponsored": false,
+      "affiliate": false
+    },
+    "verdict": {
+      "recommended": true,
+      "score_0_10": 8.5,
+      "summary": "The GhostBed Luxe mattress offers a balanced memory foam feel with effective cooling features, making it a strong contender for hot sleepers.",
+      "pros": [
+        "Effective cooling technology",
+        "Comfortable memory foam feel",
+        "Long trial period and warranty"
+      ],
+      "cons": [
+        "May take time to fully expand",
+        "Not the absolute coolest mattress"
+      ],
+      "key_quote": "While it does have a firm spot on our best cooling mattress list, I'm not sure if it is the coolest, but it's up there.",
+      "neutrality": {
+        "independence": "incentivized_free_product",
+        "disclosed": true,
+        "evidence": "The products featured in this video have been provided to CNET free of charge.",
+        "confidence_0_1": 0.9
+      }
+    },
+    "model": "gpt-4o-mini"
+  }
+]

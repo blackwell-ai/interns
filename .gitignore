@@ -33,3 +33,7 @@ skills/campaign/enriched/
 
 # Locally-installed plugin skills (origami, etc.) — not repo content
 .claude/skills/
+
+# Social-proof scraper working dirs — raw caption/audio scratch, regenerable.
+platform/data/*/_media/
+platform/data/*/_subs/
