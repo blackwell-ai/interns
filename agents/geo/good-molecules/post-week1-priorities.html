@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Good Molecules: Week 1 Priorities</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --body:#33403d; --muted:#6e7b77; --faint:#9aa6a2;
+    --line:#e2e8e5; --bg:#ffffff; --panel:#f6f9f7;
+    --green:#1d5c34; --green-soft:#eef5f0; --green-line:#cfe2d6;
+    --red:#9b1c1c; --red-soft:#fbeeee; --amber:#946300; --grey:#555;
+    --mono:"SF Mono",ui-monospace,Menlo,"DejaVu Sans Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);color:var(--body);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .deck{scroll-snap-type:y proximity;height:100vh;overflow-y:scroll}
+  .slide{scroll-snap-align:start;min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+    padding:8vh 9vw;position:relative;border-bottom:1px solid var(--line)}
+  .slide.tight{justify-content:flex-start;padding-top:11vh}
+
+  .eyebrow{font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:1.6rem}
+  .num{position:absolute;top:7vh;right:9vw;font-family:var(--mono);font-size:.8rem;color:var(--faint);letter-spacing:.1em}
+  h1{font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.04;letter-spacing:-.025em;color:var(--ink);font-weight:780}
+  h2{font-size:clamp(1.7rem,3.6vw,2.7rem);line-height:1.1;letter-spacing:-.02em;color:var(--ink);font-weight:740;margin-bottom:.4rem}
+  h2 .pre{display:block;font-size:.85rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:.9rem}
+  h3{font-size:1.12rem;font-weight:680;color:var(--ink);margin:1.7rem 0 .5rem}
+  .lede{font-size:clamp(1.05rem,1.7vw,1.35rem);color:var(--body);max-width:62ch;margin-top:1.5rem;line-height:1.6}
+  p.body{font-size:1.02rem;color:var(--body);max-width:70ch;margin-top:.7rem}
+  .cover-foot{margin-top:auto;padding-top:3rem;font-size:.9rem;color:var(--muted);line-height:1.7}
+  .cover-foot b{color:var(--ink);display:inline-block;min-width:6.5rem;font-weight:650}
+
+  .badge{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;
+    padding:.22rem .6rem;border-radius:3px;vertical-align:.12em;margin-right:.6rem}
+  .b-p1{background:var(--red)} .b-p2{background:var(--amber)} .b-p3{background:var(--grey)} .b-ok{background:var(--green)}
+
+  table{border-collapse:collapse;width:100%;margin-top:1.8rem;font-size:1rem}
+  th{text-align:left;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;
+    padding:0 1rem .7rem 0;border-bottom:1.5px solid var(--line)}
+  td{padding:.85rem 1rem .85rem 0;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .good{color:var(--green);font-weight:700} .bad{color:var(--red);font-weight:700}
+
+  .pill-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.8rem}
+  .pill{background:var(--green-soft);border:1px solid var(--green-line);color:var(--green);font-family:var(--mono);
+    font-size:.9rem;font-weight:600;padding:.5rem .95rem;border-radius:999px}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:1rem}
+  @media(max-width:820px){.two{grid-template-columns:1fr}}
+  .col .lbl{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:800;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+  .col .lbl::before{content:"";width:.55rem;height:.55rem;border-radius:50%}
+  .col.today .lbl{color:var(--red)} .col.today .lbl::before{background:var(--red)}
+  .col.rec .lbl{color:var(--green)} .col.rec .lbl::before{background:var(--green)}
+  pre{font-family:var(--mono);font-size:.82rem;line-height:1.55;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:1rem 1.15rem;white-space:pre-wrap;overflow:auto;color:#2b3633}
+  .col.rec pre{background:var(--green-soft);border-color:var(--green-line)}
+  .add{color:var(--green);font-weight:700} .cmt{color:var(--faint)} .rd{color:var(--red);font-weight:700}
+
+  .callout{border-left:4px solid var(--green);background:var(--green-soft);border-radius:0 10px 10px 0;
+    padding:1.2rem 1.6rem;margin-top:2rem;max-width:75ch}
+  .callout .cl{font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;color:var(--green);font-weight:800;margin-bottom:.5rem}
+  .callout p{font-size:1.05rem;color:var(--ink)} .callout strong{color:var(--green)}
+
+  .clean{list-style:none;margin-top:1.2rem;display:grid;gap:.85rem;max-width:70ch}
+  .clean li{padding-left:1.7rem;position:relative;font-size:1.06rem;color:var(--body)}
+  .clean li::before{content:"";position:absolute;left:0;top:.55em;width:.55rem;height:.55rem;border-radius:50%;background:var(--green)}
+  .clean li b{color:var(--ink);font-weight:650}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.8rem}
+  @media(max-width:820px){.cards{grid-template-columns:1fr 1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.3rem}
+  .card .ch{font-weight:700;color:var(--ink);font-size:1rem;margin-bottom:.35rem;display:flex;align-items:center;gap:.5rem}
+  .card p{font-size:.92rem;color:var(--muted)}
+  .card .n{font-family:var(--mono);font-size:.8rem;color:var(--green);font-weight:700}
+
+  .flow{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;font-size:1.05rem}
+  .flow .step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.8rem 1.2rem}
+  .flow .step.hot{background:var(--green-soft);border-color:var(--green-line);color:var(--green);font-weight:700}
+  .flow .arr{color:var(--faint);font-size:1.3rem}
+
+  .method{font-size:.84rem;color:var(--muted);line-height:1.6;margin-top:2.5rem;border-top:1px solid var(--line);padding-top:1.1rem;max-width:80ch}
+
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--green);width:0;z-index:50;transition:width .12s}
+  .hint{position:fixed;bottom:1.3rem;right:1.6rem;color:var(--faint);font-family:var(--mono);font-size:.74rem;z-index:50}
+  .dots{position:fixed;top:50%;right:1.4rem;transform:translateY(-50%);display:flex;flex-direction:column;gap:.65rem;z-index:50}
+  .dots a{width:.5rem;height:.5rem;border-radius:50%;background:var(--line);transition:all .2s}
+  .dots a.on{background:var(--green);transform:scale(1.4)}
+</style>
+</head>
+<body>
+<div class="progress" id="bar"></div>
+<div class="hint">scroll &nbsp;/&nbsp; &darr;</div>
+<nav class="dots" id="dots"></nav>
+<div class="deck" id="deck">
+
+  <!-- 1. COVER -->
+  <section class="slide" id="s0">
+    <div class="eyebrow">AI Visibility Engagement &middot; Week 1 Review</div>
+    <h1>Good Molecules</h1>
+    <p class="lede">The firewall fix is fully in, including the Perplexity follow-up. Your foundation is solid, so the work now is enrichment, ranked by impact. This walks through what your site shows AI crawlers today and the exact change for each priority.</p>
+    <div class="cover-foot">
+      <div><b>Prepared by</b> Blackwell Enterprises</div>
+      <div><b>Team</b> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D&rsquo;Souza</div>
+      <div><b>Date</b> June 25, 2026</div>
+    </div>
+  </section>
+
+  <!-- 2. WHAT WORKS -->
+  <section class="slide" id="s1">
+    <div class="num">01 / 07</div>
+    <h2><span class="pre">The headline win</span>AI crawlers can now read your site.</h2>
+    <p class="lede">At audit, ChatGPT, Claude, and Perplexity were blocked at your firewall, so they answered from Amazon, Ulta, and Reddit instead of you. Confirmed fixed on June 25.</p>
+    <div class="pill-row">
+      <span class="pill">GPTBot &nbsp;200</span>
+      <span class="pill">ClaudeBot &nbsp;200</span>
+      <span class="pill">PerplexityBot &nbsp;200</span>
+      <span class="pill">Perplexity-User &nbsp;200</span>
+    </div>
+    <div class="callout">
+      <div class="cl">Complete</div>
+      <p>Perplexity-User, the one agent still blocked at kickoff, now passes. Your product pages also serve real <strong>Product</strong> and <strong>Offer</strong> JSON-LD, your homepage carries an <strong>OnlineStore</strong> node, and your <strong>llms.txt</strong> is live. That is the foundation the rest of this builds on.</p>
+    </div>
+  </section>
+
+  <!-- 3. RANKED -->
+  <section class="slide" id="s2">
+    <div class="num">02 / 07</div>
+    <h2><span class="pre">The changes, ranked</span>One template change each, by impact.</h2>
+    <p class="body">Every fix below propagates across the catalog, not page by page.</p>
+    <table>
+      <thead><tr><th style="width:13%">Priority</th><th style="width:40%">Change</th><th>What it unlocks</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge b-p1">P1</span></td><td>Product IDs: <code>sku</code>, <code>gtin13</code></td><td>Your page wins the price. Fixes price substitution.</td></tr>
+        <tr><td><span class="badge b-p2">P2</span></td><td>Offer commerce fields + variant model</td><td>Shipping, returns, and size answers from structured data.</td></tr>
+        <tr><td><span class="badge b-p3">P3</span></td><td>Reviews, homepage entity, lists, breadcrumbs</td><td>Quotability and brand grounding.</td></tr>
+        <tr><td><span class="badge b-p3">P3</span></td><td>OpenGraph, sitemap, guide files, FAQ</td><td>Discovery, link previews, deeper AI layer.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4. PRIORITY 1 -->
+  <section class="slide" id="s3">
+    <div class="num">03 / 07</div>
+    <h2><span class="pre"><span class="badge b-p1">Priority 1</span>The single highest-value change</span>Give engines your product IDs.</h2>
+    <p class="body">The audit caught engines quoting the wrong price, pulled from Amazon and Target. Nothing on your page tells an engine your item is the same product as the retailer listing. A GTIN (your barcode) and SKU are that link.</p>
+    <div class="two">
+      <div class="col today"><div class="lbl">What exists right now</div>
+<pre>"offers": {
+  "@type": "Offer",
+  "price": 6.0,
+  "priceCurrency": "USD",
+  "availability": ".../InStock"
+}
+<span class="cmt">// no identifiers: engine cannot
+// match you to Ulta or Amazon</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">What should be added</div>
+<pre>"offers": {
+  "@type": "Offer",
+<span class="add">  "sku": "GM-NIA-30",</span>           <span class="cmt">// you supply</span>
+<span class="add">  "gtin13": "0860000000000",</span>  <span class="cmt">// you supply</span>
+  "price": 6.0,
+  "priceCurrency": "USD",
+  "availability": ".../InStock"
+}</pre>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="cl">The one ask that matters most</div>
+      <p>Needs one input only you hold: <strong>GTIN/UPC and SKU per product, per size.</strong> We have the template ready. Everything else is additive; this is the fix that solves the price problem.</p>
+    </div>
+  </section>
+
+  <!-- 5. PRIORITY 2 -->
+  <section class="slide tight" id="s4">
+    <div class="num">04 / 07</div>
+    <h2><span class="pre"><span class="badge b-p2">Priority 2</span>Complete the offer</span>Shipping, returns, and size variants.</h2>
+    <p class="body">Your <code>llms.txt</code> already states the shipping tiers, so most of this is data you have. Add the fields engines need to answer the next questions a shopper asks.</p>
+    <div class="two">
+      <div class="col today"><div class="lbl">What exists right now</div>
+<pre>"offers": {
+  "@type": "Offer",
+  "price": 6.0,
+  "priceCurrency": "USD",
+  "availability": ".../InStock"
+}
+<span class="cmt">// no shipping, returns, or
+// price-valid date</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">What should be added</div>
+<pre>"offers": {
+  "@type": "Offer",
+<span class="add">  "priceValidUntil": "2026-12-31",</span>
+  "price": 6.0, "priceCurrency": "USD",
+  "availability": ".../InStock",
+<span class="add">  "shippingDetails": {</span>
+<span class="add">    "@type": "OfferShippingDetails",</span>
+<span class="add">    "shippingRate": {"value": 0,</span>
+<span class="add">      "currency": "USD"} },</span>
+<span class="add">  "hasMerchantReturnPolicy": {</span>
+<span class="add">    "merchantReturnDays": 30 }</span>  <span class="cmt">// confirm</span>
+}</pre>
+      </div>
+    </div>
+    <h3>Tie the sizes together with a ProductGroup</h3>
+    <div class="two">
+      <div class="col today"><div class="lbl">What exists right now</div>
+<pre><span class="cmt">// 12ml and 30ml are unrelated
+// pages. an engine on the 30ml
+// page has no idea a 12ml exists.</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">What should be added</div>
+<pre>{ "@type": "ProductGroup",
+  "name": "Niacinamide Serum",
+  "variesBy": ".../size",
+  "hasVariant": [
+    {"size":"12ml","offers":{"price":6.0}},
+    {"size":"30ml","offers":{"price":6.0}}
+  ] }</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. PRIORITY 3 schema -->
+  <section class="slide tight" id="s5">
+    <div class="num">05 / 07</div>
+    <h2><span class="pre"><span class="badge b-p3">Priority 3</span>Quotability and grounding</span>Reviews, brand entity, and catalog.</h2>
+    <div class="two">
+      <div class="col today"><div class="lbl">Reviews today: a number only</div>
+<pre>"aggregateRating": {
+  "ratingValue": 4.6,
+  "reviewCount": 1751
+}
+<span class="cmt">// nothing quotable</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">Add review text engines can quote</div>
+<pre><span class="add">"review": [{</span>
+<span class="add">  "@type": "Review",</span>
+<span class="add">  "reviewRating": {"ratingValue": 5},</span>
+<span class="add">  "reviewBody": "actual review text"</span>
+<span class="add">}]</span> <span class="cmt">// 3-5 per product is enough</span></pre>
+      </div>
+    </div>
+    <div class="two">
+      <div class="col today"><div class="lbl">Homepage entity today</div>
+<pre>{ "@type": "OnlineStore",
+  "name": "Good Molecules",
+  "logo": ".../orig.jpg" }
+<span class="cmt">// no link to your social
+// or retailer profiles</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">Add sameAs to ground the brand</div>
+<pre>{ "@type": "OnlineStore",
+  "name": "Good Molecules",
+<span class="add">  "sameAs": [</span>
+<span class="add">    ".../instagram.com/goodmolecules",</span>
+<span class="add">    ".../ulta.com/brand/..." ]</span> <span class="cmt">// you supply</span>
+}</pre>
+      </div>
+    </div>
+    <div class="two">
+      <div class="col today"><div class="lbl">Category pages today</div>
+<pre><span class="cmt">// only the site-wide node.
+// no list of products in the
+// category, no breadcrumb trail.</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">Add ItemList + BreadcrumbList</div>
+<pre><span class="add">{ "@type": "ItemList", "name": "Toners",</span>
+<span class="add">  "itemListElement": [</span>
+<span class="add">    {"position":1,"name":"Niacinamide Toner"},</span>
+<span class="add">    {"position":2,"name":"Glycolic Toner"} ]}</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. PRIORITY 3 discovery -->
+  <section class="slide tight" id="s6">
+    <div class="num">06 / 07</div>
+    <h2><span class="pre"><span class="badge b-p3">Priority 3</span>Discovery and previews</span>OpenGraph, sitemap, and guide files.</h2>
+    <div class="two">
+      <div class="col today"><div class="lbl">Shared links today: blank</div>
+<pre>&lt;meta property="og:site_name"
+  content="Good Molecules"&gt;
+<span class="cmt">// links unfurl with no
+// image, title, or price</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">Add OpenGraph + product meta</div>
+<pre><span class="add">&lt;meta property="og:title"</span>
+<span class="add">  content="Niacinamide Serum 30ml"&gt;</span>
+<span class="add">&lt;meta property="og:image" content=".../prod.jpg"&gt;</span>
+<span class="add">&lt;meta property="product:price:amount"</span>
+<span class="add">  content="6.00"&gt;</span></pre>
+      </div>
+    </div>
+    <div class="two">
+      <div class="col today"><div class="lbl">Sitemap today</div>
+<pre>GET /sitemap.xml
+<span class="rd">&rarr; 404 Not Found</span>
+<span class="cmt">// crawlers must guess your
+// catalog by following links</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">Serve a sitemap.xml</div>
+<pre>&lt;urlset&gt;
+  &lt;url&gt;&lt;loc&gt;.../niacinamide-serum-30ml&lt;/loc&gt;
+    &lt;lastmod&gt;2026-06-25&lt;/lastmod&gt;&lt;/url&gt;
+  <span class="cmt">&lt;!-- one per product + category --&gt;</span>
+&lt;/urlset&gt;</pre>
+      </div>
+    </div>
+    <div class="two">
+      <div class="col today"><div class="lbl">Guide + FAQ layer today</div>
+<pre>GET /llms-full.txt  <span class="rd">&rarr; 404</span>
+GET /agents.md      <span class="rd">&rarr; 404</span>
+<span class="cmt">// no FAQPage markup</span></pre>
+      </div>
+      <div class="col rec"><div class="lbl">Drafts ready to upload</div>
+<pre><span class="add">{ "@type": "FAQPage", "mainEntity": [{</span>
+<span class="add">  "name": "What helps with dark spots?",</span>
+<span class="add">  "acceptedAnswer": {"text":"The Discol..."}}]}</span>
+<span class="cmt">// plus llms-full.txt + agents.md</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. NEED + NEXT -->
+  <section class="slide" id="s7">
+    <div class="num">07 / 07</div>
+    <h2><span class="pre">What we need, and what comes next</span>Six inputs, then the proof.</h2>
+    <div class="cards">
+      <div class="card"><div class="ch"><span class="n">1</span> GTIN + SKU</div><p>Per product, per size. Unblocks P1.</p></div>
+      <div class="card"><div class="ch"><span class="n">2</span> Return policy</div><p>Window, free returns or not, URL.</p></div>
+      <div class="card"><div class="ch"><span class="n">3</span> Social + retail URLs</div><p>For homepage <code>sameAs</code>.</p></div>
+      <div class="card"><div class="ch"><span class="n">4</span> Review feed</div><p>3 to 5 per product, or API.</p></div>
+      <div class="card"><div class="ch"><span class="n">5</span> Share image</div><p>1200 x 630 for previews.</p></div>
+      <div class="card"><div class="ch"><span class="n">6</span> Platform</div><p>For exact sitemap + search steps.</p></div>
+    </div>
+    <div class="flow">
+      <span class="step">Today: deliver the pack + GTIN ask</span>
+      <span class="arr">&rarr;</span>
+      <span class="step">You deploy</span>
+      <span class="arr">&rarr;</span>
+      <span class="step hot">The live engine battery: the proof</span>
+    </div>
+    <p class="method">Once you deploy, we ask ChatGPT, Claude, Perplexity, Gemini, and Google the real buyer questions and measure before and after against the frozen baseline. We draft and hand over every artifact; deploying and supplying GTINs and return text is yours. Method: passive recon and structured-data read, June 25, 2026, raw server responses. Code samples are abbreviated; full blocks are in the proposal files.</p>
+  </section>
+
+</div>
+<script>
+  const deck=document.getElementById('deck'),bar=document.getElementById('bar');
+  const secs=[...document.querySelectorAll('.slide')];
+  const dots=document.getElementById('dots');
+  secs.forEach((s,i)=>{const a=document.createElement('a');a.href='#'+s.id;dots.appendChild(a);});
+  const da=[...dots.children];
+  function update(){
+    const st=deck.scrollTop;
+    bar.style.width=(st/(deck.scrollHeight-deck.clientHeight)*100)+'%';
+    const i=Math.round(st/window.innerHeight);
+    da.forEach((d,n)=>d.classList.toggle('on',n===i));
+  }
+  deck.addEventListener('scroll',update);update();
+  function go(d){const i=Math.round(deck.scrollTop/window.innerHeight);
+    const n=Math.max(0,Math.min(secs.length-1,i+d));secs[n].scrollIntoView();}
+  addEventListener('keydown',e=>{
+    if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(1);}
+    if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(-1);}
+  });
+</script>
+</body>
+</html>

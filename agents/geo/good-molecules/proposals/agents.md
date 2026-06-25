@@ -1,12 +1,10 @@
-# Good Molecules — agents.md
 <!--
-  Prepared by Blackwell Enterprises, June 18, 2026.
+  Prepared by Blackwell Enterprises, June 25, 2026.
   Deploy at: https://www.goodmolecules.com/agents.md
   Status: ready to upload once [YOU SUPPLY] sections are filled in.
-  Current state: returns 404 (confirmed June 18 via curl with GPTBot user-agent).
 -->
 
-# Good Molecules — agents.md
+# Good Molecules agents.md
 
 This file is for AI agents and agentic systems interacting with goodmolecules.com.
 It describes what the site offers, how to find and query products, how purchasing
@@ -93,7 +91,7 @@ Expedited (FedEx Express, 2 business days):
 - $10 on orders $35-$99.99
 - $15 on orders under $35
 
-US shipping only. Orders ship from [YOU SUPPLY — warehouse location if you want to
+US shipping only. Orders ship from [YOU SUPPLY: warehouse location if you want to
 disclose it].
 
 ---
@@ -114,7 +112,7 @@ buyer.
 
 ## Returns
 
-[YOU SUPPLY — return window, process, and whether return shipping is free]
+[YOU SUPPLY: return window, process, and whether return shipping is free]
 
 Contact for return requests: support@goodmolecules.com | 1-213-444-4663
 
@@ -130,6 +128,7 @@ The following user-agents are permitted to crawl goodmolecules.com:
 - ClaudeBot
 - Claude-User
 - PerplexityBot
+- Perplexity-User
 - Google-Extended
 
 Product data is server-rendered and does not require JavaScript execution. JSON-LD

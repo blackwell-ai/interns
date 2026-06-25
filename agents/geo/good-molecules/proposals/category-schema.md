@@ -1,32 +1,51 @@
 # Category page schema
 
-Prepared by Blackwell Enterprises for the Good Molecules engineering team.
-June 18, 2026.
+> **At a glance**
+> | | |
+> |---|---|
+> | **Priority** | P3 |
+> | **Template** | category browse page (`/shop/browse?tag=...`) |
+> | **Add to** | two new sibling blocks: `ItemList` and `BreadcrumbList` |
+> | **You fill in** | nothing; server-side templating from your catalog |
+> | **Authority** | [sources.md](sources.md), Category page schema section |
 
-We fetched `goodmolecules.com/shop/browse?tag=cleansers` on June 18 using a GPTBot
-user-agent. The page loaded correctly (title: "Good Molecules - Cleansers") but
-contains no JSON-LD.
+Prepared by Blackwell Enterprises, June 25, 2026.
 
-Without structured data on category pages, an engine browsing your catalog has no
+We fetched your category pages (`/shop/browse?tag=cleansers`, `toners`,
+`facial-treatments`, `eye-treatments`) with a GPTBot user-agent. They load correctly
+and serve only the site-wide `OnlineStore` block. None carries an `ItemList`, so the
+catalog is not machine-traversable from the listing pages. The category URL format is
+`/shop/browse?tag=`.
+
+Without an `ItemList` on category pages, an engine browsing your catalog has no
 machine-readable signal about what products exist in each category. It sees a page
 full of product names rendered in JavaScript, which many crawlers do not execute.
 
 ---
 
-## Before (what a bot sees today — confirmed June 18 across all category pages)
+## What your category pages serve today
 
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "OnlineStore",
+  "name": "Good Molecules",
+  "url": "https://www.goodmolecules.com",
+  "logo": "https://dy6g3i6a1660s.cloudfront.net/0VDrsDcpa9lworZ9fqkd8wH2AGQ/orig.jpg"
+}
 ```
-(no JSON-LD block in page source)
-```
+
+This is the same site-wide block that appears on every page. There is no
+category-specific `ItemList`.
 
 ---
 
-## After: ItemList block for each category page
+## Recommended: ItemList block for each category page
 
 Add this as a `<script type="application/ld+json">` tag in the `<head>`. The
 `itemListElement` array should be generated server-side from your platform's catalog
 for that tag, not hardcoded. The niacinamide toner and glycolic toner are the
-worked example for the Toners category — your developer uses the same loop pattern
+worked example for the Toners category, and your developer uses the same loop pattern
 for every category.
 
 ```json
@@ -54,7 +73,7 @@ for every category.
 ```
 
 Position numbers are sequential. Order can match your default sort (bestsellers
-first, or alphabetical — whichever your platform uses).
+first, or alphabetical, whichever your platform uses).
 
 ---
 
@@ -75,11 +94,10 @@ Use these in the `description` field above. One per category:
 
 ## BreadcrumbList alongside the ItemList
 
-Add this as a second block on the same page:
+Your category pages carry no `BreadcrumbList` today. Add this as a second block on
+the same page:
 
-**Before:** no BreadcrumbList on any category page (confirmed June 18).
-
-**After:**
+**Recommended block:**
 ```json
 {
   "@context": "https://schema.org",
@@ -111,8 +129,9 @@ that do not execute JavaScript can read it.
 
 ---
 
-## What we need from you
+## Data your team fills in
 
-The full product list per category, in your preferred sort order, so we can verify
-the `itemListElement` entries are complete before you deploy. We can derive product
-names and URLs from your live site, but you know your catalog better than we do.
+Nothing from your systems is strictly required; the `itemListElement` array is
+generated server-side from your catalog for each tag. The one judgment call is the
+sort order (bestsellers, alphabetical, or your default), which your team sets in the
+template.

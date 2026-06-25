@@ -1,6 +1,6 @@
 # Sources and authority behind each recommendation
 
-Prepared by Blackwell Enterprises, June 18, 2026.
+Prepared by Blackwell Enterprises, June 25, 2026.
 
 Every recommendation in the proposal documents links to a specific, citable source.
 This document maps each proposal to its authority so the Good Molecules engineering
@@ -10,16 +10,16 @@ team can verify the recommendation independently.
 
 ## Product structured data (pdp-schema.md)
 
-### Authority: Google Search Central — Merchant listing structured data
+### Authority: Google Search Central, Merchant listing structured data
 URL: https://developers.google.com/search/docs/appearance/structured-data/merchant-listing
 
-Google's documentation for Merchant Listing structured data — the schema type that
+Google's documentation for Merchant Listing structured data, the schema type that
 makes a product eligible for Shopping knowledge panels, Google Images product results,
 and product snippets in Search and AI Mode. Key claims from this page:
 
 - `gtin`, `mpn`, and `sku` are recommended fields for merchant listings. Google
   states that GTIN specifically enables them to "match your product to other sources
-  of information about that product" — meaning without GTIN, Google cannot reconcile
+  of information about that product", meaning without GTIN, Google cannot reconcile
   your product page with the same item listed on Amazon, Ulta, or Target.
 - `shippingDetails` (via `OfferShippingDetails`) and `hasMerchantReturnPolicy` are
   recommended fields that unlock shipping and return annotations in merchant listing
@@ -28,28 +28,28 @@ and product snippets in Search and AI Mode. Key claims from this page:
   review text in product snippets.
 - `priceValidUntil` on the `Offer` is recommended to confirm the price is current.
 
-### Authority: Google Search Central — Merchant return policy structured data
+### Authority: Google Search Central, Merchant return policy structured data
 URL: https://developers.google.com/search/docs/appearance/structured-data/merchant-return-policy
 
 Dedicated documentation for `MerchantReturnPolicy` structured data. Google provides
 this as a separate schema type specifically to help engines answer return policy
 questions from structured data rather than from page text.
 
-### Authority: Google Search Central — Merchant shipping policy structured data
+### Authority: Google Search Central, Merchant shipping policy structured data
 URL: https://developers.google.com/search/docs/appearance/structured-data/merchant-shipping-policy
 
-Dedicated documentation for `OfferShippingDetails`. Same rationale as above — Google
+Dedicated documentation for `OfferShippingDetails`. Same rationale as above, Google
 recommends putting shipping costs and timing in structured data so engines can answer
 shipping questions with confidence.
 
-### Authority: Google Search Central — Product snippet structured data
+### Authority: Google Search Central, Product snippet structured data
 URL: https://developers.google.com/search/docs/appearance/structured-data/product-snippet
 
 Google's specification for basic product snippets. Covers required vs recommended
 fields for `Product` and `Offer` types. `Review` objects (not just `aggregateRating`)
 are explicitly described here as enabling star ratings and review text in snippets.
 
-### Authority: schema.org — Product type specification
+### Authority: schema.org, Product type specification
 URL: https://schema.org/Product
 
 The underlying schema specification that Google, Bing, and all major search engines
@@ -68,16 +68,16 @@ Source: https://developers.google.com/search/docs/appearance/structured-data/sd-
 
 ## Homepage schema (homepage-schema.md)
 
-### Authority: Google Search Central — Organization structured data
+### Authority: Google Search Central, Organization structured data
 URL: https://developers.google.com/search/docs/appearance/structured-data/organization
 
 Google recommends `Organization` schema with `sameAs` links to consolidate a
 brand's entity signals. The `sameAs` field explicitly enables Google to recognize
 that a brand's Instagram account, Wikipedia page, and retailer storefront all
-refer to the same entity — which is what drives confident brand answers in AI
+refer to the same entity, which is what drives confident brand answers in AI
 Mode and Knowledge Panels.
 
-### Authority: Google Search Central — Sitelinks Searchbox
+### Authority: Google Search Central, Sitelinks Searchbox
 URL: https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox
 
 Google documents the `WebSite` schema with `SearchAction` as the method for
@@ -88,7 +88,7 @@ enabling a sitelinks search box in Google results. This is the schema behind
 
 ## Category page schema (category-schema.md)
 
-### Authority: schema.org — ItemList type
+### Authority: schema.org, ItemList type
 URL: https://schema.org/ItemList
 
 The `ItemList` type is the standard for expressing ordered or unordered lists of
@@ -96,7 +96,7 @@ items in structured data. Google uses it for carousel results and catalog
 traversal. Documented by Google at:
 https://developers.google.com/search/docs/appearance/structured-data/carousel
 
-### Authority: Google Search Central — Breadcrumb structured data
+### Authority: Google Search Central, Breadcrumb structured data
 URL: https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
 
 Google recommends `BreadcrumbList` on product and category pages to help engines
@@ -105,9 +105,9 @@ pages appear in search results (with the breadcrumb trail shown below the URL).
 
 ---
 
-## AI guide files — llms.txt, llms-full.txt, agents.md
+## AI guide files, llms.txt, llms-full.txt, agents.md
 
-### Authority: llmstxt.org — The /llms.txt specification
+### Authority: llmstxt.org, The /llms.txt specification
 URL: https://llmstxt.org
 Author: Jeremy Howard. Published September 3, 2024.
 
@@ -123,7 +123,7 @@ specification:
 
 The proposal explicitly addresses why HTML pages are poor inputs for LLMs and why
 a dedicated plain-text file at a predictable URL is the recommended solution.
-`llms-full.txt` is the extended variant described in the same specification —
+`llms-full.txt` is the extended variant described in the same specification.
 FastHTML's own implementation uses `llms-ctx.txt` and `llms-ctx-full.txt` as the
 expanded versions, following the same pattern we are proposing for Good Molecules.
 
@@ -131,27 +131,27 @@ expanded versions, following the same pattern we are proposing for Good Molecule
 As of June 2026, `llms.txt` has been adopted by Anthropic (anthropic.com/llms.txt),
 Perplexity, Cloudflare, and hundreds of software and e-commerce sites. It is
 supported as a crawl target by Claude, Perplexity, and other AI assistants that
-accept URL context. Good Molecules already has a strong `llms.txt` — we are
+accept URL context. Good Molecules already has a strong `llms.txt`, we are
 proposing the deeper companion files the specification describes.
 
 ---
 
 ## WAF and crawler access
 
-### Authority: OpenAI — GPTBot documentation
+### Authority: OpenAI, GPTBot documentation
 URL: https://platform.openai.com/docs/bots
 
 OpenAI's official documentation for GPTBot and OAI-SearchBot, including the
 user-agent strings and the statement that sites can allow or block them via
 robots.txt or WAF rules.
 
-### Authority: Anthropic — ClaudeBot documentation
+### Authority: Anthropic, ClaudeBot documentation
 URL: https://support.anthropic.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web
 
 Anthropic's documentation on ClaudeBot (training) and Claude-User (live fetch),
 including user-agent strings.
 
-### Authority: Perplexity — PerplexityBot documentation
+### Authority: Perplexity, PerplexityBot documentation
 URL: https://docs.perplexity.ai/docs/perplexitybot
 
 Perplexity's documentation on PerplexityBot user-agent and crawl behavior.

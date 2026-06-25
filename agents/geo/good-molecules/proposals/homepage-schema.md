@@ -1,42 +1,63 @@
 # Homepage schema
 
-Prepared by Blackwell Enterprises for the Good Molecules engineering team.
-June 18, 2026.
+> **At a glance**
+> | | |
+> |---|---|
+> | **Priority** | P3 |
+> | **Template** | homepage |
+> | **Add to** | the existing `OnlineStore` block, plus one new `WebSite` block |
+> | **You fill in** | social + retailer profile URLs, search URL format |
+> | **Authority** | [sources.md](sources.md), Homepage schema section |
 
-We fetched goodmolecules.com on June 18 using a GPTBot user-agent. The homepage
-loaded correctly (title: "See a difference in your skin | Good Molecules") but
-contains no JSON-LD at all.
+Prepared by Blackwell Enterprises, June 25, 2026.
+
+Your homepage carries an `OnlineStore` block with `name`, `url`, and `logo`.
+`OnlineStore` is a subtype of `Organization`, so it counts as your brand entity
+block. What it lacks are the fields that consolidate brand authority and enable site
+search.
 
 This is the page an engine lands on when a user asks "what is Good Molecules" or
-"tell me about Good Molecules skincare." Without entity schema here, an engine has
-no structured signal to ground the brand as a single entity distinct from retailer
-listings. It falls back to Reddit threads, Ulta product pages, and press mentions
-instead.
+"tell me about Good Molecules skincare." The `sameAs` array is the field that grounds
+the brand as a single entity across your retailer and social listings. Without it, an
+engine leans on Reddit threads, Ulta product pages, and press mentions to describe
+you.
 
 ---
 
-## Before (what a bot sees today — confirmed June 18)
-
-```
-(no JSON-LD block in page source)
-```
-
----
-
-## After: two blocks to add to the homepage head
-
-Add both as `<script type="application/ld+json">` tags. They do not affect page
-rendering, page speed, or existing SEO signals.
-
-### Block 1: Organization
+## What your homepage serves today
 
 ```json
 {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "OnlineStore",
   "name": "Good Molecules",
   "url": "https://www.goodmolecules.com",
-  "logo": "[YOU SUPPLY — your CDN path to the logo image]",
+  "logo": "https://dy6g3i6a1660s.cloudfront.net/0VDrsDcpa9lworZ9fqkd8wH2AGQ/orig.jpg"
+}
+```
+
+Present: `name`, `url`, `logo`. Missing: `sameAs`, `contactPoint`, `description`, and
+a separate `WebSite` block with a `SearchAction`.
+
+---
+
+## Recommended: enrich the existing block and add a WebSite block
+
+Keep your `OnlineStore` block and add the missing fields to it, then add the
+`WebSite` block as a second tag. Both are `<script type="application/ld+json">` tags.
+They do not affect page rendering, page speed, or existing SEO signals. You can keep
+`@type` as `OnlineStore` rather than `Organization`, it is the more specific type and
+engines accept the same fields on it.
+
+### Block 1: enriched OnlineStore
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "OnlineStore",
+  "name": "Good Molecules",
+  "url": "https://www.goodmolecules.com",
+  "logo": "https://dy6g3i6a1660s.cloudfront.net/0VDrsDcpa9lworZ9fqkd8wH2AGQ/orig.jpg",
   "description": "Science-backed, affordable skincare with clinically-studied active ingredients. Fragrance-free, Leaping Bunny certified cruelty-free, and vegan. Formulated without PEGs, mineral oils, or ethoxylated ingredients.",
   "contactPoint": {
     "@type": "ContactPoint",
@@ -51,12 +72,12 @@ rendering, page speed, or existing SEO signals.
     }
   },
   "sameAs": [
-    "[YOU SUPPLY — Instagram URL]",
-    "[YOU SUPPLY — TikTok URL]",
-    "[YOU SUPPLY — YouTube URL if applicable]",
-    "[YOU SUPPLY — Beautylish storefront URL]",
-    "[YOU SUPPLY — Ulta URL if applicable]",
-    "[YOU SUPPLY — Target URL if applicable]"
+    "[YOU SUPPLY: Instagram URL]",
+    "[YOU SUPPLY: TikTok URL]",
+    "[YOU SUPPLY: YouTube URL if applicable]",
+    "[YOU SUPPLY: Beautylish storefront URL]",
+    "[YOU SUPPLY: Ulta URL if applicable]",
+    "[YOU SUPPLY: Target URL if applicable]"
   ]
 }
 ```
@@ -89,7 +110,7 @@ retailer references.
 
 This enables a sitelinks search box in Google results when someone searches for
 Good Molecules directly, and signals to crawlers that the site has a functioning
-search endpoint. The URL template uses `/shop/browse?q=` — confirm with your
+search endpoint. The URL template uses `/shop/browse?q=`, confirm with your
 platform that this is the correct search parameter.
 
 ---
@@ -99,14 +120,17 @@ platform that this is the correct search parameter.
 Paula's Choice (the closest competitor with strong schema) has none of this on their
 homepage either. You have the opportunity to implement the full entity layer before
 any comparable brand does. This is the Reputation and Recommendability dimension
-from the audit — it is what makes an engine treat Good Molecules as a definitive
+from the audit. It is what makes an engine treat Good Molecules as a definitive
 source rather than one of many skincare brands.
 
 ---
 
-## What we need from you
+## Data your team fills in
 
-1. Logo image URL (your CDN path).
-2. Social profile URLs: Instagram, TikTok, and any others you maintain.
-3. Retail partner storefront URLs: Beautylish, Ulta, Target — whichever apply.
-4. Confirmation that `/shop/browse?q=` is your site search URL format.
+1. Social profile URLs: Instagram, TikTok, and any others you maintain.
+2. Retail partner storefront URLs: Beautylish, Ulta, Target, whichever apply.
+3. Your site search URL format (we have it as `/shop/browse?q=`; confirm in the
+   template).
+
+The logo is already live in your `OnlineStore` block
+(`.../0VDrsDcpa9lworZ9fqkd8wH2AGQ/orig.jpg`), so no logo path is needed.

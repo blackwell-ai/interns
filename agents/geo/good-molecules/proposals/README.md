@@ -1,98 +1,116 @@
-# Good Molecules: AI visibility remediation — delivery status
+# Good Molecules: AI visibility implementation pack
 
 Prepared by Blackwell Enterprises for the Good Molecules engineering team.
-June 18, 2026.
+June 25, 2026.
 
-This folder contains our proposals and ready-to-deploy files for each item in the
-engagement letter. Every finding below was verified by fetching goodmolecules.com
-live on June 18 using AI crawler user-agents (GPTBot, ClaudeBot). We are not
-guessing — the before states are what your site returns right now.
+This folder is the implementation pack for the structured-data and AI-visibility work
+from our engagement. Each file gives you the exact block to add, where it goes, and
+the fields to fill. Everything was verified by fetching goodmolecules.com live with AI
+crawler user-agents and reading the raw server HTML, so the "current state" in each
+file is what your site returns today.
 
----
+These are recommendations for your team to implement. We are not deploying anything on
+your site and you are not sending anything back to us; the `[YOU SUPPLY]` values are
+data your engineers fill in from your own systems as they implement each block.
 
-## Engagement deliverables
-
-### 1. AI crawler access
-Status: complete.
-
-Your WAF now returns 200 for GPTBot, ClaudeBot, and PerplexityBot. We confirmed
-this on June 18. At the original audit all three were blocked. This was the
-highest-impact fix and it is done.
-
-One edge case still open: Perplexity-User (the live-fetch variant, distinct from
-PerplexityBot) was returning 405 as of the June 17 recon. Worth confirming whether
-this has been addressed, as Perplexity uses both user-agents.
-
-### 2. Machine-readable product pages
-Status: partial.
-
-You added server-side JSON-LD to your `/s/` size-specific pages after the audit.
-That is confirmed live and is a meaningful improvement. Two gaps remain:
-
-- The `/p/` family pages (the URLs your llms.txt links to) still have no JSON-LD.
-  We confirmed this on June 18 across multiple products including the Vitamin C
-  Serum and Discoloration Correcting Serum.
-- The schema on `/s/` pages is missing the fields engines need to confidently answer
-  price, shipping, and return questions: `sku`, `gtin13`, `shippingDetails`,
-  `hasMerchantReturnPolicy`, `priceValidUntil`, and `Review` objects.
-
-Proposals and before/after code: see `pdp-schema.md`.
-
-### 3. Schema correction
-Status: not started.
-
-The homepage has no JSON-LD at all. Category pages have no JSON-LD at all. Neither
-was in scope of the structured data you added post-audit. These are the pages that
-establish the brand as a recognizable entity and make the catalog traversable.
-
-Proposals and before/after: see `homepage-schema.md` and `category-schema.md`.
-
-### 4. AI guide files
-Status: one of three complete.
-
-- `llms.txt`: live and good. Well-structured with products, prices, shipping, and
-  skin concern mappings. No changes needed.
-- `llms-full.txt`: returns 404. Draft ready to upload — see `llms-full.txt` in
-  this folder. Needs your team to fill in the returns policy and upload.
-- `agents.md`: returns 404. Draft ready to upload — see `agents.md` in this folder.
-  Needs your team to fill in the returns policy and upload.
-
-### 5. Before-and-after measurement
-Status: before complete, after pending your deployment.
-
-We ran a full before-benchmark on June 17 (WAF, crawler access, schema validation,
-AI engine citation testing). We re-verified the technical layer on June 18. The
-after-benchmark runs once you have deployed the changes above. We will re-run the
-full engine battery (ChatGPT, Claude, Perplexity, Gemini, Google) and produce the
-comparison report.
+Start with this page. It maps every change to a priority and a file, lists the data
+your team fills in, and ends with a deploy checklist.
 
 ---
 
-## What we need from you to complete the open items
+## How to read this pack
 
-These are the only blockers on our end. Everything else in the proposals below is
-ready to deploy once your team pastes in the code.
-
-1. GTIN/UPC and internal SKU per product per size variant. This is the single
-   highest-impact open field. Without it, engines cannot match your product pages
-   to your Amazon, Ulta, or Target listings — the root cause of the price-
-   substitution finding at audit.
-2. Return policy: window in days, whether return shipping is free, and the URL of
-   your returns page.
-3. Logo image CDN path for the homepage Organization schema.
-4. Social profile URLs (Instagram, TikTok, and others) and retail partner URLs
-   (Beautylish, Ulta, Target — whichever apply).
-5. Confirmation that `/shop/browse?q=` is your search URL format.
-6. Review feed: a sample export of 3 to 5 reviews per product, or API access.
+- Changes are grouped **P1 / P2 / P3** by impact, the same order as the presentation.
+- Every file opens with an **At a glance** header: priority, which template it touches,
+  what it depends on from you, and effort.
+- Each change is shown as **Current state** (what your page returns now) next to
+  **Recommended** (what to add). Added lines are called out.
+- Fields marked `[YOU SUPPLY]` are data only your team holds. They are collected in the
+  "Data your team fills in" section below so you can gather them in one pass.
 
 ---
 
-## Files in this folder
+## Priority map
 
-| File | What it is | Status |
-|---|---|---|
-| pdp-schema.md | Enriched JSON-LD for /s/ pages + ProductGroup for /p/ pages | Needs GTIN/SKU from you |
-| homepage-schema.md | Organization + WebSite schema for the homepage | Needs logo + social URLs from you |
-| category-schema.md | ItemList schema for category browse pages | Ready, needs developer templating |
-| llms-full.txt | Full AI guide file, ready to upload | Needs returns policy from you |
-| agents.md | Agentic interaction guide, ready to upload | Needs returns policy from you |
+| Priority | Change | File | Data you fill in |
+|---|---|---|---|
+| **P1** | Product identifiers: `sku`, `gtin13` on the Offer | [pdp-schema.md](pdp-schema.md) | GTIN + SKU |
+| **P2** | Offer commerce fields: shipping, returns, `priceValidUntil`, offer `url` | [pdp-schema.md](pdp-schema.md) | return policy |
+| **P2** | Size variant model: `ProductGroup` | [pdp-schema.md](pdp-schema.md) | none |
+| **P3** | Review objects on product pages | [pdp-schema.md](pdp-schema.md) | review text |
+| **P3** | Homepage entity: `sameAs`, `contactPoint`, `WebSite` search | [homepage-schema.md](homepage-schema.md) | social/retail URLs |
+| **P3** | Category `ItemList` + `BreadcrumbList` | [category-schema.md](category-schema.md) | none |
+| **P3** | OpenGraph + product meta, and `sitemap.xml` | [opengraph-meta.md](opengraph-meta.md) | share image |
+| **P3** | `llms-full.txt` + `agents.md` guide files | [llms-full.txt](llms-full.txt), [agents.md](agents.md) | return policy |
+| **P3** | FAQ content + `FAQPage` markup | [faq-schema.md](faq-schema.md) | return policy |
+
+Reference: [sources.md](sources.md) maps every recommendation to a Google Search
+Central or schema.org authority, so your team can verify each one independently.
+
+---
+
+## Already in place (no action needed)
+
+Confirmed live June 25, so you can skip these:
+
+- AI crawler access. GPTBot, ClaudeBot, PerplexityBot, and Perplexity-User all return
+  200. This was the heaviest audit finding and it is complete.
+- Server-rendered `Product` and `Offer` JSON-LD on `/s/` size pages.
+- An `OnlineStore` node on the homepage (name, url, logo).
+- A live, well-structured `llms.txt`.
+
+The work in this pack is enrichment on top of that base.
+
+---
+
+## Data your team fills in
+
+These are the `[YOU SUPPLY]` values, pulled from your own systems as you implement.
+Gathering them once up front lets you move through the whole pack in one pass. Nothing
+here comes to us.
+
+| # | Data | Needed for | Used in |
+|---|---|---|---|
+| 1 | GTIN/UPC + internal SKU, per product per size | **P1** (highest value) | pdp-schema.md |
+| 2 | Return policy: window in days, free returns or not, returns page URL | P2, P3 | pdp-schema.md, faq-schema.md, guide files |
+| 3 | Social + retailer profile URLs (Instagram, TikTok, Beautylish, Ulta, Target) | P3 | homepage-schema.md |
+| 4 | Review text, 3 to 5 per product, from your review system | P3 | pdp-schema.md, faq-schema.md |
+| 5 | Homepage share image, 1200 x 630 | P3 | opengraph-meta.md |
+| 6 | Your e-commerce platform, and confirm `/shop/browse?q=` is search | P3 | opengraph-meta.md, homepage-schema.md |
+
+Item 1 is the one that matters most. It fixes the price-substitution problem from the
+audit, where engines quoted Amazon and Target prices because they could not match your
+page to the retailer listing.
+
+---
+
+## Suggested deploy order
+
+Each change is one template edit that propagates across the catalog. A sensible order:
+
+1. **Quick wins, no data to gather:** `priceValidUntil` and offer `url`,
+   `ProductGroup`, `BreadcrumbList`, category `ItemList`, OpenGraph meta. Ship first.
+2. **Turn on `sitemap.xml`** in your platform settings and reference it from robots.txt.
+3. **Product identifiers (P1)** once you have GTIN/SKU pulled from your product system.
+4. **Shipping and return blocks, and the guide files** once your return policy is set.
+5. **Review objects and FAQ review references** once you have the review text.
+6. **Homepage `sameAs`** once you have the profile URLs.
+
+Tell us when a batch is live and we re-validate the structured data against schema.org
+and the rich-results requirements, then schedule the live engine battery as the
+before/after proof. That validation and the engine testing are our side of the work.
+
+---
+
+## File index
+
+| File | What it is |
+|---|---|
+| [pdp-schema.md](pdp-schema.md) | Product page: identifiers, full Offer, ProductGroup, reviews, breadcrumbs |
+| [homepage-schema.md](homepage-schema.md) | Homepage: enriched OnlineStore with sameAs, plus WebSite search |
+| [category-schema.md](category-schema.md) | Category pages: ItemList and BreadcrumbList |
+| [opengraph-meta.md](opengraph-meta.md) | OpenGraph and product meta tags, plus sitemap.xml |
+| [faq-schema.md](faq-schema.md) | FAQ content set with FAQPage markup |
+| [llms-full.txt](llms-full.txt) | Full AI guide file, ready to upload |
+| [agents.md](agents.md) | Agent interaction guide, ready to upload |
+| [sources.md](sources.md) | Every recommendation mapped to its authority |
