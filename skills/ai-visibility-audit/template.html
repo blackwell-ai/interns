@@ -85,6 +85,9 @@
   pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; }
   .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
   .fixline b{ color:var(--red); }
+  /* embedded engine / reputation capture from phases 3 and 5 */
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
 
   /* readiness + compare tables */
   table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
@@ -203,13 +206,27 @@
 <section class="sec">
   <p class="eyebrow red">Finding 1 of 6 · Critical</p>
   <h2 class="ruled">AI engines do not recommend Atlas, even when DLX is named</h2>
-  <p>AI answer engines are now where many shoppers start. They do not browse; they ask "what is the best skate shop near me" or "where do I buy Antihero decks," and they return a short, synthesized list. Atlas is not on it.</p>
+  <p>AI answer engines are now where many shoppers start. They do not browse; they ask "what is the best skate shop near me" or "where do I buy Antihero decks," and they return a short, synthesized list. We ran the full six-engine battery, each in two passes: from the model's own memory with web search off, then with live web retrieval on. The query was the brand's core category. [CLIENT] was named in [N] of nine passes.</p>
+  <!-- ENGINE RESULTS TABLE. Fill from battery-log.md. pill no (red) = not named, pill yes (green) = named.
+       Perplexity/Copilot/Google AI Overview have no clean from-memory pass, so leave the off cell as "retrieval only". -->
+  <table class="grid avoid">
+    <tr><th class="k1">Engine</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Claude</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Gemini</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Perplexity (incognito)</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Copilot</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+  </table>
+  <p>Atlas is not mentioned. DLX, the sibling shop run by the same ownership, is. The named competitors recur across every engine, while Atlas appears in none of the live-retrieval passes.</p>
   <div class="ai avoid">
-    <p class="plabel">Query, web-search-backed AI answer: "best skateboard shops in the San Francisco Bay Area"</p>
-    <p class="resp">"DLX (Deluxe), FTC, SF Skate Club, Mission Skateboards, Low Key, 510 Skateboarding (East Bay), Circle-A Skateboards (South Bay)..."</p>
+    <p class="plabel">Google AI Overview, live retrieval: "[category query]"</p>
+    <p class="resp">"DLX (Deluxe), FTC, SF Skate Club, Mission Skateboards, 510 Skateboarding, Circle-A Skateboards..."</p>
   </div>
-  <p>Atlas is not mentioned. DLX, the sibling shop run by the same ownership, is. The Peninsula and South Bay slots went to Circle-A in San Jose and, in the listicle below, Skateworks in Los Altos. San Mateo's 19-year institution did not place.</p>
-  <div class="quote">The California.com "13 best Bay Area skate shops" feature names FTC, 510, Circle-A, Skates on Haight, Create, MacArthur, Red Curbs, Skateworks, Orbit, Quad Republic, Mainland, Boardgarden, and Street Science. Atlas is not among them. <span class="src">(california.com, the kind of source AI engines cite verbatim)</span></div>
+  <!-- EMBED THE MATCHING CAPTURE from phase 5. Every AI-output box gets its screenshot. -->
+  <img class="eviv" src="assets/googleaio-[query-slug]-on-[YYYY-MM-DD].png" alt="Google AI Overview for the category, [CLIENT] absent">
+  <p class="cap-img">Google AI Overview for [CLIENT]'s core category. [CLIENT] is absent; the named picks are competitors. Captured [date].</p>
+  <div class="quote">The California.com "13 best Bay Area skate shops" feature names FTC, 510, Circle-A, Skates on Haight, Create, MacArthur, Red Curbs, Skateworks, Orbit, Quad Republic, Mainland, Boardgarden, and Street Science. Atlas is not among them. <span class="src">(six-engine two-pass battery, captured [date]; full per-engine log in battery-log.md)</span></div>
   <p class="sub-h">Why this is the most expensive finding in the deck</p>
   <p>Category recommendation is the moment of intent, a shopper deciding where to buy. Atlas being absent there is worth more than any single ranking position, because the AI engine is making the choice on the shopper's behalf and never offers Atlas as an option. The shop's reputation, which is excellent, cannot rescue a recommendation it is never part of. And the gap compounds: each engine that adds live retrieval reads the same listicles and the same empty entity layer, and reaches the same competitors.</p>
   <p class="fixline"><b>The fix.</b> Recommendability is downstream of the next three findings. A machine-readable entity, structured products, and a reputation linked to the entity are what get a shop pulled into these answers. We also seed the specific category sources these engines cite, so "skate shop San Mateo" and "Peninsula skate shop" resolve to Atlas.</p>
@@ -348,7 +365,7 @@ agent-readable pricing  <span class="r">none</span>  (no Offer schema; prices re
   <p class="sub-h">Truth table, frozen first</p>
   <p>Before querying any engine, we pulled Atlas's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>llms.txt</code>, <code>agents.md</code>, <code>/.well-known/ucp</code>, and the product, collection, and blog sitemaps. Counts (4,528 products, 106 collections, roughly 990 posts) come from those sitemaps, pulled June 16, 2026.</p>
   <p class="sub-h">AI behavior and recommendability</p>
-  <p>We ran category and brand queries through web-search-backed AI retrieval, the same retrieval ChatGPT, Perplexity, and Google AI Mode now use by default, and recorded which shops were named and which sources were cited. Atlas's absence from the Bay Area results and from the listicles those engines cite is the basis of finding 1.</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. Logged-in engines ran in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) so saved history did not bias the result; Copilot ran as a guest. Each engine and pass was captured to a screenshot. Atlas's absence from the live category answers, and the brands named in its place, is the basis of finding 1.</p>
   <p class="sub-h">Reputation corpus</p>
   <p>We pulled Atlas's third-party reputation from Yelp, Birdeye, the Nike SB and Vans dealer locators, and local coverage, and checked whether any of it is linked to the site's entity. The 4.8-star rating is real; the missing link to it is finding 3.</p>
   <p class="sub-h">Competitive set</p>

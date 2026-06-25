@@ -107,6 +107,30 @@ an engine refuses a pass (for example a logged-out engine that will not disable
 browsing), write the limitation in `battery-log.md`; the gate accepts a documented
 limitation but not a missing row.
 
+What each engine actually supports (learned, keep current):
+
+- **ChatGPT**: Temporary Chat (`chatgpt.com/?temporary-chat=true`) is a true clean
+  session. Both passes work; tell it "without searching the web" for the off pass
+  and "search the web" for the on pass.
+- **Perplexity**: Incognito lives in the account menu (button label starts "Use
+  incognito"). It still always retrieves, so treat it as ON-only and document the
+  OFF pass as N/A.
+- **Claude**: no incognito mode exists. A fresh `claude.ai/new` chat is the cleanest
+  available; both passes work via the "without searching" / "search the web" prompt.
+- **Gemini**: no clean private mode in practice. If the profile is logged in and has
+  prior searches for the brand, the read is contaminated; report it as unmeasured
+  rather than counting it.
+- **Copilot**: runs as a guest (no login), so it is clean by default but ON-only.
+- **Google AI Overview**: always web-grounded (ON-only), and **non-deterministic**.
+  The same query the same day can return the brand in one render and omit it in
+  another. Capture it, and if the brand's presence varies, say "in some renders"
+  rather than asserting a stable win or loss.
+
+Note that absence is robust to contamination but presence is not: a logged-in
+profile biases toward naming brands it has seen, so "absent despite a logged-in
+profile" is conservative, while "named on a logged-in profile" must be re-checked
+clean before you trust it.
+
 ### Phase 6. Competitor recon and scorecard
 
 Run `recon.sh` on each competitor the same day and save the combined output to
@@ -121,17 +145,32 @@ Adapt `template.html` (sans-serif black-on-white cover, AI Visibility Scorecard
 with competitor columns and a red grade card, "the short version" with numbered
 findings and a dark callout, findings worst-first with real AI-output boxes and
 review quotes, optional paid-readiness section, competitive position, two-phase
-$1,000 close, methodology section, repeated footer). Every AI-output box and
-review quote embeds or links the matching capture from phases 3 and 5. Replace all
-copy, numbers, and evidence with this client's verified recon.
+$1,000 close, methodology section, repeated footer). `template.html` is the single
+canonical format; do not fork a second house style.
 
-Render with headless Chrome (WeasyPrint is the documented renderer but needs
-pango/cairo native libs that are often missing, so Chrome is the working path):
-`google-chrome --headless --disable-gpu --no-pdf-header-footer
+The Recommendability finding (finding 1) is built around the **engine-results
+table** the template now ships: one row per engine, two columns (from-memory and
+live-retrieval), `pill no` (red) for not named and `pill yes` (green) for named,
+filled directly from `battery-log.md`. Below it, embed the matching capture with
+`<img class="eviv" src="assets/<engine>-<query-slug>-<pass>-<date>.png">` plus a
+`<p class="cap-img">` caption, and quote the live answer in an `.ai`/`.resp` box.
+Every AI-output box and review quote embeds or links its capture from phases 3 and
+5; a claim with no screenshot does not ship. Replace all copy, numbers, and
+evidence with this client's verified recon, and write the methodology section to
+describe the real six-engine two-pass battery, never "web-search-backed retrieval".
+
+Render with headless Chrome or Chromium (WeasyPrint is the documented renderer but
+needs pango/cairo native libs that are often missing, so Chrome/Chromium is the
+working path; the binary is `google-chrome` on macOS and often `chromium` on
+Linux):
+`chromium --headless --disable-gpu --no-pdf-header-footer
 --run-all-compositor-stages-before-draw --virtual-time-budget=8000
---print-to-pdf=out.pdf file://$PWD/audit.html`. The cover needs `break-after:page`;
-the footer is a `position:fixed` element Chrome repeats on every page; use
-`print-color-adjust: exact` so backgrounds print.
+--print-to-pdf=out.pdf file://$PWD/audit.html` (the GPU/vaInitialize warnings are
+harmless). Relative `assets/...` image paths resolve against the HTML file's own
+directory, so render in place. The cover needs `break-after:page`; the footer is a
+`position:fixed` element repeated on every page; use `print-color-adjust: exact` so
+backgrounds and pills print. A full-width embedded capture often flows to the next
+page, which is fine.
 
 ### Phase 9. Verify, place, record
 
