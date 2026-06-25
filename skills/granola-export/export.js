@@ -34,6 +34,8 @@ const NAME_MAP = {
   'samarjit.deshmukh.29@dartmouth.edu': 'Samarjit Deshmukh',
   'armaan.priyadarshan.29@dartmouth.edu': 'Armaan Priyadarshan',
   'shamitd@stanford.edu': "Shamit D'Souza",
+  'shamit.dsouza@gmail.com': 'Shamit',
+  'shamit@tryblackwell.com': 'Shamit',
   'ethanpzhou@berkeley.edu': 'Ethan Zhou',
 };
 
