@@ -3,7 +3,7 @@
 - Date: 2026-06-25
 - Granola document id: 877a7202-6a84-4f6d-b346-0916526f5dc2
 - Created at: 2026-06-25T18:06:54.359Z
-- Attendees: Samarjit Deshmukh (samarjit.deshmukh.29@dartmouth.edu), Ethan Zhou (ethanpzhou@berkeley.edu), Armaan Priyadarshan (armaan.priyadarshan.29@dartmouth.edu), Shamit D'Souza (shamitd@stanford.edu), Sameer (sameer@beautylish.com)
+- Attendees: Samarjit Deshmukh (samarjit.deshmukh.29@dartmouth.edu), Ethan Zhou (ethanpzhou@berkeley.edu), Armaan Priyadarshan (armaan.priyadarshan.29@dartmouth.edu), Shamit D'Souza (shamitd@stanford.edu), Michael Ferchak, Scott Burack
 - Content source: enhanced notes (AI summary panel)
 - Transcript: verbatim from Granola, 238 segments
 
