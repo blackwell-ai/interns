@@ -2,660 +2,368 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Reuzel AI Visibility Audit</title>
+<title>Reuzel: AI Visibility Audit</title>
 <style>
-  @page {
-    size: letter;
-    margin: 1.05in 0.95in 0.95in 0.95in;
-    @bottom-left { content: "Blackwell Enterprises"; font: 7.5pt Helvetica, Arial, sans-serif; color: #8a8a8a; }
-    @bottom-right { content: "Reuzel AI Visibility Audit \00b7 " counter(page); font: 7.5pt Helvetica, Arial, sans-serif; color: #8a8a8a; }
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
   }
-  @page :first {
-    @bottom-left { content: none; }
-    @bottom-right { content: none; }
-  }
-  * { box-sizing: border-box; }
-  html { font-size: 10pt; }
-  body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; line-height: 1.5; margin: 0; }
-  .eyebrow { font-size: 8.5pt; letter-spacing: 0.22em; text-transform: uppercase; color: #6e6e6e; margin: 1.2in 0 0.45in 0; }
-  h1.title { font-size: 26pt; line-height: 1.15; margin: 0 0 0.4in 0; letter-spacing: -0.01em; }
-  .lede { font-size: 11pt; line-height: 1.65; color: #222; max-width: 5.9in; }
-  .coverfoot { font-size: 9pt; color: #555; margin-top: 1.5in; line-height: 1.6; }
-  .coverfoot .cfrow { margin: 3pt 0; }
-  .coverfoot .cflabel { font-weight: bold; color: #1a1a1a; margin-right: 6pt; }
-  h2 { font-size: 15.5pt; margin: 0 0 4pt 0; padding-bottom: 6pt; border-bottom: 0.75pt solid #cfcfcf; page-break-after: avoid; }
-  h3 { font-size: 10.5pt; margin: 14pt 0 4pt 0; page-break-after: avoid; }
-  .section { page-break-before: always; }
-  p { margin: 7pt 0; }
-  ul { margin: 6pt 0 10pt 0; padding-left: 14pt; }
-  li { margin: 4pt 0; }
-  .badge { display: inline-block; font-size: 7pt; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; padding: 2pt 6pt; border-radius: 2pt; margin-right: 7pt; vertical-align: 12%; }
-  .b-critical { background: #9b1c1c; }
-  .b-high     { background: #946300; }
-  .b-medium   { background: #555555; }
-  .b-strength { background: #1d5c34; }
-  .finding { margin: 13pt 0; page-break-inside: avoid; }
-  .finding .fh { font-weight: bold; font-size: 10.5pt; margin-bottom: 3pt; }
-  .finding p { margin: 3pt 0; color: #2a2a2a; }
-  table { border-collapse: collapse; width: 100%; margin: 10pt 0 14pt 0; font-size: 9pt; }
-  th { text-align: left; font-size: 7.5pt; letter-spacing: 0.1em; text-transform: uppercase; color: #777; font-weight: normal; padding: 0 10pt 5pt 0; border-bottom: 0.75pt solid #cfcfcf; }
-  td { padding: 6pt 10pt 6pt 0; border-bottom: 0.5pt solid #e3e3e3; vertical-align: top; }
-  tr:last-child td { border-bottom: 0.75pt solid #cfcfcf; }
-  tr { page-break-inside: avoid; }
-  td.num { white-space: nowrap; }
-  .good { color: #1d5c34; font-weight: bold; }
-  .bad  { color: #9b1c1c; font-weight: bold; }
-  .warn { color: #946300; font-weight: bold; }
-  .draftbox { border: 0.75pt solid #cfcfcf; background: #f7f7f7; padding: 10pt 14pt; margin: 10pt 0; font-size: 9.5pt; line-height: 1.6; page-break-inside: avoid; }
-  .draftbox .dl { font-size: 7.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: #777; margin-bottom: 5pt; }
-  .methodnote { font-size: 8.5pt; color: #777; line-height: 1.55; margin-top: 22pt; }
-  .scorewrap { display: flex; align-items: stretch; border-left: 3pt solid #1d5c34; background: #f0f5f1; margin: 14pt 0 4pt 0; page-break-inside: avoid; }
-  .scorebig { font-size: 34pt; font-weight: bold; color: #1d5c34; padding: 14pt 20pt; line-height: 1; align-self: center; text-align: center; }
-  .scorebig .den { font-size: 9pt; color: #5a755f; font-weight: normal; display: block; margin-top: 6pt; letter-spacing: 0.02em; }
-  .scoretext { font-size: 9pt; color: #3f433f; padding: 12pt 14pt 12pt 0; line-height: 1.55; align-self: center; }
-  .sc { width: 100%; font-size: 9pt; }
-  .sc th { padding-bottom: 6pt; }
-  .sc td { padding: 8pt 10pt 8pt 0; vertical-align: top; }
-  .dim { font-weight: bold; width: 1.55in; }
-  .track { background: #e7e7e7; height: 7pt; width: 1.7in; border-radius: 1pt; position: relative; margin-bottom: 4pt; }
-  .fill { height: 7pt; border-radius: 1pt; }
-  .f-green { background: #1d5c34; }
-  .f-amber { background: #b5840f; }
-  .f-red   { background: #9b1c1c; }
-  .scoreval { font-weight: bold; font-size: 9.5pt; }
-  pre.code { font-family: "DejaVu Sans Mono", monospace; font-size: 7.6pt; line-height: 1.5;
-    background: #f7f7f7; border: 0.75pt solid #cfcfcf; padding: 9pt 12pt; margin: 8pt 0 4pt 0;
-    white-space: pre-wrap; page-break-inside: avoid; }
-  .codecap { font-size: 8.5pt; color: #666; margin: 2pt 0 12pt 0; line-height: 1.5; }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  /* page footer, repeated by Chrome on every page */
+  .pagefoot{ position:fixed; bottom:0.34in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:78%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  /* numbered short list */
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  /* evidence */
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; } pre.code .g{ color:#8fbf93; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+  table.grid .pill{ display:inline-block; }
+
+  /* readiness + compare tables */
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:28%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  /* phases */
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
 </style>
 </head>
 <body>
 
-<!-- COVER -->
-<div class="eyebrow">AI Visibility Audit</div>
-<h1 class="title">Reuzel</h1>
-<p class="lede">
-Reuzel runs on Shopify, and that decision already won the hard half of AI
-visibility. Every AI crawler reaches the site, the product pages carry
-server-rendered price and stock data, and the full agent-commerce stack is live,
-so an AI shopping agent can find a Reuzel pomade, build a cart, and run a
-buyer-approved checkout today. The gap is narrower and entirely fixable. The
-brand's own structured data labels the maker "reuzelinc" instead of Reuzel, and
-it hides the one signal that decides a recommendation: the rating. The Pink
-pomade page shows 4.9 stars from 168 reviews to a shopper, and a crawler reading
-the raw HTML sees none of it. This audit shows where the brand under-sells
-itself to the engines and what closes the gap.
-</p>
-<div class="coverfoot">
-  <div class="cfrow"><span class="cflabel">Prepared by</span>Blackwell Enterprises</div>
-  <div class="cfrow"><span class="cflabel">Team</span>Armaan Priyadarshan (Dartmouth), Samarjit Deshmukh (Dartmouth), Ethan Zhou (UC Berkeley), Shamit D&rsquo;Souza (Stanford)</div>
-  <div class="cfrow"><span class="cflabel">Date</span>June 22, 2026</div>
-  <div class="cfrow"><span class="cflabel">Contact</span>armaan.priyadarshan.29@dartmouth.edu</div>
-</div>
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>Reuzel &middot; AI Visibility Audit</span></div>
 
-<!-- SUMMARY -->
-<div class="section">
-<h2>Summary</h2>
-<p>
-Reuzel is in strong shape on the parts of AI visibility most brands fail. The
-site lets every AI crawler through. Googlebot, GPTBot, the OpenAI and Perplexity
-search bots, ClaudeBot, Amazonbot, Applebot, and Bingbot all reach the homepage
-and product pages and receive the full response. The product pages are rendered
-on the server and carry well-formed Product structured data with price, stock
-status, and SKU in the raw HTML before any JavaScript runs.
-</p>
-<p>
-Reuzel also ships the full agent-commerce stack that Shopify now provides. The
-site serves an agent instruction file at /agents.md, an llms.txt, a Universal
-Commerce Protocol merchant profile at /.well-known/ucp, and a working UCP
-endpoint that an AI agent can call to search the catalog, build a cart, and run
-a checkout that the buyer approves. For the prior two brands we audited this was
-the central gap. Here the platform has solved it. An agent can transact with
-Reuzel today.
-</p>
-<p>
-The losses are not in the plumbing, they are in the content the plumbing
-carries. Three things hold the brand back. First, the Product schema names the
-brand "reuzelinc", the Shopify store slug, not "Reuzel", so an engine that reads
-the field to attribute the product gets a string no shopper uses. Second, and
-most important, the product pages carry no rating in their structured data. The
-ratings render in JavaScript review widgets, so a shopper sees 4.9 stars and an
-AI crawler reading the page directly sees nothing. The brand has thousands of
-strong reviews on Amazon, Ulta, Walmart, and its own site, and almost none of
-that reaches the engines from reuzel.com. Third, more than half the catalog is
-missing its product type, which weakens the category signal an engine reads from
-the feed.
-</p>
-<p>
-None of this requires re-architecting the site. These are field-level fixes to
-the structured data Shopify already emits, plus claiming a review profile the
-brand does not yet hold. The composite score reflects that: Reuzel is well ahead
-of where most brands start, and the remaining points sit in a few concrete
-changes.
-</p>
-</div>
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Reuzel<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI engines and search see Reuzel today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> Reuzel leadership</div>
+    <div><span class="k">Date</span> June 22, 2026</div>
+    <div><span class="k">Scope</span> Public site, search and AI surface, reputation, agent-commerce readiness</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS &middot; Dartmouth CS &middot; UC Berkeley MET (EECS &amp; Business) &middot; Stanford CS &amp; Biology</div>
+  </div>
+</section>
 
 <!-- SCORECARD -->
-<div class="section">
-<h2>Scorecard</h2>
-<div class="scorewrap">
-  <div class="scorebig">79<span class="den">out of 100</span></div>
-  <div class="scoretext">
-    Strong foundation, a few high-leverage content gaps. Transactability is the
-    standout, solved by the Shopify agent stack. Recommendability is solid: in a
-    clean six-engine battery (incognito or temporary chat where logged in), Reuzel's
-    flagship is named in ChatGPT, Perplexity, Claude, and Copilot, with a volatile
-    Google AI Overview and an unmeasured Gemini the only soft spots.
-    Quotability is the soft spot: the rating and brand entity are absent or wrong
-    in the structured data, which is exactly the data engines quote from. Every
-    gap below is a field-level fix, not a rebuild.
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded Reuzel on five dimensions of how AI engines and search treat the brand. Each dimension is scored 0 to 100 against observed behavior across AI answer engines, the category listicles those engines cite, third-party reputation sources, the brand's own indexed pages, and the agent-commerce surface. Competitor scores are our estimates from the same public signals. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">B</div>
+      <div class="score">79 / 100</div>
+      <div class="cap">Reuzel today</div>
+    </div>
+    <p class="grade-note"><strong>Reuzel is in good shape. It is reached by every AI crawler, recommended by name in most engines, and already runs the full agent-commerce stack. The headroom is concentrated in one place: the structured data engines quote from.</strong> The flagship is named as a top strong-hold pomade in a clean four of six engines. The gap is Quotability (70): the 4.9-star rating shoppers see is locked in JavaScript, so a crawler reading reuzel.com sees a product with no rating, and the brand field in the schema says "reuzelinc". Notably, competitor American Crew already exposes its rating in product schema, the exact fix Reuzel needs. Every gap below is a field-level change, not a rebuild.</p>
   </div>
-</div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">Reuzel</th><th class="cmp">Suavecito</th><th class="cmp">Layrite</th><th class="cmp">Am. Crew</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:80%"></div></div></div><div class="n">80</div></td>
+      <td class="cmp">74</td><td class="cmp">72</td><td class="cmp">70</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:70%"></div></div></div><div class="n">70</div></td>
+      <td class="cmp">68</td><td class="cmp">70</td><td class="cmp">80</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:76%"></div></div></div><div class="n">76</div></td>
+      <td class="cmp">82</td><td class="cmp">74</td><td class="cmp">80</td>
+      <td class="what">Inclusion in AI category recommendations and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:90%"></div></div></div><div class="n">90</div></td>
+      <td class="cmp">85</td><td class="cmp">85</td><td class="cmp">80</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:78%"></div></div></div><div class="n">78</div></td>
+      <td class="cmp">76</td><td class="cmp">74</td><td class="cmp">78</td>
+      <td class="what">Review aggregator presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">79 (B)</span></td>
+      <td class="cmp">77 (B)</td><td class="cmp">75 (B)</td><td class="cmp">78 (B)</td>
+      <td class="what">Reuzel leads a strong set by a small margin, on Discoverability and the agent layer. The one place it trails, the rating in structured data, is where American Crew already wins.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not a full audit of those brands. Method and queries in the methodology section.</p>
+</section>
 
-<table class="sc">
-<thead><tr><th>Dimension</th><th>Score</th><th>Read</th></tr></thead>
-<tbody>
-<tr>
-  <td class="dim">Discoverability</td>
-  <td><div class="track"><div class="fill f-green" style="width:1.36in"></div></div><span class="scoreval">80</span></td>
-  <td>Every AI crawler is allowed and gets the full page, Bing included. Sitemaps are clean and an agent-discovery sitemap is present. Held back by the brand being mislabeled in schema and half the catalog missing a product type.</td>
-</tr>
-<tr>
-  <td class="dim">Quotability</td>
-  <td><div class="track"><div class="fill f-amber" style="width:1.19in"></div></div><span class="scoreval">70</span></td>
-  <td>Price, stock, and SKU are server-rendered and quotable, and an FAQ block is present. But there is no rating in the structured data and the brand field is wrong, so the facts most relevant to a recommendation are missing or misleading.</td>
-</tr>
-<tr>
-  <td class="dim">Recommendability</td>
-  <td><div class="track"><div class="fill f-green" style="width:1.29in"></div></div><span class="scoreval">76</span></td>
-  <td>Tested live with a clean six-engine battery (incognito or temporary chat where logged in). Reuzel's Extreme Hold Matte is the top pick in ChatGPT, and a best pick in Perplexity and Claude, all citing reuzel.com; Copilot names it too. The headroom is source authority and two soft spots: a volatile Google AI Overview and a Gemini that could not be measured clean.</td>
-</tr>
-<tr>
-  <td class="dim">Transactability</td>
-  <td><div class="track"><div class="fill f-green" style="width:1.53in"></div></div><span class="scoreval">90</span></td>
-  <td>The full Shopify agent-commerce stack is live: agents.md, llms.txt, a UCP merchant profile, and a working UCP endpoint. An AI agent can search, cart, and run a buyer-approved checkout. This is the strongest dimension.</td>
-</tr>
-<tr>
-  <td class="dim">Reputation</td>
-  <td><div class="track"><div class="fill f-green" style="width:1.33in"></div></div><span class="scoreval">78</span></td>
-  <td>The underlying reputation is excellent: 4.6 to 4.9 stars across thousands of reviews on Amazon, Ulta, and the brand site, plus a genuine Schorem barbershop origin story engines can cite. Held back because the brand does not surface it in its own schema and holds no claimed Trustpilot profile.</td>
-</tr>
-</tbody>
-</table>
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>Reuzel is a strong brand with a genuine origin story: the pomades born out of the Schorem barbershop in Rotterdam, sold direct and through Amazon, Ulta, Sally Beauty, and barbershops, on a Shopify store that already runs the full agent-commerce stack. Asked for the best men's pomade for strong hold, AI engines name Reuzel by name, and ChatGPT makes the Extreme Hold Matte its top pick. The product is reviewed at 4.6 to 4.9 stars across thousands of reviews. The gap is narrow and specific: the data engines quote from. The 4.9-star rating shoppers see is locked in JavaScript, so the crawler that reads reuzel.com directly sees a product with no rating at all, and the schema labels the brand "reuzelinc".</p>
+  <p style="color:var(--muted);font-size:9pt">Six findings, ordered by leverage. The sixth is a strength.</p>
+  <ol class="short">
+    <li><strong>The rating is invisible to crawlers, and it is the highest-leverage fix on the site.</strong> The Pink pomade page shows 4.9 stars from 168 reviews in a JavaScript widget. Read as ClaudeBot reads it, from the raw HTML, the Product block carries no <code>aggregateRating</code> at all. The single fact that most drives a recommendation is the one the brand's own page does not expose.</li>
+    <li><strong>The brand is mislabeled in the Product schema.</strong> The Product structured data says <code>"brand": "reuzelinc"</code>, the Shopify store slug, while the Organization blocks on the same page correctly say "Reuzel". The page contradicts itself on its own brand entity. One field.</li>
+    <li><strong>AI engines already recommend Reuzel, with two narrow soft spots.</strong> In a clean six-engine battery, the flagship is named in ChatGPT (top pick), Perplexity, Claude, and Copilot, citing reuzel.com in the better ones. The soft spots: Google's AI Overview is volatile for this query, and Gemini could not be measured in a clean session.</li>
+    <li><strong>Catalog and schema hygiene leave easy signal on the table.</strong> 49 of 89 products carry no product type, the <code>@context</code> is http rather than https, the Organization blocks have duplicate and empty <code>sameAs</code> entries, and four review apps load on one page where one should.</li>
+    <li><strong>The reputation is excellent and barely machine-readable.</strong> 4.8 to 4.9 stars on Ulta, roughly 4.6 over 5,000-plus on Amazon, and a Schorem origin story engines love. Almost none of it reaches an engine from reuzel.com, and the brand holds no claimed Trustpilot profile.</li>
+    <li><strong>The agent-commerce layer is live and on par with the best in the set.</strong> A working UCP profile, an MCP endpoint, <code>agents.md</code>, and an agentic-discovery sitemap. An AI agent can search, cart, and run a buyer-approved checkout today. This is the asset to build on.</li>
+  </ol>
+  <div class="darkbox">Reuzel is most of the way there. It is reached, recommended, and transactable. The one thing between it and being the engines' default for strong-hold pomade is making reuzel.com the citable source for the rating it already earns, so the engines quote the brand's own page instead of learning it secondhand from listicles and resellers.</div>
+</section>
 
-<p class="methodnote">
-Scores are graded against a truth table frozen from reuzel.com on June 17, 2026,
-before any engine or third-party source was queried. Method is Blackwell's
-nine-phase AI visibility audit across five dimensions. Where a dimension depends
-on live answer-engine behavior, the basis and its limits are stated in the
-finding and in the closing note on method.
-</p>
-</div>
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 6 &middot; High severity</p>
+  <h2 class="ruled">The rating is invisible to crawlers, and it is the highest-leverage fix</h2>
+  <p>Reuzel's product pages show a strong star rating to a shopper. An AI crawler reading the same page from the raw HTML sees a product with no rating at all. The rating is the single fact that most drives a recommendation, and it is the one fact the brand's own page does not expose to a machine.</p>
+  <pre class="code"><span class="c">// Reuzel Pink pomade PDP, June 17 to 22, 2026</span>
+What a shopper sees (JavaScript review widget):   <span class="g">4.9</span> stars from <span class="g">168</span> reviews
+What ClaudeBot reads (raw HTML Product block):    aggregateRating = <span class="r">none</span>
+                                                  review nodes   = <span class="r">none</span>
 
-<!-- DISCOVERABILITY -->
-<div class="section">
-<h2>Discoverability</h2>
-<p>
-Discoverability asks whether the engines can reach the site, read it, and
-identify what they are looking at. Reuzel does the first two cleanly and stumbles
-on the third.
-</p>
+Server-rendered and correct:  <span class="g">Product</span> + <span class="g">Offer</span> (price 19.95 USD, InStock, SKU REU203) + <span class="g">FAQ</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>The price path is good: a crawler that does not run JavaScript still reads the price, the stock status, and the FAQ answers. The rating path is the gap. Reuzel has earned thousands of strong reviews, then kept them in JavaScript widgets the crawlers cannot read, so the engines learn the brand's reputation secondhand from resellers and listicles instead of from reuzel.com. Competitor American Crew already exposes <code>AggregateRating</code> in its product schema, so this is a solved problem in the category, just not on Reuzel's pages yet.</p>
+  <div class="quote">We loaded the Pink pomade page in a browser and the widget showed 4.9 stars from 168 reviews. We then requested the same page as ClaudeBot reads it, from the raw HTML, and the rating was not there. A shopper sees 4.9 stars; the crawler sees a product with no rating. <span class="src">(live page read versus raw-HTML crawl, June 17 to 22, 2026)</span></div>
+  <p class="fixline"><b>The fix.</b> Turn on <code>AggregateRating</code> output in the live review app so every product page carries its rating and review count in the server-rendered HTML. This is the highest-leverage change on the site: it makes reuzel.com the citable source for the social proof the brand already earns. We deliver the exact schema payload and re-test it as a crawler.</p>
+</section>
 
-<h3>Crawler access</h3>
-<p>
-We requested the homepage and a product page with each crawler's published user
-agent. Every one returned the full page. The robots.txt is the stock Shopify
-file: it blocks only cart, checkout, account, search, and faceted collection
-paths, and carries no rules against the AI crawlers, so they are allowed by
-default. The one AI-specific entry, ChatRankBot, is slowed with a crawl delay,
-not blocked.
-</p>
-<table>
-<thead><tr><th>Crawler</th><th>Status</th><th>Note</th></tr></thead>
-<tbody>
-<tr><td>Googlebot</td><td class="num good">200</td><td>allowed</td></tr>
-<tr><td>GPTBot, OAI-SearchBot, ChatGPT-User</td><td class="num good">200</td><td>OpenAI crawlers, all allowed</td></tr>
-<tr><td>ClaudeBot, Claude-User</td><td class="num good">200</td><td>full Product schema served</td></tr>
-<tr><td>PerplexityBot, Perplexity-User</td><td class="num good">200</td><td>allowed</td></tr>
-<tr><td>Bingbot</td><td class="num good">200</td><td>allowed, the channel many brands close</td></tr>
-<tr><td>Amazonbot, Applebot, Bytespider, Google-Extended</td><td class="num good">200</td><td>all allowed</td></tr>
-</tbody>
-</table>
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">The brand is mislabeled in the Product schema</h2>
+  <p>The structured data on the product page contradicts itself about what the brand is called. The Product block names the Shopify store slug; the Organization blocks on the same page name the brand. An engine reading the brand field to attribute or group the product gets a string no shopper would ever search.</p>
+  <pre class="code"><span class="c">// Reuzel Pink pomade PDP, Product structured data</span>
+Product.brand:  { "@type": "Brand", "name": <span class="r">"reuzelinc"</span> }   <span class="c">// the myshopify slug</span>
+Organization blocks (same page):  name = <span class="g">"Reuzel"</span>   <span class="c">// correct</span>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-strength">Strength</span>Open to every engine, with a clean agent-discovery sitemap</div>
-  <p>
-  The main sitemap links a dedicated sitemap_agentic_discovery.xml that points
-  AI agents to /agents.md. Crawl access is not a problem here, and the agent
-  discovery layer is a positive signal most brands do not have.
-  </p>
-</div>
+@context:  <span class="r">http://schema.org/</span>   <span class="c">// http, stricter validators prefer https</span>
+Organization.sameAs:  <span class="r">duplicated and empty entries, including a bare "#"</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>Entity resolution is how an engine decides that the product, the brand, the reviews, and the origin story are all the same thing. When the page says both "reuzelinc" and "Reuzel," it lowers the engine's confidence in the entity and weakens every downstream attribution, including the rating fix above. The http context and the malformed <code>sameAs</code> entries are the same kind of low-grade noise. None of it is a redesign; it is a handful of field corrections in data Shopify already emits.</p>
+  <p class="fixline"><b>The fix.</b> Set the Product brand to "Reuzel," move the schema <code>@context</code> to https, and remove the empty and duplicate <code>sameAs</code> entries on the Organization blocks. We deliver the corrected payloads; the brand applies them in the theme.</p>
+</section>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>The brand is mislabeled in the Product schema</div>
-  <p>
-  The Product structured data on the Pink pomade page carries
-  <code>"brand": {"@type": "Brand", "name": "reuzelinc"}</code>. That is the
-  Shopify store slug, not the brand. The two Organization blocks on the same page
-  correctly say "Reuzel", so the page contradicts itself. An engine that reads
-  the Product brand field to attribute or group the product sees "reuzelinc", a
-  string that appears nowhere a shopper would search. The fix is one field in the
-  product data, set to "Reuzel".
-  </p>
-</div>
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 6 &middot; Strength with two soft spots</p>
+  <h2 class="ruled">AI engines already recommend Reuzel, with two narrow gaps</h2>
+  <p>This is where most brands fail and Reuzel succeeds. We ran the full six-engine battery, two passes each (from the model's memory with web search off, then with live retrieval on), on "best men's pomade for strong hold." Logged-in engines ran in incognito or a temporary chat so saved history could not inflate the result. Reuzel is named in four of the six engines, and is the top pick in ChatGPT.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine (clean session)</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT (Temporary Chat)</td><td><span class="pill yes">Reuzel Blue</span></td><td><span class="pill yes">top pick: Extreme Hold Matte</span></td></tr>
+    <tr><td class="k1">Perplexity (Incognito)</td><td>retrieval only</td><td><span class="pill yes">best pick, cites reuzel.com</span></td></tr>
+    <tr><td class="k1">Claude</td><td><span class="pill no">not named</span></td><td><span class="pill yes">named, cites reuzel.com</span></td></tr>
+    <tr><td class="k1">Copilot (guest)</td><td>retrieval only</td><td><span class="pill yes">named with Suavecito</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill part">varies by render</span></td></tr>
+    <tr><td class="k1">Gemini</td><td><span class="pill part">not measured clean</span></td><td><span class="pill part">not measured clean</span></td></tr>
+  </table>
+  <div class="ai avoid">
+    <p class="plabel">ChatGPT, Temporary Chat, live retrieval: "best men's pomade for strong hold"</p>
+    <p class="resp">"My pick for best men's pomade for strong hold in 2026 is Reuzel Extreme Hold Matte Pomade. Reuzel rates it 11 out of 10 hold, 1 out of 10 shine, the strongest hold in the lineup."</p>
+  </div>
+  <img class="eviv" src="assets/chatgpt-best-pomade-on-2026-06-22.png" alt="ChatGPT names Reuzel Extreme Hold Matte as the top pick">
+  <p class="cap-img">ChatGPT in a Temporary Chat (no saved history) names Reuzel Extreme Hold Matte as its top pick and quotes Reuzel's own hold spec. Captured June 22, 2026.</p>
+  <p class="sub-h">The two soft spots, and the borrowed-recommendation problem</p>
+  <p>Google's AI Overview is non-deterministic for this query: in two same-day renders it named Reuzel in one and omitted it in the other (favoring Suavecito, Blind Barber, and Duke Cannon), so the brand's place there is not yet stable. Gemini could not be run in a clean session because the test profile carried prior Reuzel searches, so it is reported as unmeasured rather than counted. The deeper point sits under the wins: where engines name Reuzel, the better ones cite reuzel.com, but Copilot still builds its answer from an Amazon-sourced Bing carousel and names the brand without crediting its site. The rating and brand fixes above are what convert "recommended from listicles" into "recommended and cited from reuzel.com" everywhere.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is already strong; the lever is source authority. Findings 1 and 2 make reuzel.com the place engines read the rating and the brand from, which stabilizes the volatile renders and pulls the carousel engines onto the brand's own page.</p>
+</section>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>More than half the catalog has no product type</div>
-  <p>
-  Of 89 products in the catalog feed, 49 carry an empty product type. The rest
-  are typed correctly (Pomade, Beard Products, Hair Tonic, Shampoo, and so on).
-  Product type is part of how an engine and a faceted search read what a product
-  is. Filling it across the catalog sharpens the category signal at no design
-  cost.
-  </p>
-</div>
-</div>
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">Catalog and schema hygiene leave easy signal on the table</h2>
+  <p>A set of small, mechanical gaps in the catalog feed and the review stack. None is severe alone; together they soften the category signal an engine and an agent read, and they make the rating fix in finding 1 cleaner once addressed.</p>
+  <pre class="code"><span class="c">// reuzel.com catalog and review stack, June 17 to 22, 2026</span>
+Products in the feed:   <span class="g">89</span>   (130 variants, 118 in stock)
+Products with an empty product_type:   <span class="r">49 of 89</span>   <span class="c">// weakens the category signal</span>
+Review and UGC apps loaded on one PDP:   <span class="r">4</span>   <span class="c">// Okendo, Yotpo, Loox, Judge.me</span>
+Plausibly canonical review source:   <span class="g">1</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>Product type is part of how an engine and a faceted search read what a product is; filling it across the catalog sharpens that signal at no design cost. The four review apps on a single page are most likely leftovers from past installs. Beyond the page weight, the clutter makes it ambiguous which review corpus is the brand's source of truth, which is exactly the question the rating fix needs answered. Confirming the live app and pruning the rest makes finding 1 straightforward.</p>
+  <p class="fixline"><b>The fix.</b> Assign a product type to the 49 products that lack one, and consolidate to the single live review app. We deliver the product-type mapping and confirm which app is canonical; the brand applies both in its systems.</p>
+</section>
 
-<!-- QUOTABILITY -->
-<div class="section">
-<h2>Quotability</h2>
-<p>
-Quotability asks whether an engine can lift clean, structured facts off the page
-and repeat them confidently. The price path is good. The rating path is the gap,
-and it is the one that matters most.
-</p>
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">The reputation is excellent and barely machine-readable</h2>
+  <p>Reuzel's reputation is genuinely strong wherever it is exposed. The problem is distribution, not substance: the brand does not surface its own proof in a form engines can read, and it leaves one trust channel unclaimed.</p>
+  <pre class="code"><span class="c">// Reuzel reputation corpus, live reads, June 22, 2026</span>
+Ulta, Reuzel Blue pomade:      <span class="g">4.8</span> / 5   (358 reviews)
+Ulta, Reuzel Red pomade:       <span class="g">4.9</span> / 5   (182 reviews)
+Amazon, Reuzel Red pomade:     ~<span class="g">4.6</span> / 5   (5,000+ reviews)
+reuzel.com on-page widget:     <span class="g">4.9</span> / 5   (168 reviews, JavaScript only)
+Trustpilot business profile:   <span class="r">unclaimed</span>   (1 review; third-party reseller pages only)</pre>
+  <p class="sub-h">Why it matters</p>
+  <p>Reuzel was created in 2013 by the barbers behind Schorem, the Rotterdam barbershop, and the name means pork drippings, a nod to the grease pomade. It is a well-documented, frequently retold origin story across grooming media, which gives the engines a strong, consistent entity to attach the brand to. Most direct-to-consumer brands have nothing like it. The gap is that the excellent ratings almost never reach an engine from reuzel.com, because of the missing schema rating in finding 1, and that Trustpilot, a source several engines weight for trust, shows no claimed Reuzel profile.</p>
+  <div class="quote">Reddit confirms the sentiment live: threads like "My favorite Reuzel" and "Reuzel Blue Pomade, Strong Hold, High Shine" with replies that it "applies easily and washes out without any effort" and "stays malleable throughout the day and doesn't flake." The reputation is real and current; it is the machine-readable signal that is thin. <span class="src">(Ulta, Amazon, Reddit, observed June 22, 2026)</span></div>
+  <p class="fixline"><b>The fix.</b> The schema rating fix (finding 1) converts the earned reviews into a signal engines can quote. Separately, claiming the Trustpilot business profile and seeding it with existing reviews opens a closed trust channel. The schema is ours to deliver; claiming the profile is the brand's to execute.</p>
+</section>
 
-<h3>What the schema gets right</h3>
-<p>
-The Pink pomade page serves four JSON-LD blocks in the raw HTML, all valid: a
-Product block with a nested Offer (price 19.95, currency USD, availability
-InStock, SKU REU203), two Organization blocks, and an FAQ block. A crawler that
-does not run JavaScript still reads the price, the stock status, and the answers
-to common questions. That is real and worth keeping.
-</p>
+<!-- FINDING 6 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 6 of 6 &middot; Strength to build on</p>
+  <h2 class="ruled">The agent-commerce layer is live and ready for agent-driven shopping</h2>
+  <p>For most brands this is the hardest dimension and the one they score worst on. Reuzel scores highest here, because Shopify ships the whole stack and the brand has it switched on. We verified the endpoints directly.</p>
+  <pre class="code"><span class="c">// reuzel.com agent surface, June 17 to 22, 2026</span>
+/.well-known/ucp        <span class="g">live</span>   (UCP merchant profile, version 2026-04-08; cart, checkout, fulfillment, discount)
+/api/ucp/mcp            <span class="g">live</span>   (the endpoint an agent calls; enforces agent-identity handshake first)
+agents.md  &middot;  llms.txt  &middot;  llms-full.txt   <span class="g">200</span>   (agent instructions and the buyer-approval rule)
+sitemap_agentic_discovery.xml   <span class="g">present</span>   &middot;   /products.json   <span class="g">live</span>   (full catalog as JSON)</pre>
+  <p class="sub-h">Why it matters, and the honest caveat</p>
+  <p>An AI agent acting for a shopper can discover the store's capabilities, search the catalog, build a cart, set shipping, and complete a checkout the buyer must approve through Shop Pay. The UCP endpoint enforces the agent-identity handshake before it lists its tools, which is the correct, secure behavior. The caveat: Reuzel gets most of this from being on Shopify, so it is a platform advantage rather than a custom build, and its closest competitors (Suavecito, Layrite) run the same stack. There is nothing to fix here. The point is to keep the catalog data those agents read, brand and rating included, correct, which findings 1 and 2 handle, so an agent that arrives reads a clean, citable product.</p>
+  <p class="fixline"><b>The lever.</b> Keep the Shopify agent layer current with the UCP version Shopify ships, and make sure the brand and rating in the feed are correct (findings 1, 2) so the agent reads accurate data at the moment of purchase.</p>
+</section>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-high">High</span>The rating is invisible to crawlers</div>
-  <p>
-  The Product block carries no aggregateRating and no review nodes. The ratings
-  on the page come from JavaScript review widgets. We loaded the Pink pomade page
-  in a browser and the widget showed 4.9 stars from 168 reviews. We then read the
-  same page as ClaudeBot reads it, from the raw HTML, and the rating was not
-  there. A shopper sees 4.9 stars. An AI crawler reading the page directly sees a
-  product with no rating at all. Since the rating is the single fact that most
-  drives a recommendation, this is the highest-leverage fix on the site.
-  </p>
-</div>
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The same machine-readable signals across the four brands, all checked the same day. Reuzel leads on discoverability and is at parity on the agent layer. The one signal where it trails, the rating in product schema, is one American Crew already exposes.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>Reuzel</th><th>Suavecito</th><th>Layrite</th><th>Am. Crew</th></tr>
+    <tr><td class="k1">Named in AI category answers</td><td class="good">yes (top in ChatGPT)</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td></tr>
+    <tr><td class="k1">aggregateRating in product schema</td><td class="bad">none</td><td class="bad">none</td><td class="bad">none</td><td class="good">yes</td></tr>
+    <tr><td class="k1">Brand field correct in schema</td><td class="bad">"reuzelinc"</td><td class="good">correct</td><td class="good">correct</td><td class="good">correct</td></tr>
+    <tr><td class="k1">Live agent stack (ucp + agents.md)</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td></tr>
+    <tr><td class="k1">Claimed Trustpilot profile</td><td class="bad">no</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">The set is strong across the board, which is the honest framing: Reuzel competes with brands that are also named by the engines and also run the agent stack. Reuzel's edge is its origin story and discoverability; its one clear deficit is the rating in structured data, where American Crew shows what good looks like. Competitor scores are estimates from the same public signals, consistent with the scorecard columns.</p>
+</section>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>Four review apps load on one page</div>
-  <p>
-  The Pink pomade page references four separate review and user-content apps:
-  Okendo, Yotpo, Loox, and Judge.me. Only one is plausibly the live source of
-  reviews; the rest are most likely leftover from past installs. Beyond the page
-  weight, the clutter makes it ambiguous which review corpus is the brand's
-  source of truth. Worth confirming and pruning to one, which also makes the
-  rating fix below straightforward.
-  </p>
-</div>
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Reuzel does not need a rebuild. It needs a short, high-leverage data sprint. Phase 1 is a 30-day pass that makes the rating and the brand entity machine-readable and cleans the catalog hygiene. Phase 2 is ongoing AI visibility work that holds the position and closes the volatile renders. After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
 
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Low to medium</span>Schema hygiene: http context and malformed social links</div>
-  <p>
-  The Product block declares <code>"@context": "http://schema.org/"</code> over
-  http rather than https. Google tolerates it, stricter validators prefer https.
-  The two Organization blocks also carry duplicated and empty sameAs entries,
-  including a bare "#". These are small, but they are the kind of noise that
-  lowers an engine's confidence in the entity. Clean them up alongside the rating
-  fix.
-  </p>
-</div>
-</div>
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 &middot; 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Structured-data sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Five remediations, ranked by leverage, each closing a finding above.</p>
+    <ul class="rem">
+      <li>Put the rating into the server-rendered Product schema: turn on <code>AggregateRating</code> so every PDP carries its rating and review count in raw HTML (finding 1)</li>
+      <li>Correct the brand field to "Reuzel," move <code>@context</code> to https, and remove the empty and duplicate <code>sameAs</code> entries (finding 2)</li>
+      <li>Assign a product type to the 49 products that lack one, sharpening the category signal in the feed (finding 4)</li>
+      <li>Consolidate to one review app so there is a single source of truth for the rating fix (finding 4)</li>
+      <li>Category-source map for "best men's pomade," plus a spec to claim and seed the Trustpilot profile (findings 3, 5)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite AI visibility score (target 79 to 86-plus, holding B and climbing); <code>AggregateRating</code> server-rendered and validator-clean on every PDP; the Product brand reading "Reuzel" with an https context and a clean <code>sameAs</code>; product type populated across the catalog; and a measurable lift in engines citing reuzel.com for the rating. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met.</div>
+  </div>
 
-<!-- THE FIX -->
-<div class="section">
-<h2>The fix that moves the most</h2>
-<p>
-One change carries most of the upside: put the rating the brand already earns
-into the server-rendered Product schema, and correct the brand name while you
-are in that block. Below is the current Product JSON-LD on the Pink pomade page
-and the version that would let every engine read the 4.9-star, 168-review signal
-the shopper already sees.
-</p>
+  <p class="sub-h" style="margin-top:16pt">What is ours, what is yours, what the engines decide</p>
+  <p>We produce the exact schema payloads, the field corrections, the catalog product-type mapping, and the re-test that measures movement. Turning on the app setting, editing the live theme, claiming the Trustpilot profile, and pruning the review apps are changes inside Reuzel's own systems that the brand executes; we hand over the precise specs and verify the result. Where an outcome depends on a third party, such as a publisher updating a roundup, we flag it and do not promise it.</p>
 
-<pre class="code">// CURRENT, as served to crawlers in raw HTML
-{
-  "@context": "http://schema.org/",
-  "@type": "Product",
-  "name": "Pink Strong Hold Grease Pomade",
-  "sku": "REU203",
-  "brand": { "@type": "Brand", "name": "reuzelinc" },
-  "offers": [{
-    "@type": "Offer", "sku": "REU203",
-    "price": 19.95, "priceCurrency": "USD",
-    "availability": "http://schema.org/InStock"
-  }]
-  // no aggregateRating, no review nodes
-}</pre>
-<div class="codecap">Current. Brand reads as the store slug, and the rating is absent.</div>
+  <p class="sub-h" style="margin-top:14pt">Phase 2 and beyond</p>
+  <p>Phase 1 makes reuzel.com the citable source. Phase 2 holds it there: continuous AI behavior monitoring per dimension with drift alerts, so the volatile Google AI Overview render is caught and corrected; an entity establishment campaign so the engines resolve "Reuzel" cleanly with its Schorem origin and its rating; and tracking the UCP and agent-commerce changes that move every quarter, where Reuzel already has a head start. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+</section>
 
-<pre class="code">// PROPOSED
-{
-  "@context": "https://schema.org/",
-  "@type": "Product",
-  "name": "Pink Strong Hold Grease Pomade",
-  "sku": "REU203",
-  "brand": { "@type": "Brand", "name": "Reuzel" },
-  "offers": [{
-    "@type": "Offer", "sku": "REU203",
-    "price": 19.95, "priceCurrency": "USD",
-    "availability": "https://schema.org/InStock"
-  }],
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.9",
-    "reviewCount": "168"
-  }
-}</pre>
-<div class="codecap">
-Proposed. https context, brand corrected to "Reuzel", and the rating pulled from
-the live review source into the server-rendered block. The numbers shown are the
-live values read from the page on June 17, 2026; in practice the review app
-emits these per product so the figures stay current.
-</div>
-
-<p>
-Every major review app on Shopify, Okendo and Yotpo included, can write
-AggregateRating into the server-rendered Product schema. In many cases it is a
-setting in the app, not custom code. Confirming which app is the live one and
-turning that on across the catalog is the single most valuable change in this
-audit.
-</p>
-</div>
-
-<!-- RECOMMENDABILITY -->
-<div class="section">
-<h2>Recommendability</h2>
-<p>
-Recommendability asks whether the brand gets named when a shopper asks by
-category rather than by name. We tested this directly with the full six-engine
-battery, two passes each (from the model's own memory with web search off, then
-with live retrieval on), on "best men's pomade for strong hold". Logged-in engines
-ran in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito)
-and Copilot ran as a guest, so saved history did not inflate the result. The
-result is strong, better than most brands and well ahead of the two we audited
-before. The gaps that remain are narrow and specific.
-</p>
-
-<h3>What the engines said, clean re-run June 22, 2026</h3>
-<table>
-<thead><tr><th>Engine (clean session)</th><th>Named Reuzel</th><th>Pick, on live retrieval</th><th>Cited reuzel.com</th></tr></thead>
-<tbody>
-<tr><td>ChatGPT (Temporary Chat)</td><td class="good">Yes, top pick</td><td>Extreme Hold Matte</td><td class="good">Yes</td></tr>
-<tr><td>Perplexity (Incognito)</td><td class="good">Yes, best pick</td><td>strong-hold pomade</td><td class="good">Yes</td></tr>
-<tr><td>Claude (web retrieval)</td><td class="good">Yes</td><td>Reuzel pomade</td><td class="good">Yes</td></tr>
-<tr><td>Copilot (guest)</td><td class="good">Yes</td><td>named with Suavecito</td><td class="warn">No (Bing carousel)</td></tr>
-<tr><td>Google AI Overview</td><td class="warn">Varies by render</td><td>present in some, absent in others</td><td class="warn">mixed</td></tr>
-<tr><td>Gemini</td><td class="warn">Not measured clean</td><td>logged-in only</td><td>n/a</td></tr>
-</tbody>
-</table>
-<p>
-This is a clean re-run: each logged-in engine used incognito or a temporary chat so
-that no saved history could push Reuzel up. It still lands. ChatGPT made Reuzel
-Extreme Hold Matte its outright top pick and quoted the brand's own "11 out of 10
-hold" spec. Perplexity in incognito named Reuzel's strong-hold pomade as a best pick
-and cited reuzel.com. Claude does not name Reuzel from memory, but on live retrieval
-it surfaces the brand and cites reuzel.com. Copilot as a guest named Reuzel
-alongside Suavecito. Two honest caveats: Google's AI Overview is non-deterministic
-for this query, present in one same-day render and absent in another, so it is shown
-as variable rather than a guaranteed win; and Gemini could not be run in a clean
-session, so its result is left unmeasured rather than counted either way.
-</p>
-<img src="assets/chatgpt-best-pomade-on-2026-06-22.png" alt="ChatGPT names Reuzel Extreme Hold Matte as the top pick" style="width:100%;border:0.75pt solid #cfcfcf;border-radius:2pt;margin:6pt 0 2pt;display:block;">
-<p style="font-size:7.8pt;color:#777;line-height:1.4;margin:2pt 0 10pt;">ChatGPT in a Temporary Chat (no saved history), asked for the best strong-hold pomade, names Reuzel Extreme Hold Matte as its top pick and quotes Reuzel's own hold spec. Captured June 22, 2026.</p>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>The recommendation is borrowed, not owned</div>
-  <p>
-  Look at the last column. ChatGPT, Perplexity, and Claude all cite reuzel.com when
-  they name the brand, which is the strong case. Copilot still builds its answer from
-  an Amazon-sourced Bing shopping carousel and names Reuzel without crediting
-  reuzel.com. So where the brand is named, the better engines now read it from its
-  own site, but the commerce-carousel path still learns it from resellers. That is
-  the cost of the missing server-rendered rating and the mislabeled brand entity in
-  the schema: reuzel.com is not yet the single authoritative source for its own
-  products. The Quotability fixes convert "recommended from listicles" into
-  "recommended and cited from reuzel.com" everywhere, including the carousel engines.
-  </p>
-</div>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>Two narrow gaps: Google AI Overview volatility and an unmeasured Gemini</div>
-  <p>
-  The clean re-run closed the gaps the earlier draft flagged: Copilot and Perplexity
-  now both name Reuzel. What remains is narrower. Google's AI Overview is
-  non-deterministic for this category: in two same-day renders it named Reuzel in
-  one and omitted it in the other (favoring Suavecito, Blind Barber, and Duke
-  Cannon), so the brand's place there is not yet stable. And Gemini could not be run
-  in a clean session, because the test profile carried prior Reuzel searches that
-  would bias the read, so it is reported as unmeasured rather than counted. Both are
-  reasons to keep the entity and category-source work going until the position holds
-  across every render, not just most of them.
-  </p>
-</div>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-strength">Strength</span>Named-brand queries already work</div>
-  <p>
-  Asked "Reuzel Blue pomade price and where to buy", Perplexity returned the
-  correct 19.95 dollars and cited reuzel.com as the official store. When a shopper
-  names the brand, the engines read the brand's page and get it right. The gap is
-  only on the category question, where the brand competes to be named in the first
-  place.
-  </p>
-</div>
-</div>
-
-<!-- TRANSACTABILITY -->
-<div class="section">
-<h2>Transactability</h2>
-<p>
-Transactability asks whether an AI agent acting for a shopper can actually buy
-the product. For most brands this is the hardest dimension and the one they
-score worst on. Reuzel scores highest here, because Shopify now ships the whole
-stack and the brand has it switched on.
-</p>
-
-<h3>The agent-commerce stack is live</h3>
-<table>
-<thead><tr><th>Surface</th><th>Status</th><th>What it does</th></tr></thead>
-<tbody>
-<tr><td>/agents.md</td><td class="num good">live</td><td>Agent instruction file. Describes the UCP flow and the buyer-approval rule.</td></tr>
-<tr><td>/llms.txt</td><td class="num good">live</td><td>Same agent-facing instructions at the conventional path.</td></tr>
-<tr><td>/.well-known/ucp</td><td class="num good">live</td><td>UCP merchant profile, version 2026-04-08, advertising cart, checkout, fulfillment, and discount capabilities.</td></tr>
-<tr><td>UCP endpoint (/api/ucp/mcp)</td><td class="num good">live</td><td>The endpoint an agent calls to search the catalog, build a cart, and run checkout.</td></tr>
-<tr><td>/products.json</td><td class="num good">live</td><td>Full catalog as structured JSON for read-only agents.</td></tr>
-</tbody>
-</table>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-strength">Strength</span>An agent can find, cart, and buy, with the buyer approving payment</div>
-  <p>
-  The /agents.md file walks an agent through the full flow: discover the store's
-  capabilities, search the catalog, create a cart, set shipping, and complete a
-  checkout that the buyer must approve. It also points agents at the Shop skill
-  for buyer-approved payment through Shop Pay. We exercised the UCP endpoint
-  directly. It is live and enforces the agent-identity handshake before it lists
-  its tools, which is the correct, secure behavior: it will not transact for an
-  unidentified agent, and payment requires buyer approval. The read-only paths,
-  the catalog JSON and the merchant profile, are open and worked on the first
-  request.
-  </p>
-</div>
-
-<p>
-There is nothing to fix here. The point in the audit is to recognize the
-advantage: as agent-driven shopping grows, Reuzel is already reachable by it
-while most brands are not. The recommendation is to keep the stack current with
-the UCP version Shopify ships, and to make sure the catalog data those agents
-read, brand and rating included, is correct, which the fixes above handle.
-</p>
-</div>
-
-<!-- REPUTATION -->
-<div class="section">
-<h2>Reputation</h2>
-<p>
-Reputation asks what the wider corpus says about the brand and whether engines
-can find and trust it. Reuzel's reputation is genuinely strong. The problem is
-distribution, not substance: the brand does not surface its own proof, and it
-leaves one trust channel unclaimed.
-</p>
-
-<h3>The ratings are excellent wherever they are exposed</h3>
-<table>
-<thead><tr><th>Source</th><th>Rating</th><th>Depth</th></tr></thead>
-<tbody>
-<tr><td>Ulta, Reuzel Blue pomade</td><td class="num good">4.8 / 5</td><td>358 reviews</td></tr>
-<tr><td>Ulta, Reuzel Red pomade</td><td class="num good">4.9 / 5</td><td>182 reviews</td></tr>
-<tr><td>Amazon, Reuzel Red pomade</td><td class="num good">~4.6 / 5</td><td>5,000+ reviews</td></tr>
-<tr><td>reuzel.com, Pink pomade (on-page widget)</td><td class="num good">4.9 / 5</td><td>168 reviews</td></tr>
-<tr><td>reuzel.com, sitewide reviews page</td><td class="num good">5-star</td><td>2,000+ 5-star reviews cited</td></tr>
-<tr><td>ReviewMeta, brand aggregate</td><td class="num">mixed-verified</td><td>7,731 reviews across 25 products</td></tr>
-</tbody>
-</table>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-strength">Strength</span>A real origin story engines can cite</div>
-  <p>
-  Reuzel was created in 2013 by Leen Bergman and Bertus van Dijk, the barbers
-  behind Schorem, the Rotterdam barbershop they opened in 2001. The name means
-  pork drippings, a nod to the grease pomade. This is a well-documented,
-  frequently retold story across barbering and grooming media, which gives the
-  engines a strong, consistent entity to attach the brand to. Most DTC brands
-  have nothing like it.
-  </p>
-</div>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>The brand under-surfaces its own proof</div>
-  <p>
-  The ratings above are excellent and abundant, and almost none of it reaches an
-  engine from reuzel.com, because of the missing schema rating covered earlier.
-  The brand has done the hard work of earning thousands of strong reviews and
-  then keeps them in JavaScript widgets the crawlers cannot read. The schema fix
-  is what converts this earned reputation into a signal the engines can quote.
-  </p>
-</div>
-
-<div class="finding">
-  <div class="fh"><span class="badge b-medium">Medium</span>No claimed Trustpilot business profile</div>
-  <p>
-  Searching for Reuzel on Trustpilot returns only third-party retailer product
-  pages, not a claimed Reuzel business profile. Trustpilot is a source several
-  engines weight for brand trust. Claiming the profile and seeding it with the
-  reviews the brand already has would open a trust channel that is currently
-  closed. This is an action only the brand can take, and it is worth taking.
-  </p>
-</div>
-</div>
-
-<!-- RECOMMENDATIONS -->
-<div class="section">
-<h2>What to do, in order</h2>
-<p>
-Ranked by leverage. The first two are field-level changes to data Shopify already
-emits and should move the score the most.
-</p>
-
-<h3>1. Put the rating into the server-rendered Product schema</h3>
-<p>
-Highest leverage. Turn on AggregateRating output in the live review app so every
-product page carries its rating and review count in the raw HTML, as shown in the
-fix section. This makes the brand's own page a citable source for its social
-proof.
-</p>
-
-<h3>2. Correct the brand and clean the schema</h3>
-<p>
-Set the Product brand to "Reuzel", move the schema context to https, and remove
-the empty and duplicate sameAs entries on the Organization blocks. Small edits,
-and they remove the contradictions that lower an engine's confidence in the
-entity.
-</p>
-
-<h3>3. Fill in product type across the catalog</h3>
-<p>
-Assign a product type to the 49 products that lack one. This sharpens the
-category signal in the feed the engines and agents read.
-</p>
-
-<h3>4. Consolidate to one review app</h3>
-<p>
-Confirm which of the four review apps is live and remove the rest. One source of
-truth for reviews makes the schema fix clean and lightens the page.
-</p>
-
-<h3>5. Claim the Trustpilot profile</h3>
-<p>
-Open the brand-controlled trust channel that is currently empty, and seed it with
-the reviews the brand already has elsewhere.
-</p>
-
-<div class="draftbox">
-  <div class="dl">What we deliver versus what only the brand can do</div>
-  We produce the exact schema payloads, the field corrections, the catalog
-  product-type mapping, and the re-test that measures movement. Turning on the
-  app setting, editing the live theme, claiming the Trustpilot profile, and
-  pruning the review apps are changes inside Reuzel's own systems that the brand
-  executes; we hand over the precise specs and verify the result. Where an
-  outcome depends on a third party, such as a publisher updating a roundup, we
-  flag it as such and do not promise it.
-</div>
-</div>
-
-<!-- METHOD -->
-<div class="section">
-<h2>How we tested</h2>
-<p>
-This audit follows Blackwell's nine-phase AI visibility method across five
-dimensions: Discoverability, Quotability, Recommendability, Transactability, and
-Reputation.
-</p>
-<p>
-We froze a truth table from reuzel.com on June 17, 2026, before querying any
-engine or third-party source, so scores are graded against the brand's own data,
-not against the engines' answers. We tested crawler access by requesting the site
-with each crawler's published user agent. We read the product schema as the AI
-crawlers read it, from the raw HTML. We loaded the product pages in a real browser
-to capture what a shopper sees, including the JavaScript-rendered ratings. We
-exercised the UCP agent-commerce endpoint directly. We pulled the full catalog
-from the Shopify products feed (89 products, 130 variants) for the truth table.
-For reputation we used named retailer ratings from Amazon and Ulta and the brand's
-own review pages.
-</p>
-<p>
-For Recommendability we ran a clean six-engine battery on June 22, 2026: ChatGPT,
-Perplexity, Claude, Gemini, Google AI Overview, and Microsoft Copilot, each asked
-for the best men's pomade for strong hold, in two passes where possible (from the
-model's memory with web search off, then with live retrieval on). To keep saved
-history from inflating the result, logged-in engines ran in incognito or a
-temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) and Copilot ran as a
-guest. What each named and cited was recorded against the frozen truth table, and
-each engine and pass was captured. Three honest limits are noted in the
-Recommendability section rather than smoothed over: Claude names Reuzel only on the
-retrieval pass, not from memory; Google's AI Overview returned Reuzel in one
-same-day render and omitted it in another; and Gemini could not be run in a clean
-session, so it is reported as unmeasured. Everything else in this document was
-verified live between June 17 and 22, 2026.
-</p>
-<p class="methodnote">
-Prepared by Blackwell Enterprises. Figures are point-in-time and will shift as
-the engines, the catalog, and the review corpus change. The recommendations above
-are scoped to what Blackwell delivers, what the brand executes, and what depends
-on third parties, and are labeled accordingly.
-</p>
-</div>
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what Reuzel publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled Reuzel's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>agents.md</code>, <code>llms.txt</code>, <code>/.well-known/ucp</code>, the <code>/api/ucp/mcp</code> endpoint, the agentic-discovery sitemap, and the product feed (89 products, 130 variants). AI-crawler access was tested by fetching a product page under the GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Amazonbot, and Bingbot user agents; every one returned a 200. The rating gap in finding 1 came from reading the same PDP both in a browser and as ClaudeBot reads it.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. Logged-in engines were run in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) so saved history did not bias the result; Copilot ran as a guest. Each engine and pass was captured to a screenshot. Reuzel was named in ChatGPT, Perplexity, Claude, and Copilot; Google AI Overview varied by render and Gemini could not be measured clean, both noted in finding 3.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled Reuzel's reputation live from Ulta, Amazon, Reddit, YouTube, Trustpilot, and the brand's own review surface, and checked whether any of it is linked to the product's structured data. The 4.6 to 4.9 ratings are real and abundant; the missing server-rendered <code>aggregateRating</code> and the unclaimed Trustpilot profile are findings 1 and 5. Retailer figures are live page reads and move over time.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>Suavecito, Layrite, and American Crew were checked the same day on the same signals (homepage and product schema, the brand field, AI category presence, agent endpoints). Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>agents.md</code>, <code>llms.txt</code>, <code>/.well-known/ucp</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries. Catalog counts pulled June 17 to 22, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises &middot; Armaan Priyadarshan &middot; Samarjit Deshmukh &middot; Ethan Zhou &middot; Shamit D'Souza &middot; ethanpzhou@berkeley.edu</div></div>
+</section>
 
 </body>
 </html>
