@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reuzel: AI Visibility Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  /* page footer, repeated by Chrome on every page */
+  .pagefoot{ position:fixed; bottom:0.34in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:78%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  /* numbered short list */
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  /* evidence */
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; } pre.code .g{ color:#8fbf93; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+  table.grid .pill{ display:inline-block; }
+
+  /* readiness + compare tables */
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:28%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  /* phases */
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>Hanz de Fuko &middot; AI Visibility Audit</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Hanz de Fuko<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI engines and search see Hanz de Fuko today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> Hanz de Fuko leadership</div>
+    <div><span class="k">Date</span> June 25, 2026</div>
+    <div><span class="k">Scope</span> Public site, search and AI surface, reputation, agent-commerce readiness</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS &middot; Dartmouth CS &middot; UC Berkeley MET (EECS &amp; Business) &middot; Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded Hanz de Fuko on five dimensions of how AI engines and search treat the brand. Each dimension is scored 0 to 100 against observed behavior across AI answer engines, the category listicles those engines cite, third-party reputation sources, the brand's own indexed pages, and the agent-commerce surface. Competitor scores are our estimates from the same public signals. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">B</div>
+      <div class="score">76 / 100</div>
+      <div class="cap">Hanz de Fuko today</div>
+    </div>
+    <p class="grade-note"><strong>Hanz de Fuko is in good shape. AI engines already recommend it by name, the hero product's rating is machine-readable, and the brand runs the full agent-commerce stack.</strong> Claymation is named in five of the six engines we tested, and is ChatGPT's outright top pick for "best men's hair clay." The headroom is Discoverability (66): the homepage carries no <code>Organization</code> or <code>Brand</code> entity, so the brand the engines recommend has no machine-readable identity to resolve to, and Hanz holds no claimed reputation profiles. The fixes are entity-level, not a rebuild.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">Hanz de Fuko</th><th class="cmp">Baxter</th><th class="cmp">Am. Crew</th><th class="cmp">Reuzel</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:66%"></div></div></div><div class="n">66</div></td>
+      <td class="cmp">68</td><td class="cmp">70</td><td class="cmp">80</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:74%"></div></div></div><div class="n">74</div></td>
+      <td class="cmp">70</td><td class="cmp">80</td><td class="cmp">70</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:78%"></div></div></div><div class="n">78</div></td>
+      <td class="cmp">76</td><td class="cmp">80</td><td class="cmp">76</td>
+      <td class="what">Inclusion in AI category recommendations and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:88%"></div></div></div><div class="n">88</div></td>
+      <td class="cmp">80</td><td class="cmp">80</td><td class="cmp">90</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:74%"></div></div></div><div class="n">74</div></td>
+      <td class="cmp">74</td><td class="cmp">78</td><td class="cmp">78</td>
+      <td class="what">Review aggregator presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">76 (B)</span></td>
+      <td class="cmp">74 (C)</td><td class="cmp">78 (B)</td><td class="cmp">79 (B)</td>
+      <td class="what">Hanz sits mid-pack in a strong set. It wins on recommendation and the agent layer; it trails on the homepage entity, where the brand engines name has no structured identity behind it.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not a full audit of those brands. Reuzel's column is from our full audit of that brand. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>Hanz de Fuko is a well-regarded premium men's styling brand: Quicksand and Claymation are category staples, sold direct and through Amazon, Ulta, and Sephora, on a Shopify store that runs the full agent-commerce stack. Asked for the best men's hair clay, AI engines name Hanz by name, and ChatGPT calls Claymation "the best all-around men's hair clay." The hero product's rating is even server-rendered, which is a step ahead of most of the set. The gap is upstream of all of it: the homepage carries no machine-readable brand entity, so the brand the engines recommend has nothing structured to anchor to, and the reputation lives on channels Hanz has not claimed.</p>
+  <p style="color:var(--muted);font-size:9pt">Six findings, ordered by leverage. The last two are strengths.</p>
+  <ol class="short">
+    <li><strong>The homepage has no machine-readable brand entity.</strong> The homepage ships only <code>WebSite</code> and <code>SearchAction</code> JSON-LD: no <code>Organization</code>, no <code>Brand</code>. Engines name Hanz de Fuko, but nothing on the homepage tells a machine what the brand is, who makes it, or how its reputation attaches. This is the discoverability gap that caps everything else.</li>
+    <li><strong>AI engines already recommend Hanz, with one clean gap.</strong> In a six-engine battery, Claymation is named in ChatGPT (top pick), Claude, Gemini, Copilot, and Google's AI Overview. The one miss is Perplexity in incognito, which named Layrite, American Crew, and Suavecito instead.</li>
+    <li><strong>The product schema works, but duplicates itself.</strong> The Quicksand page serves <code>Product</code>, <code>AggregateOffer</code>, and <code>AggregateRating</code> in the raw HTML, which is good. It also serves two <code>Product</code> blocks and two <code>AggregateRating</code> blocks on the same page, the kind of duplication that lowers an engine's confidence in which record is canonical.</li>
+    <li><strong>The reputation is real but unclaimed and unlinked.</strong> 4.3 to 4.6 stars across Amazon, engaged Reddit threads, and a deep YouTube review corpus. But Trustpilot is unclaimed (one review), there is no BBB profile, and none of it is tied to a homepage entity, so engines cannot attribute it confidently.</li>
+    <li><strong>The rating is already machine-readable, a head start most of the set lacks.</strong> Unlike Reuzel, whose rating hides in JavaScript, Hanz serves its <code>AggregateRating</code> in the server HTML. A crawler reading the Quicksand page directly sees the rating. This is the asset to anchor the entity work to.</li>
+    <li><strong>The agent-commerce layer is live.</strong> A working UCP profile, an MCP endpoint, <code>agents.md</code>, and <code>llms-full.txt</code>, all returning 200, with every AI crawler reaching the site. An AI agent can find and transact today.</li>
+  </ol>
+  <div class="darkbox">Hanz de Fuko is already recommended and already transactable, with a machine-readable rating most competitors lack. The one thing holding the score down is that the brand the engines name has no structured identity on its own homepage. Give "Hanz de Fuko" a machine-readable entity and link the reputation to it, and the recommendation the engines already make resolves cleanly to the brand's own site.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 6 &middot; High severity</p>
+  <h2 class="ruled">The homepage has no machine-readable brand entity</h2>
+  <p>AI engines name Hanz de Fuko when a shopper asks for the best hair clay. But when an engine tries to build a record of what "Hanz de Fuko" actually is, who makes it, what it is rated, and how its reputation attaches, the homepage gives it almost nothing. This is the gap that caps the whole scorecard.</p>
+  <pre class="code"><span class="c">// hanzdefuko.com homepage JSON-LD, June 25, 2026</span>
+Homepage structured data:  <span class="g">WebSite</span> + <span class="g">SearchAction</span>   <span class="c">// present</span>
+Organization entity:  <span class="r">none</span>   <span class="c">// no name, logo, founder, or sameAs links</span>
+Brand entity:  <span class="r">none</span>
+Title and meta description:  <span class="g">present, descriptive</span>   &middot;   h1 in server HTML:  <span class="g">1</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>The title and the on-page content are fine for a human. What is missing is the structured identity a machine uses to decide that the brand the engines recommend, the products on the PDPs, the 4.x ratings on Amazon, and the YouTube reviews are all the same entity. With no <code>Organization</code> and no <code>sameAs</code>, every reputation signal floats unattached, and the brand is recommended in spite of its own homepage rather than because of it. The good news under this: every AI crawler reaches the site cleanly. GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Amazonbot, and Bingbot each returned a 200. The front door is open; there is just no identity card inside it.</p>
+  <p class="fixline"><b>The fix.</b> Server-rendered <code>Organization</code> and <code>Brand</code> schema on the homepage, with <code>sameAs</code> links to the brand's retail, social, and review profiles, so the engines have one entity to resolve every signal to. Theme-level and mechanical, and it is the anchor the rest of the findings attach to.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 6 &middot; Strength with one gap</p>
+  <h2 class="ruled">AI engines already recommend Hanz, with one clean gap</h2>
+  <p>This is where most brands fail and Hanz succeeds. We ran the full six-engine battery, two passes each (from the model's memory with web search off, then with live retrieval on), on "best men's hair clay 2026." Logged-in engines ran in incognito or a temporary chat so saved history could not inflate the result. Claymation is named in five of the six engines, and is ChatGPT's outright top pick.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine (clean session)</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT (Temporary Chat)</td><td><span class="pill yes">top pick: Claymation</span></td><td><span class="pill yes">named ($28, matte, strong hold)</span></td></tr>
+    <tr><td class="k1">Claude</td><td><span class="pill yes">named</span></td><td><span class="pill yes">named with Reuzel, Layrite</span></td></tr>
+    <tr><td class="k1">Gemini</td><td><span class="pill yes">named</span></td><td><span class="pill yes">named</span></td></tr>
+    <tr><td class="k1">Copilot (guest)</td><td>retrieval only</td><td><span class="pill yes">named with Layrite, Baxter</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill yes">Claymation, top performer</span></td></tr>
+    <tr><td class="k1">Perplexity (Incognito)</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+  </table>
+  <div class="ai avoid">
+    <p class="plabel">Google AI Overview, live retrieval: "best men's hair clay 2026"</p>
+    <p class="resp">"The best men's hair clay for 2026 delivers texture, volume, and an invisible, reworkable hold. Top performers include Church California Volcanic Clay Pomade, Hanz de Fuko Claymation for all-around versatility, and REUZEL Clay Matte Pomade."</p>
+  </div>
+  <img class="eviv" src="assets/googleaio-best-hair-clay-on-2026-06-25.png" alt="Google AI Overview names Hanz de Fuko Claymation as a top performer">
+  <p class="cap-img">Google AI Overview names "Hanz de Fuko Claymation for all-around versatility" among the year's top performers. ChatGPT, asked from memory, goes further and calls Claymation the best all-around men's hair clay. Captured June 25, 2026.</p>
+  <p class="sub-h">The one gap</p>
+  <p>The single clean miss is Perplexity, run in incognito so no saved history could help or hurt. It named Layrite, American Crew, and Suavecito and left Hanz out. Perplexity leans hard on third-party category guides, so the brand is under-represented in the specific roundups it cites. That is a narrow, addressable gap, not a reputation problem: every other engine, including the from-memory passes, knows Claymation well.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is already strong; the lever is source authority in the guides Perplexity reads, plus the entity work in finding 1 so the recommendation resolves to a brand the engine can identify and trust.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">The product schema works, but duplicates itself</h2>
+  <p>The good news first: the hero product page serves its rating in the raw HTML, which most of the set does not. The issue is that it serves it twice, along with two product records, on the same page. Duplication makes an engine guess which record is canonical, and guessing lowers confidence.</p>
+  <pre class="code"><span class="c">// hanzdefuko.com Quicksand PDP, structured data, June 25, 2026</span>
+<span class="g">Product</span>  &times; 2   <span class="r">// two Product blocks on one page</span>
+<span class="g">AggregateRating</span>  &times; 2   <span class="r">// two rating blocks on one page</span>
+<span class="g">AggregateOffer</span>   <span class="g">present</span>   <span class="c">// price range, server-rendered</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>A single, clean <code>Product</code> with one <code>AggregateRating</code> is what an engine wants: one unambiguous record to read the price, the rating, and the availability from. Two of each, even with the same values, is the kind of low-grade noise that makes an engine hedge on which to trust, and it can split or dilute how the rating is attributed. This is a deduplication, not a rebuild: the data is right, there is just too much of it.</p>
+  <p class="fixline"><b>The fix.</b> Collapse the PDP to a single <code>Product</code> block with one <code>AggregateRating</code> and the <code>AggregateOffer</code>, and tie it to the homepage <code>Organization</code> from finding 1. We deliver the corrected payload; the brand applies it in the theme.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">The reputation is real, but unclaimed and unlinked</h2>
+  <p>Hanz has a genuine, engaged reputation. The problem is the same shape as the entity gap in finding 1: the proof exists, but it is not claimed on the channels engines weight, and none of it is tied to a brand entity an engine can resolve.</p>
+  <pre class="code"><span class="c">// Hanz de Fuko reputation corpus, live reads, June 25, 2026</span>
+Amazon (Quicksand and others):   <span class="g">4.3 to 4.6</span> / 5
+Reddit:   <span class="g">active</span>   (Claymation how-to threads, "is it still worth?")
+YouTube:   <span class="g">deep</span>   (Quicksand reviews, creator budget breakdowns)
+Trustpilot business profile:   <span class="r">unclaimed</span>   (1 review)
+BBB profile:   <span class="r">none</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>Amazon and the creator ecosystem rate Hanz well, and the brand is a known name in men's grooming discussion. But Trustpilot, a source several engines weight for trust, sits unclaimed with a single review, there is no BBB profile, and because the homepage has no <code>Organization</code> with <code>sameAs</code> links, an engine cannot confidently connect the strong Amazon and YouTube signal back to the brand. The reputation is real; it is unmanaged at exactly the layer that decides trust.</p>
+  <div class="quote">Reddit shows live, engaged interest: "Hanz De Fuko Claymation, how do you apply this stuff?", "Is Hanz de Fuko still worth?", and "Claymation substitute or better competitor?". This is a brand people actively discuss and compare, which is the raw material the entity and review work turns into a machine-readable signal. <span class="src">(Amazon, Reddit, YouTube, observed June 25, 2026)</span></div>
+  <p class="fixline"><b>The fix.</b> Claim and seed the Trustpilot profile, and link the retail and social reputation through the homepage <code>sameAs</code> from finding 1, so engines attribute the existing strong signal to the brand. Claiming the profile is the brand's to execute; the entity linkage is ours to deliver.</p>
+</section>
+
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 6 &middot; Strength to build on</p>
+  <h2 class="ruled">The rating is already machine-readable, a head start most of the set lacks</h2>
+  <p>This is the asset to anchor the entity work to. Where many grooming brands, Reuzel included, lock their rating in a JavaScript widget a crawler cannot read, Hanz serves its <code>AggregateRating</code> in the server HTML. A crawler reading the Quicksand page directly sees the rating without running any scripts.</p>
+  <pre class="code"><span class="c">// hanzdefuko.com Quicksand PDP, read as ClaudeBot reads it</span>
+aggregateRating in raw HTML:   <span class="g">present</span>   <span class="c">// the rating is visible without JavaScript</span>
+Contrast, Reuzel PDP raw HTML:   <span class="r">no aggregateRating</span>   <span class="c">// rating hidden in a JS widget</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>The rating is the single fact that most drives a recommendation, and Hanz already exposes it in the form engines read. That is half of what wins the recommendation, and the brand has it. The reason it is filed as a strength with a fix rather than solved outright is finding 3: the rating is served twice, and finding 1: it is not linked to a brand entity. Clean up the duplication and anchor it to an <code>Organization</code>, and this becomes a clean, citable, machine-readable rating, which is exactly what pulls a brand into the answers it is not yet named in.</p>
+  <p class="fixline"><b>The lever.</b> Keep the server-rendered rating, deduplicate it (finding 3), and link it to the homepage entity (finding 1), so the head start Hanz already has converts into the attribution it is missing.</p>
+</section>
+
+<!-- FINDING 6 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 6 of 6 &middot; Strength to build on</p>
+  <h2 class="ruled">The agent-commerce layer is live</h2>
+  <p>For most brands this is the hardest dimension. Hanz scores high here because it is on Shopify and the stack is switched on. We verified the endpoints directly.</p>
+  <pre class="code"><span class="c">// hanzdefuko.com agent surface, June 25, 2026</span>
+/.well-known/ucp        <span class="g">live</span>   (UCP merchant profile)
+agents.md  &middot;  llms-full.txt   <span class="g">200</span>   (agent instructions, full content map)
+sitemap_agentic_discovery.xml   <span class="g">present</span>
+AI crawler access:   <span class="g">200</span>   (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Amazonbot, Bingbot)</pre>
+  <p class="sub-h">Why it matters, and the honest caveat</p>
+  <p>An AI agent acting for a shopper can discover the store, read the catalog, and move toward a buyer-approved checkout. The caveat is the same as for any Shopify brand: this is a platform advantage rather than a custom build, and the close competitors run the same stack. There is nothing to fix here. The point is to keep the data the agents read, the brand entity and the deduplicated rating, correct, which findings 1, 3, and 5 handle, so an agent that arrives reads a clean, citable product.</p>
+  <p class="fixline"><b>The lever.</b> Keep the Shopify agent layer current, and make the upstream entity and rating legible (findings 1, 3, 5) so engines and agents both resolve cleanly to the brand.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The same machine-readable signals across the four brands, all checked the same day. Hanz is recommended like the rest and exposes its rating, which Reuzel does not. Where it trails is the homepage entity, which none of this set does especially well, and the claimed reputation profiles.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>Hanz de Fuko</th><th>Baxter</th><th>Am. Crew</th><th>Reuzel</th></tr>
+    <tr><td class="k1">Named in AI category answers</td><td class="good">yes (top in ChatGPT)</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td></tr>
+    <tr><td class="k1">aggregateRating in product schema</td><td class="good">yes</td><td>partial</td><td class="good">yes</td><td class="bad">none</td></tr>
+    <tr><td class="k1">Homepage Organization entity</td><td class="bad">none</td><td>partial</td><td>partial</td><td class="good">yes</td></tr>
+    <tr><td class="k1">Live agent stack (ucp + agents.md)</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td><td class="good">yes</td></tr>
+    <tr><td class="k1">Claimed Trustpilot profile</td><td class="bad">no</td><td>n/a</td><td>n/a</td><td class="bad">no</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">The set is strong across the board: every brand here is named by the engines and runs the agent stack. Hanz's edge is that its rating is already machine-readable, which Reuzel's is not. Its one clear deficit is the homepage brand entity, where it trails Reuzel. Competitor scores are estimates from the same public signals; the Reuzel column is from our full audit of that brand.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Hanz de Fuko does not need a rebuild. It needs a short entity sprint. Phase 1 is a 30-day pass that gives the brand a machine-readable identity on its homepage, deduplicates the product schema, and links the reputation the brand already earns. Phase 2 is ongoing AI visibility work that holds the position and closes the one engine where Hanz is not yet named. After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 &middot; 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Entity sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Four remediations, ranked by leverage, each closing a finding above.</p>
+    <ul class="rem">
+      <li>Server-rendered <code>Organization</code> and <code>Brand</code> schema on the homepage, with <code>sameAs</code> links to the retail, social, and review profiles, so the brand engines name has a machine-readable identity (finding 1)</li>
+      <li>Deduplicate the PDP to a single <code>Product</code> with one <code>AggregateRating</code> and the <code>AggregateOffer</code>, tied to the homepage entity (findings 3, 5)</li>
+      <li>Link the Amazon, Reddit, and YouTube reputation through the homepage <code>sameAs</code>, and a spec to claim and seed the Trustpilot profile (finding 4)</li>
+      <li>Category-source map for "best men's hair clay," targeting the guides Perplexity cites where Hanz is currently absent (finding 2)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite AI visibility score (target 76 to 83-plus, holding B and climbing); homepage <code>Organization</code> and <code>Brand</code> schema validator-clean with a populated <code>sameAs</code>; the Quicksand PDP reduced to a single <code>Product</code> and one <code>AggregateRating</code>; and movement toward presence in the Perplexity category answer. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">What is ours, what is yours, what the engines decide</p>
+  <p>We produce the exact schema payloads, the entity and <code>sameAs</code> linkage, the PDP deduplication spec, the category-source map, and the re-test that measures movement. Editing the live theme, claiming the Trustpilot profile, and any CMS changes are inside Hanz de Fuko's own systems that the brand executes; we hand over the precise specs and verify the result. Where an outcome depends on a third party, such as a publisher updating a roundup, we flag it and do not promise it.</p>
+
+  <p class="sub-h" style="margin-top:14pt">Phase 2 and beyond</p>
+  <p>Phase 1 gives the brand a machine-readable identity. Phase 2 holds and extends it: continuous AI behavior monitoring per dimension with drift alerts; an entity establishment campaign so the engines resolve "Hanz de Fuko" cleanly with its rating and reputation; and earning Hanz into the category sources Perplexity cites, the one engine where it is not yet named. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what Hanz de Fuko publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled Hanz de Fuko's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>agents.md</code>, <code>llms-full.txt</code>, <code>/.well-known/ucp</code>, the agentic-discovery sitemap, and the product feed (22 products on the first page, 8 collections). AI-crawler access was tested by fetching a product page under the GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Amazonbot, and Bingbot user agents; every one returned a 200. The homepage entity gap in finding 1 and the duplicated product schema in finding 3 came from reading the raw HTML as a crawler reads it.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. Logged-in engines were run in incognito or temporary chat (ChatGPT Temporary Chat, Perplexity Incognito) so saved history did not bias the result; Copilot ran as a guest. Each engine and pass was captured to a screenshot. Claymation was named in ChatGPT (top pick), Claude, Gemini, Copilot, and Google AI Overview; the one miss was Perplexity in incognito, noted in finding 2.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled Hanz de Fuko's reputation live from Amazon, Reddit, YouTube, and Trustpilot, and checked whether any of it is linked to a brand entity. The 4.3 to 4.6 Amazon ratings and the active Reddit and YouTube discussion are real; the unclaimed Trustpilot profile, the missing BBB profile, and the absent homepage <code>Organization</code> are findings 1 and 4. Retailer figures are live page reads and move over time.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>Baxter of California, American Crew, and Reuzel were checked the same day on the same signals (homepage and product schema, AI category presence, agent endpoints). Their dimension scores are estimates from those public signals, except Reuzel, which is from our full audit of that brand, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>agents.md</code>, <code>llms-full.txt</code>, <code>/.well-known/ucp</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries. Counts pulled June 25, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises &middot; Armaan Priyadarshan &middot; Samarjit Deshmukh &middot; Ethan Zhou &middot; Shamit D'Souza &middot; ethanpzhou@berkeley.edu</div></div>
+</section>
+
+</body>
+</html>
