@@ -31,17 +31,22 @@ as. The digest cron emails this list from Armaan's Dartmouth account.
 
 As of June 17, 2026 (per Armaan) each founder also has a company inbox at
 `<firstname>@tryblackwell.com`: armaan@, samarjit@, shamit@, ethan@. These are
-the preferred internal-mail recipients going forward. Agents still only *send
-from* Armaan's two accounts (Dartmouth, personal gmail); the tryblackwell
-addresses are recipients, not send-from integrations. First send to them was the
+the preferred internal-mail recipients going forward. First send to them was the
 June 17 off-cycle "new tools" digest; delivery to the new domain is not yet
 independently confirmed (watch for bounces).
+
+Update June 26, 2026: `armaan@tryblackwell.com` is now authorized in gogcli as a
+send-from / API account (full `user` scopes, same broad set as the Dartmouth
+account). Added via the `gog auth add --remote` two-step flow with Armaan doing
+the Google consent. Verified working (gmail labels list returned). The other
+three tryblackwell addresses are still recipients only.
 
 | Platform | Method | Account | Status (June 10, 2026) |
 |---|---|---|---|
 | Gmail | claude.ai Gmail connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
 | Gmail / Google Workspace | gogcli (`gog`, /sbin/gog) | armaan.priyadarshan.29@dartmouth.edu | ✅ Verified June 10 — full scopes (gmail, calendar, drive, docs, sheets, contacts, tasks, …) |
 | Gmail | gogcli | armaanp4423@gmail.com | ✅ Token present (gmail scope only) |
+| Gmail / Google Workspace | gogcli | armaan@tryblackwell.com | ✅ Added June 26, 2026 — full `user` scopes (gmail, calendar, drive, docs, sheets, contacts, tasks, …). Token written under the `.env` keyring password (see keyring caveat below). |
 | Google Calendar | claude.ai Calendar connector (MCP) | armaanp4423@gmail.com | ✅ Connected |
 | Google Drive | claude.ai Drive connector (MCP) | armaanp4423@gmail.com | ✅ Connected (verified June 10 — sees shared docs incl. "Blackwell Work Doc") |
 | Granola | MCP, https://mcp.granola.ai/mcp | armaanp4423@gmail.com (workspace: Armaan Priyadarshan) | ✅ Connected (verified June 10). Free tier: AI summaries/notes readable, verbatim transcripts paywalled. Speaker attribution in summaries can be scrambled — corroborate names before relying on them. |
@@ -57,6 +62,16 @@ independently confirmed (watch for bounces).
 - gogcli keyring: in headless/agent contexts, export `GOG_KEYRING_PASSWORD`
   from `credentials/.env` before any `gog` call. Pick the account per call with
   `-a <email>` (default is the Dartmouth account).
+- Keyring password drift (found and fixed June 26, 2026): the
+  `GOG_KEYRING_PASSWORD` in `credentials/.env` had stopped decrypting the
+  `armaan.priyadarshan.29@dartmouth.edu` and `armaanp4423@gmail.com` tokens on
+  Armaan's machine (`aes.KeyUnwrap(): integrity check failed`); they had been
+  written under a different, unknown password. Reconciled by re-adding both
+  accounts via the `gog auth add --remote` two-step flow (Armaan did the
+  consent) so they were rewritten under the `.env` password. As of June 26 all
+  three accounts (Dartmouth, personal gmail, tryblackwell) decrypt and
+  authenticate under the single `.env` password; each was verified with
+  `gmail labels list`.
 - Interactively-authenticated MCP connectors (claude.ai ones, Granola) may be
   absent in headless/cron agent runs — plan automations around gogcli and API
   keys where possible.
