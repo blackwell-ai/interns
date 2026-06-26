@@ -1,0 +1,20 @@
+# Secrets — never commit
+.env
+.env.local
+
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# SQLite transient files (the dataset videos.db itself IS committed)
+*.db-journal
+*.db-wal
+
+# Stray editor / ad-hoc export files (the maintained export is data/preference_data.json)
+videos.json
+owala_*_extracted.json
+
+# Scratch / temp test artifacts
+tests/
+scratch_*.db

@@ -1,0 +1,6 @@
+# Phase 1 — scraper
+yt-dlp==2026.6.9
+youtube-transcript-api==1.2.4
+
+# Phase 2 — processor (LLM extraction)
+openai>=1.40
