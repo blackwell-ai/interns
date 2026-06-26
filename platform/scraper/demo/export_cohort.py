@@ -14,10 +14,10 @@ BUDGET = 45       # her stated ~$40, soft cap for the in-budget pick
 
 # real retail prices + display brand/title (the search labels are messy)
 META = {
- "Maybelline Super Stay Full Coverage": ("Maybelline", "Super Stay Full Coverage Foundation", 15, "super stay"),
- "NARS Soft Matte Complete":            ("NARS", "Soft Matte Complete Foundation", 52, None),
- "L'Oreal Infallible Fresh Wear":       ("L’Oréal Paris", "Infallible Fresh Wear 32HR Foundation", 16, "infallible"),
- "Revlon ColorStay":                    ("Revlon", "ColorStay Foundation for Combination/Oily", 15, "revlon"),
+ "Maybelline Super Stay Full Coverage": ("Maybelline", "Super Stay Full Coverage", 15, "super stay"),
+ "NARS Soft Matte Complete":            ("NARS", "Soft Matte Complete", 52, None),
+ "L'Oreal Infallible Fresh Wear":       ("L’Oréal Paris", "Infallible Fresh Wear", 16, "infallible"),
+ "Revlon ColorStay":                    ("Revlon", "ColorStay (Oily/Combo)", 15, "revlon"),
  "Fenty Pro Filtr Soft Matte":          ("Fenty Beauty", "Pro Filt’r Soft Matte Longwear Foundation", 41, "fenty"),
  "MAC Studio Fix Fluid":                ("M·A·C", "Studio Fix Fluid SPF 15 Foundation", 39, "mac studio fix"),
 }
