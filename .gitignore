@@ -37,3 +37,6 @@ skills/campaign/enriched/
 # Social-proof scraper working dirs — raw caption/audio scratch, regenerable.
 platform/data/*/_media/
 platform/data/*/_subs/
+
+# tryblackwell.com website / platform front end — its own git repo, nested here.
+/website/
