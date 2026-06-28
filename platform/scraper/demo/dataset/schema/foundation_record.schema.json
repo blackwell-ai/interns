@@ -1,0 +1,298 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Foundation wear-test record",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "product",
+  "source",
+  "transcript",
+  "analysis",
+  "analysis_provenance"
+ ],
+ "properties": {
+  "schema_version": {
+   "const": "2.0"
+  },
+  "product": {
+   "type": "object",
+   "required": [
+    "name",
+    "product_id",
+    "brand"
+   ],
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "product_id": {
+     "type": "string",
+     "description": "canonical slug; reviews of one foundation share it"
+    },
+    "brand": {
+     "type": "string"
+    }
+   }
+  },
+  "source": {
+   "type": "object",
+   "required": [
+    "platform",
+    "video_id",
+    "url",
+    "video_type"
+   ],
+   "properties": {
+    "platform": {
+     "type": "string"
+    },
+    "video_id": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string",
+     "format": "uri"
+    },
+    "channel": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "title": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "published_at": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "ISO 8601 date"
+    },
+    "duration_seconds": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "view_count": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "snapshot at retrieved_at"
+    },
+    "like_count": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "snapshot at retrieved_at"
+    },
+    "retrieved_at": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "ISO 8601 local timestamp, no timezone"
+    },
+    "video_type": {
+     "enum": [
+      "single_review",
+      "comparison",
+      "roundup"
+     ]
+    }
+   }
+  },
+  "transcript": {
+   "type": "object",
+   "required": [
+    "text",
+    "source"
+   ],
+   "properties": {
+    "text": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "source": {
+     "enum": [
+      "captions",
+      "asr"
+     ],
+     "description": "captions = pulled from YouTube (creator or auto, not distinguished); asr = our own transcription of the audio"
+    },
+    "asr_model": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "segments_available": {
+     "type": "boolean"
+    }
+   }
+  },
+  "description": {
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "analysis": {
+   "type": "object",
+   "required": [
+    "product_reviewed",
+    "persona",
+    "outcomes",
+    "is_sponsored",
+    "key_quote"
+   ],
+   "properties": {
+    "product_reviewed": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "persona": {
+     "type": "object",
+     "properties": {
+      "skin_type": {
+       "type": [
+        "string",
+        "null"
+       ],
+       "description": "free text, e.g. 'oily', 'combination oily'"
+      },
+      "acne_prone": {
+       "enum": [
+        "yes",
+        "no",
+        "unknown"
+       ]
+      },
+      "skin_tone_depth": {
+       "enum": [
+        "fair",
+        "light",
+        "medium",
+        "tan",
+        "deep",
+        "unknown"
+       ]
+      },
+      "undertone": {
+       "enum": [
+        "warm",
+        "cool",
+        "neutral",
+        "olive",
+        "unknown"
+       ]
+      },
+      "shade_used": {
+       "type": [
+        "string",
+        "null"
+       ]
+      }
+     }
+    },
+    "outcomes": {
+     "type": "object",
+     "properties": {
+      "stayed_matte": {
+       "enum": [
+        "yes",
+        "mostly",
+        "no",
+        "not_tested"
+       ]
+      },
+      "wear_hours": {
+       "type": [
+        "number",
+        "null"
+       ]
+      },
+      "broke_out": {
+       "enum": [
+        "yes",
+        "no",
+        "not_mentioned"
+       ]
+      },
+      "oxidized": {
+       "enum": [
+        "yes",
+        "no",
+        "not_mentioned"
+       ]
+      },
+      "would_repurchase": {
+       "enum": [
+        "yes",
+        "no",
+        "not_mentioned"
+       ]
+      },
+      "overall": {
+       "enum": [
+        "positive",
+        "mixed",
+        "negative"
+       ]
+      }
+     }
+    },
+    "is_sponsored": {
+     "type": "boolean"
+    },
+    "key_quote": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   }
+  },
+  "analysis_provenance": {
+   "type": "object",
+   "required": [
+    "extraction_model",
+    "schema_version"
+   ],
+   "properties": {
+    "extraction_model": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "analyzed_at": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "schema_version": {
+     "type": "string"
+    },
+    "normalized_from": {
+     "type": [
+      "object",
+      "null"
+     ],
+     "description": "dotted field path -> the raw model value before normalization"
+    }
+   }
+  }
+ }
+}
