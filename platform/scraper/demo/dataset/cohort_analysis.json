@@ -1,0 +1,285 @@
+{
+ "cohort": "oily / acne-prone reviewers",
+ "by_foundation": [
+  {
+   "product": "NARS Soft Matte Complete",
+   "cohort_size": 20,
+   "stayed_matte": 20,
+   "broke_out": 0,
+   "oxidized": 3,
+   "rated_positive": 19,
+   "avg_wear_hours": 8.9,
+   "would_repurchase_yes": 9
+  },
+  {
+   "product": "Maybelline Super Stay Full Coverage",
+   "cohort_size": 18,
+   "stayed_matte": 14,
+   "broke_out": 0,
+   "oxidized": 2,
+   "rated_positive": 18,
+   "avg_wear_hours": 9.2,
+   "would_repurchase_yes": 6
+  },
+  {
+   "product": "Fenty Pro Filtr Soft Matte",
+   "cohort_size": 16,
+   "stayed_matte": 13,
+   "broke_out": 0,
+   "oxidized": 6,
+   "rated_positive": 12,
+   "avg_wear_hours": 9.1,
+   "would_repurchase_yes": 2
+  },
+  {
+   "product": "Revlon ColorStay",
+   "cohort_size": 15,
+   "stayed_matte": 10,
+   "broke_out": 1,
+   "oxidized": 1,
+   "rated_positive": 11,
+   "avg_wear_hours": 10.5,
+   "would_repurchase_yes": 7
+  },
+  {
+   "product": "L'Oreal Infallible Fresh Wear",
+   "cohort_size": 12,
+   "stayed_matte": 10,
+   "broke_out": 2,
+   "oxidized": 0,
+   "rated_positive": 8,
+   "avg_wear_hours": 11.3,
+   "would_repurchase_yes": 6
+  },
+  {
+   "product": "Clinique Even Better",
+   "cohort_size": 6,
+   "stayed_matte": 5,
+   "broke_out": 0,
+   "oxidized": 2,
+   "rated_positive": 3,
+   "avg_wear_hours": 8.9,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Lancome Teint Idole Ultra Wear",
+   "cohort_size": 6,
+   "stayed_matte": 5,
+   "broke_out": 0,
+   "oxidized": 3,
+   "rated_positive": 6,
+   "avg_wear_hours": 12.0,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Smashbox Studio Skin",
+   "cohort_size": 6,
+   "stayed_matte": 5,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 3,
+   "avg_wear_hours": 9.8,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Catrice HD Liquid Coverage",
+   "cohort_size": 5,
+   "stayed_matte": 4,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 5,
+   "avg_wear_hours": 8.5,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Charlotte Tilbury Airbrush Flawless",
+   "cohort_size": 5,
+   "stayed_matte": 4,
+   "broke_out": 1,
+   "oxidized": 2,
+   "rated_positive": 4,
+   "avg_wear_hours": 11.2,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "CoverGirl Outlast",
+   "cohort_size": 5,
+   "stayed_matte": 4,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 3,
+   "avg_wear_hours": 11.6,
+   "would_repurchase_yes": 2
+  },
+  {
+   "product": "IT Cosmetics CC Cream",
+   "cohort_size": 5,
+   "stayed_matte": 3,
+   "broke_out": 1,
+   "oxidized": 0,
+   "rated_positive": 2,
+   "avg_wear_hours": 9.4,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "NYX Cant Stop Wont Stop",
+   "cohort_size": 5,
+   "stayed_matte": 4,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 4,
+   "avg_wear_hours": 9.0,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Tarte Shape Tape",
+   "cohort_size": 5,
+   "stayed_matte": 2,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 2,
+   "avg_wear_hours": 9.4,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Too Faced Born This Way",
+   "cohort_size": 5,
+   "stayed_matte": 4,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 3,
+   "avg_wear_hours": 10.1,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Huda Beauty FauxFilter",
+   "cohort_size": 4,
+   "stayed_matte": 4,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 4,
+   "avg_wear_hours": 8.8,
+   "would_repurchase_yes": 2
+  },
+  {
+   "product": "Kosas Revealer",
+   "cohort_size": 4,
+   "stayed_matte": 3,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 3,
+   "avg_wear_hours": 10.3,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "MAC Studio Fix Fluid",
+   "cohort_size": 4,
+   "stayed_matte": 4,
+   "broke_out": 0,
+   "oxidized": 2,
+   "rated_positive": 4,
+   "avg_wear_hours": 9.3,
+   "would_repurchase_yes": 2
+  },
+  {
+   "product": "Make Up For Ever HD Skin",
+   "cohort_size": 4,
+   "stayed_matte": 3,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 4,
+   "avg_wear_hours": 8.4,
+   "would_repurchase_yes": 0
+  },
+  {
+   "product": "Maybelline Fit Me Matte Poreless",
+   "cohort_size": 4,
+   "stayed_matte": 3,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 2,
+   "avg_wear_hours": 6.8,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Rare Beauty Liquid Touch",
+   "cohort_size": 4,
+   "stayed_matte": 2,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 3,
+   "avg_wear_hours": 8.5,
+   "would_repurchase_yes": 1
+  },
+  {
+   "product": "Estee Lauder Double Wear",
+   "cohort_size": 3,
+   "stayed_matte": 3,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 2,
+   "avg_wear_hours": 11.0,
+   "would_repurchase_yes": 2
+  },
+  {
+   "product": "Giorgio Armani Luminous Silk",
+   "cohort_size": 3,
+   "stayed_matte": 3,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 2,
+   "avg_wear_hours": 10.0,
+   "would_repurchase_yes": 0
+  },
+  {
+   "product": "Hourglass Vanish",
+   "cohort_size": 3,
+   "stayed_matte": 1,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 1,
+   "avg_wear_hours": 8.7,
+   "would_repurchase_yes": 0
+  },
+  {
+   "product": "Milk Makeup Future Fluid",
+   "cohort_size": 3,
+   "stayed_matte": 0,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 2,
+   "avg_wear_hours": null,
+   "would_repurchase_yes": 0
+  },
+  {
+   "product": "elf Flawless Satin",
+   "cohort_size": 3,
+   "stayed_matte": 1,
+   "broke_out": 0,
+   "oxidized": 0,
+   "rated_positive": 0,
+   "avg_wear_hours": 10.7,
+   "would_repurchase_yes": 0
+  },
+  {
+   "product": "Dior Forever",
+   "cohort_size": 2,
+   "stayed_matte": 2,
+   "broke_out": 0,
+   "oxidized": 1,
+   "rated_positive": 1,
+   "avg_wear_hours": 10.8,
+   "would_repurchase_yes": 0
+  },
+  {
+   "product": "NARS Sheer Glow",
+   "cohort_size": 1,
+   "stayed_matte": 0,
+   "broke_out": 1,
+   "oxidized": 0,
+   "rated_positive": 1,
+   "avg_wear_hours": 11.0,
+   "would_repurchase_yes": 1
+  }
+ ]
+}
