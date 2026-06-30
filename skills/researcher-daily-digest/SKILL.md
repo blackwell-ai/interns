@@ -142,3 +142,4 @@ The schedule and the X/Bookface logins live on Armaan's machine, not in git.
 - 2026-06-23 15:30 UTC: run `researcher-daily-digest-20260623T150040Z-caf503` — 0 sent, 0 skipped, 0 failed
 - 2026-06-24 17:08 UTC: run `researcher-daily-digest-20260624T163636Z-06b6eb` — 0 sent, 0 skipped, 0 failed
 - 2026-06-26 18:03 UTC: run `researcher-daily-digest-20260626T173205Z-3402b9` — 0 sent, 0 skipped, 0 failed
+- 2026-06-29 15:29 UTC: run `researcher-daily-digest-20260629T150048Z-a2ba69` — 0 sent, 0 skipped, 0 failed

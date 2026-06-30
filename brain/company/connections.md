@@ -72,6 +72,14 @@ three tryblackwell addresses are still recipients only.
   three accounts (Dartmouth, personal gmail, tryblackwell) decrypt and
   authenticate under the single `.env` password; each was verified with
   `gmail labels list`.
+- Drift recurred June 28, 2026: all three tokens again failed
+  `aes.KeyUnwrap(): integrity check failed` under the `.env` password. Re-added
+  `armaan@tryblackwell.com` via the same `gog auth add --remote` two-step flow
+  (Armaan did the consent); it now decrypts and was verified with
+  `gmail labels list`. The Dartmouth and personal-gmail tokens were left broken
+  this time (not needed for the task); re-add them the same way when required.
+  This is now a repeating failure mode, so expect to re-auth before any `gog`
+  run and budget for the browser consent step.
 - Interactively-authenticated MCP connectors (claude.ai ones, Granola) may be
   absent in headless/cron agent runs — plan automations around gogcli and API
   keys where possible.
