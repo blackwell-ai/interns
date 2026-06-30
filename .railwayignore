@@ -1,0 +1,13 @@
+# Mirrors .dockerignore: keep the railway up upload small.
+.git/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+toolbox/.venv/
+scratch/
+runs/
+*.log
+**/proposals.zip
+credentials/.env
+skills/campaign/enriched/
+.DS_Store

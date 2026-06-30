@@ -12,6 +12,7 @@ import asyncio
 import hashlib
 import os
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -105,8 +106,28 @@ async def _send_all(rows, run_dir, run_id, skill, from_, from_name, reply_to,
               "resumed_skip": 0, "quota_aborted": 0}
     quota_hit = asyncio.Event()
 
+    # Gmail's per-user send rate is ~2.5 messages/sec (250 quota units/sec at 100
+    # units per send). Pace sends below that so a burst does not trip the 403
+    # rate-limit wall; retry-with-backoff in classify_send_error is the safety net.
+    rate = float(os.environ.get("GMAIL_SEND_RATE", "2"))
+    min_interval = 1.0 / rate if rate > 0 else 0.0
+    gate = {"next": 0.0}
+    gate_lock = asyncio.Lock()
+
+    async def pace() -> None:
+        if min_interval <= 0:
+            return
+        async with gate_lock:
+            now = time.monotonic()
+            wait = gate["next"] - now
+            if wait > 0:
+                await asyncio.sleep(wait)
+                now = time.monotonic()
+            gate["next"] = max(now, gate["next"]) + min_interval
+
     @_transient
     async def do_send(client: httpx.AsyncClient, raw: str) -> dict:
+        await pace()
         return await lib.send_raw(client, raw)
 
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {token}"}, timeout=60) as client:

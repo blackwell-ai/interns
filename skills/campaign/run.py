@@ -61,7 +61,7 @@ from toolbox.core import llm as llm_mod
 from toolbox.primitives.compose import lib as compose_lib
 from toolbox.primitives.findemail import cli as findemail_cli
 from toolbox.primitives.gmail import cli as gmail_cli
-from skills.campaign import gog_auth, notion_sync
+from skills.campaign import gog_auth, storeleads
 
 
 # ---- LLM helpers -------------------------------------------------------
@@ -77,6 +77,18 @@ class _SubcategoryList(BaseModel):
 class _VariantTemplate(BaseModel):
     subject: str
     body: str
+
+
+class _SubcatFilters(BaseModel):
+    """How a niche maps onto the StoreLeads e-commerce database.
+
+    `applicable` is False when the niche is not consumer e-commerce (B2B
+    services, logistics, software, manufacturing) — StoreLeads only indexes
+    online stores, so those niches fall back to LLM domain generation.
+    """
+    applicable: bool
+    q: str = ""        # keyword query matched against store descriptions
+    category: str = "" # optional StoreLeads category path (e.g. "/Apparel")
 
 
 # Each claude -p call reliably returns ~50 good domains; past that it repeats
@@ -96,7 +108,20 @@ def _banner(label: str) -> None:
 
 _DOMAIN_CHUNK = 50
 _LLM_CONCURRENCY = 1  # concurrent claude -p HURTS; serialize, overlap enrichment
+
+# StoreLeads sourcing. When TOOLBOX_TOKEN_STORELEADS is set, each niche's domains
+# come from real, live stores in the StoreLeads database instead of Claude
+# guessing names. _STORELEADS_PER_NICHE real domains beat the ~20 Claude can
+# recall before inventing. f:ds=Active keeps dead/parked stores out.
+_STORELEADS_PER_NICHE = 50
+_STORELEADS_BASE_FILTERS = {"f:ds": "Active"}
 _FILL_TOLERANCE = 3   # don't fire another LLM/Hunter round when this few contacts short
+
+# Credit circuit breakers for source_contacts_pipeline. A bug in enrichment
+# (e.g. every domain raising) must never run away generating fresh niches and
+# burning paid Hunter calls forever. These two caps bound the worst case.
+_MAX_ENRICH_ERRORS_NO_PROGRESS = 20  # abort if this many enrichment calls fail without yielding a single contact
+_MAX_SOURCING_NICHES = 60            # absolute cap on niches generated in one sourcing run (anti-infinite-loop backstop)
 _DOMAIN_VARIATIONS = [
     "",
     "Focus on smaller and mid-market companies, not just the biggest brands.",
@@ -105,6 +130,32 @@ _DOMAIN_VARIATIONS = [
     "Include relevant companies based outside the United States.",
     "Focus on specialized or sub-category players within this space.",
 ]
+
+
+def _niche_cap(limit: int) -> int:
+    """Per-run ceiling on niches searched, scaled to the requested contact count.
+
+    The flat 60-niche backstop (~1200 domains, ~1000 new contacts after dedup and
+    enrichment misses) means a single run can never fill a 2000 ask — it hits the
+    cap and quits short. Scale the cap with the ask, roughly one niche per eight
+    wanted contacts, while keeping 60 as the floor so small runs still get a
+    generous explore budget. Credit burn stays bounded by the independent
+    enrichment-error circuit breaker, so a higher niche cap is safe.
+    """
+    return max(_MAX_SOURCING_NICHES, math.ceil(max(0, limit) / 8))
+
+
+def _normalize_icp(icp: str) -> str:
+    """Canonical form of an ICP string, used as the sub-category cache key.
+
+    Casing, surrounding whitespace, and trailing punctuation differences
+    ('DTC brands', 'dtc  brands', 'DTC brands.') must resolve to one niche and
+    exclusion memory rather than fragmenting into separate caches that each
+    re-explore the market from scratch. Typos are intentionally left alone — we
+    cannot safely guess intent — so they still fork their own cache.
+    """
+    import re
+    return re.sub(r"\s+", " ", icp.strip().lower()).rstrip(".,;:!?")
 
 _SUBCAT_DIR          = Path.home() / ".blackwell" / "subcats"
 _SUBCAT_COUNT        = 25   # sub-categories to generate per ICP
@@ -121,7 +172,7 @@ class SubcategoryCache:
 
     def __init__(self, icp: str) -> None:
         import hashlib
-        slug = hashlib.md5(icp.encode()).hexdigest()[:12]
+        slug = hashlib.md5(_normalize_icp(icp).encode()).hexdigest()[:12]
         self._path = _SUBCAT_DIR / f"{slug}.json"
         self._data: dict = self._load(icp)
 
@@ -208,6 +259,104 @@ def generate_domains_for_subcat(
         _DomainList,
     )
     return [d.strip().lower() for d in result.domains if "." in d.strip()]
+
+
+def subcat_to_filters(subcat: str) -> _SubcatFilters:
+    """Translate a free-text niche into StoreLeads search filters.
+
+    One cheap structured LLM call. StoreLeads only indexes consumer e-commerce
+    stores, so `applicable` gates non-store niches (B2B/logistics/software/
+    manufacturing) back to LLM domain generation. The keyword `q` does the
+    targeting; `category` narrows it when an obvious top-level category fits.
+    """
+    return llm_mod.parse(
+        "Map this outreach niche onto the StoreLeads e-commerce store database.\n"
+        f"Niche: {subcat}\n\n"
+        "StoreLeads only indexes online stores that sell products directly to "
+        "consumers (Shopify, WooCommerce, etc.).\n"
+        "- applicable: true ONLY if this niche describes consumer e-commerce "
+        "stores. false for B2B services, software, logistics/3PL, agencies, or "
+        "manufacturers.\n"
+        "- q: a short 2-4 word keyword query matching such stores' product "
+        "descriptions (e.g. 'maternity clothing', 'pet supplements').\n"
+        "- category: one StoreLeads top-level category path if an obvious one "
+        "fits, else empty string. Examples: /Apparel, /Beauty & Fitness, "
+        "/Home & Garden, /Health, /Food & Drink, /Sporting Goods, /Pet Supplies, "
+        "/Electronics.",
+        _SubcatFilters,
+    )
+
+
+async def source_domains_for_subcat(
+    subcat: str,
+    count: int = _SUBCAT_DOMAIN_COUNT,
+    exclude: set[str] | None = None,
+    llm_sem: asyncio.Semaphore | None = None,
+) -> list[str]:
+    """Real domains for one niche: StoreLeads first, LLM generation as fallback.
+
+    StoreLeads returns confirmed-live e-commerce stores, so no Hunter credit is
+    spent on hallucinated or dead domains. Falls back to
+    generate_domains_for_subcat whenever StoreLeads cannot serve the niche: no
+    token configured, the niche is not consumer e-commerce, or the query errors
+    or returns nothing after excluding already-contacted domains.
+    """
+
+    async def _run_llm(fn, *a):
+        if llm_sem is not None:
+            async with llm_sem:
+                return await asyncio.to_thread(fn, *a)
+        return await asyncio.to_thread(fn, *a)
+
+    async def _llm_fallback() -> list[str]:
+        return await _run_llm(generate_domains_for_subcat, subcat, count, exclude)
+
+    if not storeleads.available():
+        return await _llm_fallback()
+
+    try:
+        filt = await _run_llm(subcat_to_filters, subcat)
+    except Exception as e:
+        events.emit("campaign.storeleads_filter_error", level="warn",
+                    reason=str(e)[:120], subcat=subcat)
+        return await _llm_fallback()
+
+    if not filt.applicable or not filt.q.strip():
+        return await _llm_fallback()
+
+    q = filt.q.strip()
+    category = filt.category.strip()
+    try:
+        domains, _cursor = await storeleads.search_domains(
+            {**_STORELEADS_BASE_FILTERS, "f:cat": category} if category
+            else dict(_STORELEADS_BASE_FILTERS),
+            q=q, page_size=_STORELEADS_PER_NICHE,
+        )
+        # The category path is best-effort: the LLM can guess one that does not
+        # exist in StoreLeads' taxonomy, which zeros an otherwise-good keyword
+        # query. Retry once on the keyword alone before dropping to LLM guessing.
+        if not domains and category:
+            events.emit("campaign.storeleads_cat_miss", level="info",
+                        subcat=subcat, category=category)
+            domains, _cursor = await storeleads.search_domains(
+                dict(_STORELEADS_BASE_FILTERS), q=q, page_size=_STORELEADS_PER_NICHE
+            )
+    except Exception as e:
+        events.emit("campaign.storeleads_error", level="warn",
+                    reason=str(e)[:120], subcat=subcat)
+        return await _llm_fallback()
+
+    if exclude:
+        domains = [d for d in domains if d not in exclude]
+    if not domains:
+        # Real store DB had nothing usable for this niche — let the LLM try.
+        return await _llm_fallback()
+
+    events.emit("campaign.storeleads_hit", level="info",
+                subcat=subcat, count=len(domains), q=filt.q.strip())
+    print(f"  [storeleads] {subcat}: {len(domains)} real stores (q='{filt.q.strip()}')",
+          flush=True)
+    return domains
 
 
 def generate_domains(
@@ -314,8 +463,18 @@ def load_leads_csv(path: str, min_score: int = 0) -> list[models.Contact]:
     return contacts
 
 
-# Hunter credit counter — 1 credit per domain search call.
-_hunter_credits: int = 0
+def _hunter_searches_used(key: str) -> int:
+    """Return Hunter's authoritative searches.used counter from the account API."""
+    try:
+        import urllib.request as _ur
+        req = _ur.Request(
+            f"https://api.hunter.io/v2/account?api_key={key}",
+            headers={"Accept": "application/json"},
+        )
+        with _ur.urlopen(req, timeout=10) as r:
+            return int(json.loads(r.read())["data"]["requests"]["searches"]["used"])
+    except Exception:
+        return -1
 
 # Generated domains are streamed to a repo-local CSV as each claude -p call
 # returns, so the slow generation step is visible (and its rate is measurable,
@@ -408,6 +567,7 @@ async def _enrich_batch(
     min_score: int,
     sem: asyncio.Semaphore | None = None,
     enriched_cache: dict | None = None,
+    stats: dict | None = None,
 ) -> list[models.Contact]:
     """Enrich one batch of domains — returns contacts that passed the score filter.
 
@@ -415,11 +575,14 @@ async def _enrich_batch(
     segments enriching at the same time still respect a single global rate cap.
     `enriched_cache` is a {domain: [result dicts]} map built from prior enriched
     CSVs; domains found there skip the Hunter API call entirely.
+    `stats`, if passed, is populated with {"attempted": n, "errors": n} for the
+    batch — the caller uses it to drive a credit circuit breaker.
     """
     use_all = provider == "hunter"
     contacts: list[models.Contact] = []
     if sem is None:
         sem = asyncio.Semaphore(3)
+    _stats = {"attempted": 0, "errors": 0}
 
     def _apply_results(domain: str, results: list[dict]) -> None:
         for res in results:
@@ -451,8 +614,6 @@ async def _enrich_batch(
             print(f"  + {res['email']}  ({res.get('email_status', '')})  {domain}", flush=True)
 
     async def one(domain: str) -> None:
-        global _hunter_credits
-
         # Fix 2: use cached results from a prior run — skip the paid Hunter call.
         if enriched_cache and domain in enriched_cache:
             events.emit("campaign.cache_hit", domain=domain)
@@ -461,6 +622,7 @@ async def _enrich_batch(
 
         async with sem:
             try:
+                _stats["attempted"] += 1
                 if use_all:
                     # Fix 1: free pre-check — skip if Hunter has no executive emails.
                     exec_count = await findemail_cli._hunter_email_count(client, key, domain)
@@ -470,13 +632,13 @@ async def _enrich_batch(
                     results = await findemail_cli._hunter_domain_all(
                         client, key, domain, limit=10, executives_only=True
                     )
-                    _hunter_credits += 1
                 else:
                     single = await findemail_cli._apollo_domain(
                         client, key, domain, limit=10, executives_only=True
                     )
                     results = [single] if single and single.get("email") else []
             except Exception as e:
+                _stats["errors"] += 1
                 msg = str(e)
                 if "429" in msg:
                     events.emit("campaign.rate_limited", level="warn", domain=domain)
@@ -491,6 +653,8 @@ async def _enrich_batch(
         _apply_results(domain, results)
 
     await asyncio.gather(*(one(d) for d in domains))
+    if stats is not None:
+        stats.update(_stats)
     return contacts
 
 
@@ -660,6 +824,8 @@ async def source_contacts_pipeline(
     ldg = ledger.Ledger(session_token)
     batch_num = 0
     niche_num = 0
+    max_niches = _niche_cap(limit)  # scales with the ask; floor of _MAX_SOURCING_NICHES
+    errors_since_progress = 0  # resets whenever a batch yields a new contact
     tag = f"[{label}] " if label else ""
 
     # ---- Phase 1: load or generate sub-categories ----------------------
@@ -701,16 +867,18 @@ async def source_contacts_pipeline(
 
         subcat = pending[0]
         exclude = set(domain_counts.keys()) if domain_counts else None
-        async with llm_sem:
-            try:
-                domains = await asyncio.to_thread(
-                    generate_domains_for_subcat, subcat, _SUBCAT_DOMAIN_COUNT, exclude
-                )
-                return domains, subcat
-            except Exception as e:
-                events.emit("campaign.domaingen_error", level="warn",
-                            reason=str(e)[:120], subcat=subcat)
-                return [], subcat
+        # StoreLeads-primary (real stores), LLM-fallback. The dispatcher acquires
+        # llm_sem itself only around the LLM calls it makes (filter translation /
+        # fallback generation); StoreLeads HTTP needs no LLM slot.
+        try:
+            domains = await source_domains_for_subcat(
+                subcat, _SUBCAT_DOMAIN_COUNT, exclude, llm_sem=llm_sem
+            )
+            return domains, subcat
+        except Exception as e:
+            events.emit("campaign.domaingen_error", level="warn",
+                        reason=str(e)[:120], subcat=subcat)
+            return [], subcat
 
     async def _ledger_filter(contacts: list[models.Contact]) -> list[models.Contact]:
         sem = asyncio.Semaphore(10)
@@ -756,14 +924,40 @@ async def source_contacts_pipeline(
                 # Fire next niche LLM call concurrently with Hunter enrichment.
                 next_gen = asyncio.create_task(_gen_batch())
 
+                batch_stats: dict = {}
                 enriched = await _enrich_batch(client, current, provider, key, min_score,
-                                               sem=hunter_sem, enriched_cache=enriched_cache)
+                                               sem=hunter_sem, enriched_cache=enriched_cache,
+                                               stats=batch_stats)
                 new_contacts = await _ledger_filter(enriched)
                 accumulated.extend(new_contacts)
                 batch_num += 1
                 pct = int(len(accumulated) / limit * 100)
                 print(f"{tag}  {len(enriched)} enriched, {len(new_contacts)} new "
                       f"— {len(accumulated)}/{limit} contacts ({pct}%)", flush=True)
+
+                # Credit circuit breaker: if enrichment keeps failing and we have
+                # found nothing, stop before another niche burns more paid calls.
+                if new_contacts:
+                    errors_since_progress = 0
+                else:
+                    errors_since_progress += batch_stats.get("errors", 0)
+                if errors_since_progress >= _MAX_ENRICH_ERRORS_NO_PROGRESS:
+                    events.emit("campaign.circuit_break", level="error",
+                                reason="enrichment failing with no contacts found — aborting to stop credit burn",
+                                errors=errors_since_progress, niches=niche_num)
+                    print(f"{tag}  ⚠ circuit breaker: {errors_since_progress} enrichment "
+                          f"failures, 0 contacts — aborting run", flush=True)
+                    next_gen.cancel()
+                    break
+
+                # Absolute backstop against an unbounded niche-generation loop.
+                if niche_num >= max_niches:
+                    events.emit("campaign.circuit_break", level="warn",
+                                reason="reached max niches per sourcing run",
+                                niches=niche_num, contacts=len(accumulated))
+                    print(f"{tag}  ⚠ reached {niche_num}-niche cap — stopping", flush=True)
+                    next_gen.cancel()
+                    break
 
                 if limit - len(accumulated) <= _FILL_TOLERANCE:
                     next_gen.cancel()
@@ -931,6 +1125,28 @@ async def _source_from_mix(
 
 def load_template(path: str) -> tuple[str, str]:
     return compose_lib.parse_template(Path(path).read_text(encoding="utf-8"))
+
+
+# Team schools, Stanford pinned first so "working with a couple from X/Y" always
+# reads Stanford-first regardless of who is sending.
+_TEAM_SCHOOLS = ["Stanford", "Dartmouth", "Berkeley"]
+
+
+def school_for_email(email: str) -> tuple[str, str]:
+    """Map a sender email to (school, other_schools) for the brand template.
+
+    School is derived from the address domain; other_schools is the rest of the
+    team joined by '/'. Unknown domains fall back to Stanford.
+    """
+    domain = (email or "").rsplit("@", 1)[-1].lower()
+    if "dartmouth" in domain:
+        school = "Dartmouth"
+    elif "berkeley" in domain:
+        school = "Berkeley"
+    else:
+        school = "Stanford"
+    others = "/".join(s for s in _TEAM_SCHOOLS if s != school)
+    return school, others
 
 
 def _html_to_text(html: str) -> str:
@@ -1103,21 +1319,6 @@ def _finalize(
             sent_count=total_sent,
         )
 
-    notion_page_id = ""
-    if not args.dry_run:
-        notion_page_id = notion_sync.create_campaign_row(
-            run_id=run_id,
-            sender=sender_name,
-            date=datetime.now().strftime("%Y-%m-%d"),
-            provider=args.provider,
-            template_name=template_name,
-            icp=icp_label,
-            experiment=args.experiment,
-            sent_count=total_sent,
-        ) or ""
-        if notion_page_id:
-            print(f"Notion : https://app.notion.com/p/{notion_page_id.replace('-', '')}")
-
     default_log_dir = Path.home() / ".blackwell" / "campaigns"
     default_log_dir.mkdir(parents=True, exist_ok=True)
     log_path = args.log or str(default_log_dir / f"campaign_{run_id[:8]}.jsonl")
@@ -1126,7 +1327,7 @@ def _finalize(
         "sender_email": args.from_, "provider": args.provider,
         "template": template_name, "icp": icp_label,
         "experiment": args.experiment, "sent_count": total_sent,
-        "notion_page_id": notion_page_id, "sent_at": sent_at,
+        "sent_at": sent_at,
     }
     contact_entries = (
         [{"email": r.email, "run_id": run_id, "variant": "a", "sent_at": sent_at}
@@ -1136,9 +1337,16 @@ def _finalize(
     )
     write_campaign_log(log_path, [meta_entry] + contact_entries)
 
+    total_skipped = counts_a.get("skipped_ledger", 0) + counts_b.get("skipped_ledger", 0)
+    print(f"Result : {total_sent} sent  {total_skipped} skipped")
+
+    def _sum(key: str) -> int:
+        return counts_a.get(key, 0) + counts_b.get(key, 0)
+
+    print(f"Breakdown : {total_sent} sent, {total_skipped} skipped (already "
+          f"contacted), {_sum('suppressed')} suppressed, {_sum('failed')} failed, "
+          f"{total_dry} dry-run")
     print(f"Log    : {log_path}")
-    if _hunter_credits > 0:
-        print(f"Hunter : {_hunter_credits} credits used")
     if elapsed:
         print(f"Time   : {elapsed / 60:.1f} min ({elapsed:.0f}s)")
 
@@ -1191,20 +1399,6 @@ def _preflight(from_: str, provider: str) -> None:
             f"  Fix: gog auth add {from_} --services gmail"
         )
 
-    # 4. Notion token (optional — only warn)
-    notion_token = os.environ.get("NOTION_TOKEN", "").strip()
-    if notion_token:
-        r = httpx.get(
-            "https://api.notion.com/v1/users/me",
-            headers={
-                "Authorization": f"Bearer {notion_token}",
-                "Notion-Version": "2022-06-28",
-            },
-            timeout=10,
-        )
-        if r.status_code == 401:
-            print("Warning: NOTION_TOKEN is invalid — Notion sync will be skipped")
-
     if errors:
         print("\nPreflight failed — fix these before running:\n")
         for err in errors:
@@ -1246,6 +1440,10 @@ def main() -> None:
                         help="Gmail address to send from")
     parser.add_argument("--from-name", default="",
                         help="Display name in the From header")
+    parser.add_argument("--school", default="",
+                        help="Sender's school for the {{school}} slot (default: derived from --from domain)")
+    parser.add_argument("--other-schools", default="",
+                        help="Other team schools for the {{other_schools}} slot (default: derived)")
     parser.add_argument("--cc", default="",
                         help="CC list (comma-separated) added to every send — the co-founder CC convention")
     parser.add_argument("--concurrency", type=int, default=8,
@@ -1265,6 +1463,8 @@ def main() -> None:
                         help="Campaign log path for reply tracking (default: /tmp/campaign_<id>.jsonl)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be sent without actually sending")
+    parser.add_argument("--skip-preflight", action="store_true",
+                        help="Skip credential preflight checks (for server/headless mode)")
     args = parser.parse_args()
 
     global _ICP_MIX_PATH
@@ -1281,8 +1481,10 @@ def main() -> None:
                 f"(or add {_ICP_MIX_PATH} to use the default ICP mix)"
             )
 
-    _preflight(args.from_, args.provider)
+    if not args.skip_preflight:
+        _preflight(args.from_, args.provider)
 
+    _hunter_before = -1  # set per-path when key is available
     t_start = time.monotonic()
     run_id = str(uuid.uuid4())
     run_dir = tempfile.mkdtemp(prefix=f"campaign_{run_id[:8]}_")
@@ -1340,6 +1542,7 @@ def main() -> None:
             contacts = contacts[: args.limit]
     elif args.icp:
         key = auth.get_token(args.provider)
+        _hunter_before = _hunter_searches_used(key) if args.provider == "hunter" else -1
         _banner(f"Sourcing contacts  [target: {args.limit or 20}  provider: {args.provider}]")
         contacts = asyncio.run(
             source_contacts_pipeline(
@@ -1350,6 +1553,8 @@ def main() -> None:
                 enriched_cache=enriched_cache,
             )
         )
+        if args.limit:
+            contacts = contacts[: args.limit]
     else:
         # Default: distribute contacts across segments per icp_mix.toml.
         # Each segment uses its own template; outbox rows are returned pre-composed.
@@ -1371,6 +1576,7 @@ def main() -> None:
             print("No new contacts — exiting.")
             sys.exit(0)
         n_mix = len(outbox_a) + len(outbox_b)
+        print(f"Drafted : {n_mix} emails", flush=True)
         dry_tag = "  [dry run]" if args.dry_run else ""
         _banner(f"Sending{dry_tag}  {n_mix} emails")
         if args.dry_run:
@@ -1421,7 +1627,13 @@ def main() -> None:
         subject_b = body_b = ""
 
     # 4. Compose ----------------------------------------------------------
-    extra = {"segment_phrase": args.segment_phrase} if args.segment_phrase else None
+    _school, _other_schools = school_for_email(args.from_)
+    extra = {
+        "school": args.school or _school,
+        "other_schools": args.other_schools or _other_schools,
+    }
+    if args.segment_phrase:
+        extra["segment_phrase"] = args.segment_phrase
     outbox_a = compose_outbox(contacts_a, subject_a, body_a, from_name=args.from_name, extra_values=extra)
     outbox_b = (
         compose_outbox(contacts_b, subject_b, body_b, from_name=args.from_name, extra_values=extra)
@@ -1430,6 +1642,7 @@ def main() -> None:
     print(f"  {len(outbox_a)} variant-A  {len(outbox_b)} variant-B")
 
     n_total = len(outbox_a) + len(outbox_b)
+    print(f"Drafted : {n_total} emails", flush=True)
     dry_tag = "  [dry run]" if args.dry_run else ""
     _banner(f"Sending{dry_tag}  {n_total} emails")
     if args.dry_run:
@@ -1458,9 +1671,28 @@ def main() -> None:
     template_name = Path(args.template).stem
     sender_name = args.from_name or args.from_.split("@")[0].title()
     elapsed = time.monotonic() - t_start
+    if _hunter_before >= 0 and args.provider == "hunter":
+        _hunter_after = _hunter_searches_used(key)
+        if _hunter_after >= 0:
+            print(f"Hunter : {max(0, _hunter_after - _hunter_before)} credits used")
+            # Absolute account counter snapshots so the orchestrator can compute a
+            # campaign-wide total (last sender's `after` minus first sender's
+            # `before`) instead of summing per-sender deltas of a shared counter.
+            print(f"Hunter-usage : before={_hunter_before} after={_hunter_after}")
     _finalize(args, run_id, sender_name, total_sent, total_dry, template_name,
               args.icp, outbox_a, outbox_b, sent_at, counts_a, counts_b, elapsed)
 
 
 if __name__ == "__main__":
     main()
+    # run.py is a one-shot subprocess: by the time main() returns, every send,
+    # ledger write, and log line is already flushed. The sourcing pipeline fires a
+    # speculative look-ahead generation on a worker thread that cannot be cancelled
+    # (see source_contacts_pipeline); if one is still running it blocks interpreter
+    # shutdown (ThreadPoolExecutor.shutdown(wait=True)) and the process never exits,
+    # which freezes the wizard's sender queue. Force a clean immediate exit so a
+    # stranded thread can't hold the process open. Flush first so the executor reads
+    # the final lines before the pipe closes.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)

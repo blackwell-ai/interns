@@ -21,6 +21,14 @@ _GOG_CREDS_PATH = (
 )
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
+# Server mode: executor injects fresh access tokens as env vars keyed by sender.
+_SENDER_ENV_KEYS: dict[str, str] = {
+    "armaan.priyadarshan.29@dartmouth.edu": "ARMAAN",
+    "samarjit.deshmukh.29@dartmouth.edu": "SAMARJIT",
+    "ethanpzhou@berkeley.edu": "ETHAN",
+    "shamit.dsouza@gmail.com": "SHAMIT",
+}
+
 
 def _client_id() -> str:
     """Read the OAuth client_id from gog's credentials file."""
@@ -152,10 +160,16 @@ def _is_token_fresh(account: str) -> bool:
 def get_access_token(account: str) -> str:
     """Return a fresh Gmail access token.
 
-    Fast path: if gog's cached token has >5 min remaining, return it directly.
-    Otherwise, let gog refresh it by making a lightweight Gmail API call, then
-    re-export. This avoids needing the OAuth client_secret ourselves.
+    Server fast path: if GMAIL_TOKEN_{SENDER} is set in env (injected by the
+    campaign bot executor), return it directly without touching gog.
+    Local fast path: if gog's cached token has >5 min remaining, return it.
+    Otherwise, let gog refresh it by making a lightweight Gmail API call.
     """
+    env_key = _SENDER_ENV_KEYS.get(account, "")
+    if env_key:
+        if token := os.environ.get(f"GMAIL_TOKEN_{env_key}"):
+            return token
+
     if _is_token_fresh(account):
         token = _export_access_token(account)
         if token:

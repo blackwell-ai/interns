@@ -1,0 +1,24 @@
+# Keep the image lean. Build only needs source: toolbox/ + skills/campaign/server/.
+.git/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+toolbox/.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local-only heavy junk and artifacts (never needed at runtime).
+scratch/
+runs/
+*.log
+**/proposals.zip
+agents/geo/good-molecules/proposals.zip
+
+# PII / local lead data must never enter the image.
+credentials/.env
+skills/campaign/enriched/
+skills/autonomous-outreach/agentic-ads/
+skills/autonomous-outreach/taste-data/
+
+# macOS
+.DS_Store

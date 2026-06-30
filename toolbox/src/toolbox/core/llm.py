@@ -61,13 +61,35 @@ class LLMRefusal(Exception):
     """Model safety-refused. Do not retry, do not escalate."""
 
 
+def _run_api(prompt: str, *, system: str, model: str | None, api_key: str) -> str:
+    """Direct Anthropic SDK call — used on servers where ANTHROPIC_API_KEY is set."""
+    import anthropic  # optional dep; only imported on servers
+    client = anthropic.Anthropic(api_key=api_key)
+    msg = client.messages.create(
+        model=model or config.DEFAULT_LLM_MODEL,
+        max_tokens=4096,
+        system=system or "You are a helpful assistant.",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    u = msg.usage
+    _usage["input_tokens"] += u.input_tokens
+    _usage["output_tokens"] += u.output_tokens
+    _usage["calls"] += 1
+    return msg.content[0].text if msg.content else ""
+
+
 def _run(prompt: str, *, system: str, model: str | None, tools: str = "") -> str:
     """One headless Claude Code invocation; returns the result text.
 
     `tools` is the value for `--tools` ("" disables every built-in tool).
+    On servers with ANTHROPIC_API_KEY set, routes to the SDK directly.
     Transient process/parse failures raise RuntimeError, which the runner's
     step-level retry treats like any other transient error.
     """
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if api_key:
+        return _run_api(prompt, system=system, model=model, api_key=api_key)
+
     cmd = [
         "claude",
         "-p",

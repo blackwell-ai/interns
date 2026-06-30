@@ -5,7 +5,7 @@ subject: Stanford Student Question
 
 <p>I understand your time's important, so I'll keep this concise.</p>
 
-<p>I'm a student at Dartmouth (working with a couple from Stanford/Berkeley) digging into what's difficult for teams like {{company}} about getting products in front of the right people.</p>
+<p>I'm a student at {{school}} (working with a couple from {{other_schools}}) digging into what's difficult for teams like {{company}} about getting products in front of the right people.</p>
 
 <p>We're backed by YC and have worked with folks at brands like Public Goods and Good Molecules.</p>
 

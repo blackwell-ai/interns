@@ -29,6 +29,14 @@ def api_base() -> str:
 # instead (plan §7 item 6).
 _QUOTA_PATTERNS = ("Daily user sending limit exceeded", "quotaExceeded", "dailyLimitExceeded")
 
+# Per-user / per-minute rate limits. Gmail returns these as HTTP 403 (not 429),
+# so without this they would be misread as permanent 4xx failures. They are
+# transient: back off and retry rather than dropping the recipient.
+_RATE_LIMIT_PATTERNS = (
+    "rateLimitExceeded", "userRateLimitExceeded", "User-rate limit exceeded",
+    "Too many concurrent requests", "Queries per minute",
+)
+
 FINAL_RECIPIENT_RE = re.compile(r"^Final-Recipient:\s*[^;]*;\s*(\S+)\s*$", re.IGNORECASE | re.MULTILINE)
 
 
@@ -68,7 +76,9 @@ def build_raw_message(
 def classify_send_error(status: int, body_text: str) -> type[Exception] | None:
     """None → transient (retry with backoff). Otherwise the exception to raise."""
     if any(p in body_text for p in _QUOTA_PATTERNS):
-        return QuotaExceeded
+        return QuotaExceeded  # daily hard wall: do not retry
+    if any(p in body_text for p in _RATE_LIMIT_PATTERNS):
+        return None           # per-user rate limit (often 403): back off and retry
     if status == 429 or status >= 500:
         return None
     if 400 <= status < 500:

@@ -34,5 +34,12 @@ skills/campaign/enriched/
 # Locally-installed plugin skills (origami, etc.) — not repo content
 .claude/skills/
 
+# Local artifacts and PII — never committed.
+scratch/
+logs.*.log
+*-emails-*.csv
+ai-researcher-emails-*.csv
+agents/geo/good-molecules/proposals.zip
+
 # tryblackwell.com website / platform front end — its own git repo, nested here.
 /website/

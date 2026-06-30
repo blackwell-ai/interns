@@ -6,6 +6,21 @@ Covers the June 2026 LLM infra + aerospace campaign runs from Samarjit, Armaan, 
 
 ## Errors encountered
 
+### Gmail per-minute rate limit dropped 48 sends (Armaan, via Slack wizard)
+
+A burst of sends tripped Gmail's per-user rate limit ("Queries per minute per
+user"), which Gmail returns as HTTP **403** (not 429). `classify_send_error`
+treated any 403 that was not a daily-cap phrase as a `PermanentSendError`, so the
+48 affected recipients were marked failed and never retried. We had a concurrency
+cap (8) but no per-second pacing, so the burst was easy to hit.
+
+Fix (in `toolbox/.../gmail/lib.py` and `cli.py`): classify 403 rate-limit bodies
+(`rateLimitExceeded`, `userRateLimitExceeded`, "Queries per minute", etc.) as
+transient so tenacity retries them with backoff; daily-cap phrases still abort.
+Added send pacing in `_send_all` capped at `GMAIL_SEND_RATE` (default 2/sec, under
+Gmail's ~2.5/sec per-user send budget). Failed recipients from a rate burst can be
+re-run; they were marked failed in the ledger, so clear those rows first.
+
 ### Gmail daily send limit hit (Samarjit)
 
 Samarjit's account hit Gmail's daily outbound limit mid-run. Sends after ~102 emails bounced silently (logged as `bounced_gmail_limit`, not hard failures). The campaign continued sending but those emails never delivered. The 122 bounced records had to be manually deleted from the Supabase `contacted` ledger before retrying from a different account.
