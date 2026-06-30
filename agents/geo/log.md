@@ -336,3 +336,46 @@ inbox/queue/2026-06-22-review-ghostbed-audit-deck.md per the charter guardrail.
 Open before sending: re-verify Amazon per-model counts; decide whether to run the
 full six-engine battery (browsing-off and browsing-on) before delivery; confirm
 whether this stays a cold prospect or becomes a paid pilot.
+
+---
+
+## 2026-06-29 · Stream2Sea · full nine-phase audit
+
+Customer: Stream2Sea (stream2sea.com), reef-safe mineral sunscreen and ocean-safe
+body care, founder Autumn Blum. Cold prospect, requested by Armaan. Competitor set
+chosen with founder: Raw Elements, Badger, Thinksport.
+
+Scorecard composite 69 (C) against a set averaging 78 (Badger 79, Raw Elements 77,
+Thinksport 77). Discoverability 68, Quotability 70, Recommendability 56,
+Transactability 88, Reputation 62. The whole gap is Recommendability and Reputation,
+not the plumbing.
+
+Flagship finding is a memory/retrieval split surfaced by the full six-engine
+two-pass battery (real /browse sessions, captured). From memory, ChatGPT and Claude
+both name Stream2Sea and describe it accurately (Claude ranks it #3, "the standout
+if you snorkel or dive"). In live retrieval it is named only by Claude and by
+ChatGPT in 1 of 2 renders; absent in Perplexity, Copilot, Gemini, and the Google AI
+Overview, where Project Reef and Badger dominate. The live answers draw on editorial
+roundups (Treeline, NYT Wirecutter, Travel+Leisure, Good Housekeeping, Vogue,
+Project Reef's blog) that under-feature Stream2Sea. Reputation is real but stranded:
+Amazon flagship Water Sport SPF 30 over 1,000 ratings at 4.0 stars (Every Day Active
+SPF 45 4.6/203), Trustpilot claimed but dormant (2 reviews), no BBB or
+ConsumerAffairs, thin Reddit/YouTube, and homepage Organization entity has no
+sameAs and no AggregateRating. Strength is Transactability: full Shopify UCP agent
+layer live. Discoverability/Quotability are mid: all seven AI bots return 200,
+product PDPs carry Product+Offer+Brand, but the homepage has no server-rendered
+title (JS-injected; og:title present).
+
+Battery note: ChatGPT initially stalled under anti-bot sentinel throttling on a slow
+connection; resolved on retry once the connection recovered. Laptop died mid-run
+after the ChatGPT on-pass; resumed, re-captured, finished all six engines.
+
+Both dash gates clean (0 in HTML, 0 in PDF text); evidence gate PASS; 16-page visual
+QA clean (one tight but non-overlapping line above the footer on page 14; fixed the
+fixed-footer overlap that the template's bottom:0.34in caused on full content pages
+by moving the footer to bottom:0.0in). Deliverable:
+brain/customers/documents/stream2sea-audit.pdf. Working source:
+agents/geo/stream2sea/stream2sea-ai-visibility-audit.html. Findings:
+brain/customers/stream2sea.md. Posted for human sign-off at
+inbox/queue/2026-06-29-review-stream2sea-audit-deck.md per the charter guardrail.
+Open before sending: confirm cold prospect vs paid pilot, add a real contact.

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stream2Sea: AI Visibility Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .eyebrow.green{ color:var(--green); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  .pagefoot{ position:fixed; bottom:0.0in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:80%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai.good{ border-left:3pt solid var(--green); }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; } pre.code .g{ color:#9fc6a6; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:30%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>Stream2Sea &middot; AI Visibility Audit</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Stream2Sea<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI engines and search see Stream2Sea today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> Stream2Sea leadership</div>
+    <div><span class="k">Date</span> June 29, 2026</div>
+    <div><span class="k">Scope</span> Public site, search and AI surface, reputation, agent-commerce readiness</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS &middot; Dartmouth CS &middot; UC Berkeley MET (EECS &amp; Business) &middot; Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded Stream2Sea on five dimensions of how AI engines and search treat the brand. Each dimension is scored 0 to 100 against observed behavior across six AI answer engines, the third-party review surface, the brand's own indexed pages, and the agent-commerce layer. Competitor scores are our estimates from the same public signals. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">C</div>
+      <div class="score">69 / 100</div>
+      <div class="cap">Stream2Sea today</div>
+    </div>
+    <p class="grade-note"><strong>The store is built right. The recommendation engine is where Stream2Sea is losing.</strong> Transactability is an 88, a genuine strength, because the Shopify agent-commerce rails are fully live. The brand also already exists in the AI models' memory: asked from training alone, both ChatGPT and Claude name Stream2Sea and describe it accurately. The gap is the two dimensions that decide a live recommendation. Recommendability, at 56, is the lowest, because in live web answers the brand mostly disappears behind Project Reef and Badger. Reputation, at 62, is real but stranded: strong on Amazon, thin everywhere else, and connected to nothing the engine can read.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">Stream2Sea</th><th class="cmp">Badger</th><th class="cmp">Raw El.</th><th class="cmp">Think</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:68%"></div></div></div><div class="n">68</div></td>
+      <td class="cmp">70</td><td class="cmp">78</td><td class="cmp">68</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:70%"></div></div></div><div class="n">70</div></td>
+      <td class="cmp">70</td><td class="cmp">80</td><td class="cmp">68</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:56%"></div></div></div><div class="n">56</div></td>
+      <td class="cmp">90</td><td class="cmp">72</td><td class="cmp">85</td>
+      <td class="what">Inclusion in AI category answers and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:88%"></div></div></div><div class="n">88</div></td>
+      <td class="cmp">85</td><td class="cmp">85</td><td class="cmp">85</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:62%"></div></div></div><div class="n">62</div></td>
+      <td class="cmp">82</td><td class="cmp">72</td><td class="cmp">78</td>
+      <td class="what">Review aggregator presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">69 (C)</span></td>
+      <td class="cmp">79 (B)</td><td class="cmp">77 (B)</td><td class="cmp">77 (B)</td>
+      <td class="what">Stream2Sea trails a competitive set that averages 78, and the whole gap is Recommendability and Reputation, not the plumbing.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not a full audit of those brands. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>Stream2Sea is one of the most credible reef-safe brands in the category. It was founded in 2015 by a cosmetic chemist after a dive trip to Palau, it runs real aquatic ecotoxicity testing rather than just printing "reef-safe" on a tube, and the AI models know it. Ask ChatGPT or Claude from memory for the best reef-safe sunscreens and Stream2Sea is named, correctly, as the diver's pick. The store is also built on modern rails: every AI crawler reaches it, and the Shopify agent-commerce layer is fully live. The problem is the one moment that matters most. When a shopper asks an engine live, today, for the best reef-safe sunscreen, Stream2Sea mostly is not in the answer. Project Reef and Badger are.</p>
+  <p style="color:var(--muted);font-size:9pt">Five findings, ordered worst first.</p>
+  <ol class="short">
+    <li><strong>The models remember Stream2Sea, but the live answer forgets it.</strong> From memory, ChatGPT and Claude both name it. In live web retrieval, it appears in only one or two of six engines; Perplexity, Copilot, Gemini, and the Google AI Overview all leave it out and name Project Reef, Badger, and Thinksport instead.</li>
+    <li><strong>The reputation is real, but stranded and thin off Amazon.</strong> Amazon is strong (the flagship Water Sport SPF 30 carries more than 1,000 ratings, and other SKUs reach 4.6 stars), but the Trustpilot profile is claimed and nearly empty, there is no BBB or ConsumerAffairs page, and Reddit and YouTube are positive but low-volume. None of it is linked to the brand's machine-readable identity.</li>
+    <li><strong>Clean crawl, thin entity.</strong> Every AI bot reaches the site, but the homepage gives an engine almost nothing to anchor to: no <code>sameAs</code> links, no <code>AggregateRating</code>, and no server-rendered page title. The brand is readable but not resolvable.</li>
+    <li><strong>Products are quotable, reviews are not.</strong> Product pages carry <code>Product</code>, <code>Offer</code>, and <code>Brand</code> schema, which is more than many brands ship. What is missing is <code>AggregateRating</code> and <code>Review</code> schema, the structured form of the very reviews that are Stream2Sea's strongest asset.</li>
+    <li><strong>The agent-commerce layer is the bright spot.</strong> Unlike most brands we audit, Stream2Sea has the full Shopify agent stack live: <code>agents.md</code>, <code>llms.txt</code>, a working UCP endpoint with cart, checkout, and catalog services, and Google Pay and Shop Pay handlers. An AI shopping agent can already transact here.</li>
+  </ol>
+  <div class="darkbox">ChatGPT, Perplexity, Gemini, and the Google AI Overview all default to live web retrieval in 2026. Every query that hits live retrieval reads the same editorial roundups, and those roundups under-feature Stream2Sea. The reputation the models clearly respect from memory is not present in the sources they cite live. That is a closable gap, and it is the most valuable one on this list.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 5 &middot; Critical</p>
+  <h2 class="ruled">The models remember Stream2Sea, the live answer forgets it</h2>
+  <p>AI answer engines are now where many shoppers start. They do not browse; they ask "what is the best reef-safe sunscreen" and get back a short, synthesized list. We ran the full six-engine battery, each in two passes: from the model's own memory with web search off, then with live web retrieval on. The query was the brand's core category, "best reef-safe sunscreen 2026." The split is the finding.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT</td><td><span class="pill yes">named</span></td><td><span class="pill part">varies</span></td></tr>
+    <tr><td class="k1">Claude</td><td><span class="pill yes">named</span></td><td><span class="pill yes">named</span></td></tr>
+    <tr><td class="k1">Gemini</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Perplexity</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Copilot</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+  </table>
+  <p>From memory, the brand is known and well regarded. Asked without searching, Claude ranked Stream2Sea third of seven and called it the standout for divers; ChatGPT listed it for snorkeling and diving and named its aquatic-toxicity testing. That is reputation the models carry in their training.</p>
+  <div class="ai good avoid">
+    <p class="plabel">Claude, from memory (search off): "best reef-safe sunscreens 2026"</p>
+    <p class="resp">"Stream2Sea SPF 30: The standout if you actually snorkel or dive. They do real aquatic ecotoxicity testing rather than just claiming reef-safe, and the formula is biodegradable. A favorite in the diving community for that reason."</p>
+  </div>
+  <img class="eviv" src="assets/claude-reef-safe-sunscreen-off-2026-06-29.png" alt="Claude from memory names Stream2Sea third, as the standout for divers">
+  <p class="cap-img">Claude, web search off, names Stream2Sea third of seven and calls it the standout for snorkeling and diving. Captured June 29, 2026.</p>
+  <p class="sub-h">Then live retrieval turns on, and it mostly disappears</p>
+  <p>With web search on, four of the six engines leave Stream2Sea out entirely. Gemini, Perplexity, Copilot, and the Google AI Overview each return the same handful of names, led by Project Reef and Badger. ChatGPT named it in one of two live runs (only when it happened to cite a niche tested roundup) and dropped it in the other. The live category answer, the moment a shopper is deciding what to buy, is where the brand is weakest.</p>
+  <div class="ai avoid">
+    <p class="plabel">Gemini, live retrieval (search on): "best reef-safe sunscreen 2026"</p>
+    <p class="resp">"The Top Reef-Safe Sunscreen Brands. 1. Project Reef (Best Overall and Eco-Conscious). 2. Badger. 3. Blue Lizard Sensitive." Stream2Sea is not named.</p>
+  </div>
+  <img class="eviv" src="assets/gemini-reef-safe-sunscreen-on-2026-06-29.png" alt="Gemini live answer names Project Reef and Badger, Stream2Sea absent">
+  <p class="cap-img">Gemini, web search on, ranks Project Reef first and Badger second. Stream2Sea is absent. Perplexity, Copilot, and the Google AI Overview returned the same pattern. Captured June 29, 2026.</p>
+  <div class="quote">Across the live passes the named picks were Project Reef, Badger, Thinksport, Blue Lizard, Raw Elements, and Thrive. The engines were pulling from the same editorial roundups (Treeline Review, NYT Wirecutter, Travel and Leisure, Good Housekeeping, Vogue, and Project Reef's own blog), and most of those roundups do not feature Stream2Sea. <span class="src">(six-engine two-pass battery, captured June 29, 2026; full per-engine log in battery-log.md)</span></div>
+  <p class="sub-h">Why this is the most valuable finding in the deck</p>
+  <p>Category recommendation is the moment of intent. Being absent there is worth more than any ranking position, because the engine is choosing on the shopper's behalf and never offers Stream2Sea as an option. The good news is the hard part is done: the models already respect the brand from memory, which most brands cannot say. The work is getting that reputation into the live sources the engines cite.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is downstream of reputation and entity. We seed the specific category sources these engines cite (the reef-safe and dive roundups, plus the HEL "Protect Land and Sea" certification angle competitors lead with), connect the reputation to the entity, and structure the review data, so "best reef-safe sunscreen" and "best sunscreen for diving" start resolving to Stream2Sea live, not just from memory.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 5 &middot; High severity</p>
+  <h2 class="ruled">The reputation is real, but stranded and thin off Amazon</h2>
+  <p>This finding should be encouraging, because the sentiment is genuinely good. The problem is distribution and connection. Almost all of Stream2Sea's review equity sits on Amazon, and none of it is linked to the brand's machine-readable identity, so an engine resolving the brand finds nothing pointing to it.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Source</th><th>What we found</th><th>Read</th></tr>
+    <tr><td class="k1">Amazon</td><td class="good">Flagship Water Sport SPF 30 over 1,000 ratings at 4.0 stars; Every Day Active SPF 45 at 4.6 (203); catalog 4.0 to 4.6</td><td>Strong volume, positive, but siloed</td></tr>
+    <tr><td class="k1">Trustpilot</td><td>Claimed (since 2019) but only 2 reviews; "no history of asking for reviews"</td><td>Claimed and dormant</td></tr>
+    <tr><td class="k1">BBB</td><td class="bad">No profile</td><td>Absent</td></tr>
+    <tr><td class="k1">ConsumerAffairs</td><td class="bad">No profile</td><td>Absent</td></tr>
+    <tr><td class="k1">Reddit</td><td>Positive but low volume; r/scuba word-of-mouth ("the first thing that worked, love it")</td><td>Niche, thin</td></tr>
+    <tr><td class="k1">YouTube</td><td>Brand-owned content plus scattered low-view clips; no high-reach independent reviews</td><td>Low reach</td></tr>
+  </table>
+  <img class="eviv" src="assets/reputation-retailer-amazon-2026-06-29.png" alt="Stream2Sea Amazon results, flagship over 1,000 ratings">
+  <p class="cap-img">Stream2Sea on Amazon: the flagship Water Sport SPF 30 carries more than 1,000 ratings (4.0 stars), with the Every Day Active SPF 45 at 4.6 stars and a catalog rated 4.0 to 4.6. This is the brand's strongest reputation surface by volume, and the engines do not weight it for category recommendations. Captured June 29, 2026.</p>
+  <p class="sub-h">Now the connection problem</p>
+  <p>The homepage <code>Organization</code> entity carries no <code>sameAs</code> links and no <code>AggregateRating</code>. To an AI engine, the well-reviewed Stream2Sea on Amazon and the store at stream2sea.com are not obviously the same record, and the brand's identity points at none of its own reputation. Raw Elements, by contrast, ships <code>AggregateRating</code> and <code>Brand</code> in its homepage schema.</p>
+  <pre class="code"><span class="c">// stream2sea.com homepage Organization entity, today</span>
+sameAs (links to Amazon, social, reviews):   <span class="r">none</span>
+AggregateRating on the entity:               <span class="r">none</span>
+
+<span class="c">// Raw Elements ships AggregateRating + Brand in homepage JSON-LD.</span></pre>
+  <p class="fixline"><b>The fix.</b> Two moves. On site, add <code>sameAs</code> links and <code>AggregateRating</code> so the entity points at the reputation that already exists. Off site, the bigger lever: get genuine third-party reviews into the channels engines actually read, the editorial roundups and independent creators, since off-site mentions are the strongest correlate of AI visibility and the part of reputation that on-site schema cannot reach.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 5 &middot; High severity</p>
+  <h2 class="ruled">Clean crawl, thin entity</h2>
+  <p>Discoverability has two halves: can a machine reach the pages, and once there, does it find an identity it can resolve. Stream2Sea passes the first test cleanly and stalls on the second.</p>
+  <pre class="code"><span class="c">// AI crawler access on a product page (HTTP status)</span>
+GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot,
+Google-Extended, Amazonbot, Bingbot:   <span class="g">all 200, no walls</span>
+
+<span class="c">// Homepage identity for an engine to anchor to</span>
+Organization + WebSite + SearchAction:  <span class="g">present</span>
+sameAs / AggregateRating:               <span class="r">none</span>
+server-rendered &lt;title&gt;:                <span class="r">none (title injected by JavaScript)</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>Full crawlability is good, and many brands fail it. But once an engine arrives, the homepage gives it a bare entity: an <code>Organization</code> with no outbound identity links, no rating, and a title set only after JavaScript runs, so a crawler that does not render sees no page title at all (the <code>og:title</code> tag, "Stream2Sea, Reef safer sunscreens and skin care," does carry through). The brand is readable but not resolvable, which is exactly what keeps it out of the live answers in finding 1.</p>
+  <p class="fixline"><b>The fix.</b> Enrich the homepage entity: a server-rendered, descriptive <code>&lt;title&gt;</code>, an <code>Organization</code> with <code>sameAs</code> and <code>AggregateRating</code>, and consistent entity markup across the key landing pages. Theme-level and mechanical, measured in hours.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 5 &middot; Medium severity</p>
+  <h2 class="ruled">Products are quotable, the reviews are not</h2>
+  <p>Quotability is where Stream2Sea is closer to par than anywhere else, and a small addition would push it ahead. Product pages already render real structured data, the format AI shopping engines read to compare and recommend.</p>
+  <pre class="code"><span class="c">// A Stream2Sea product page, structured data found</span>
+JSON-LD Product schema:        <span class="g">present</span>
+Offer (price, availability):   <span class="g">present</span>
+Brand:                         <span class="g">present</span>
+AggregateRating / Review:      <span class="r">none</span></pre>
+  <p class="sub-h">What the missing piece costs</p>
+  <p>The product, price, and brand are all machine-readable, which is more than many brands ship. What is absent is the review schema, <code>AggregateRating</code> and <code>Review</code>. That is the structured form of the very thing that is Stream2Sea's strongest asset: a deep Amazon review reputation, more than 1,000 ratings on the flagship alone, that the product pages never expose to a machine. When an engine compares mineral sunscreens and can read a competitor's star rating but not Stream2Sea's, the competitor is the one it can quote with confidence.</p>
+  <p class="fixline"><b>The fix.</b> Emit <code>AggregateRating</code> and <code>Review</code> schema on the product pages from the review data the brand already has, so the rating becomes quotable. One template change covers the catalog, and it compounds with the entity fix in finding 2.</p>
+</section>
+
+<!-- FINDING 5 (STRENGTH) -->
+<section class="sec">
+  <p class="eyebrow green">Finding 5 of 5 &middot; What is already working</p>
+  <h2 class="ruled">The agent-commerce layer is the bright spot</h2>
+  <p>It is worth being clear about what Stream2Sea has right, because it is the dimension most brands score worst on and Stream2Sea scores an 88. The Shopify agent-commerce stack is fully provisioned and live, so an AI shopping agent can already discover and transact here.</p>
+  <pre class="code"><span class="c">// stream2sea.com agent surface (HTTP status)</span>
+/agents.md            <span class="g">200</span>   agent instructions present
+/llms.txt             <span class="g">200</span>   present
+/.well-known/ucp      <span class="g">200</span>   cart, checkout, catalog, fulfillment,
+                            discount, order services; MCP transport
+payment handlers      <span class="g">live</span>  Google Pay + Shop Pay wired
+sitemap_agentic_discovery.xml   <span class="g">200</span></pre>
+  <p class="sub-h">One note, so the strength is stated honestly</p>
+  <p>This layer is Shopify-provisioned, so it is a strength Stream2Sea shares with its competitors rather than one it built alone, and the apex <code>/api/ucp/mcp</code> path returns 404 because the live MCP endpoint sits on the Shopify backend, not the apex domain, which is normal. The transaction rails work. The reason a shopper still does not arrive here through an AI engine is everything in findings 1 through 4, not this layer.</p>
+  <p class="fixline" style="color:var(--soft)"><b style="color:var(--green)">Keep it, and build on it.</b> The agent layer is the foundation. Once the entity, reviews, and off-site reputation are connected, an agent that reaches Stream2Sea has both a reason to choose it and a clean path to transact.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>We checked Stream2Sea against the three brands it shares the reef-safe shelf with: Badger, Raw Elements, and Thinksport. The striking result is how little separates them on the plumbing, and how much separates them on the live recommendation.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>Stream2Sea</th><th>Badger</th><th>Raw Elements</th><th>Thinksport</th></tr>
+    <tr><td class="k1">AI crawler access</td><td class="good">all bots 200</td><td class="good">all 200</td><td class="good">all 200</td><td class="good">all 200</td></tr>
+    <tr><td class="k1">Agent-commerce (UCP) layer</td><td class="good">live</td><td class="good">live</td><td class="good">live</td><td class="good">live</td></tr>
+    <tr><td class="k1">Product structured data</td><td class="good">Product + Offer + Brand</td><td>Product + Offer</td><td class="good">Product + Offer + rating</td><td>Product + Offer + Brand</td></tr>
+    <tr><td class="k1">Homepage entity rating</td><td class="bad">no AggregateRating</td><td class="bad">none</td><td class="good">AggregateRating</td><td class="bad">none</td></tr>
+    <tr><td class="k1">Named in live AI category answers</td><td class="bad">rarely</td><td class="good">consistently (Best Overall)</td><td>sometimes</td><td class="good">consistently</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">All four are on Shopify with the same native agent rails and full crawlability, so the plumbing is not the differentiator. Badger wins the live answer on the strength of the Haereticus "Protect Land and Sea" certification, which the roundups call Best Overall, and Thinksport wins on sheer presence across every guide. The brand most likely to take share from Stream2Sea in AI answers, Project Reef, is not even in this set; it built its entire live presence on reef-safe content the engines now cite by default. Stream2Sea has the deeper scientific credibility. It does not yet have the citation footprint.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Two phases. Phase 1 is a 30-day sprint that connects Stream2Sea's reputation to its entity, makes the reviews machine-readable, and starts seeding the live sources the engines cite. Phase 2 is ongoing AI visibility work that moves the brand from "known in memory" to "named in the live answer." After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 &middot; 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Stabilization sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Five remediations, each closing a finding above. Refunded in full if the benchmarks are not met.</p>
+    <ul class="rem">
+      <li><code>Organization</code> entity enriched with <code>sameAs</code> links and a server-rendered, descriptive title, so the brand is resolvable, not just readable (findings 2 and 3)</li>
+      <li><code>AggregateRating</code> and <code>Review</code> schema across product pages, exposing the deep Amazon review reputation to machines (findings 2 and 4)</li>
+      <li>Trustpilot profile reactivated and a review-generation flow turned on, since the profile is claimed but dormant (finding 2)</li>
+      <li>A category-source plan targeting the reef-safe and dive roundups the engines cite, including the HEL certification angle (finding 1)</li>
+      <li>Agent surface content map: <code>agents.md</code> and <code>llms.txt</code> rewritten from generic defaults into a real brand and catalog description, on top of the working UCP layer (finding 5)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite AI visibility score (target 69 toward the high 70s, C toward B); <code>AggregateRating</code> and entity coverage validated across the catalog; presence in live AI category answers for "best reef-safe sunscreen" and "best sunscreen for diving" measured by re-running this same six-engine battery. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met. We deliver the on-site specs and the re-benchmark; the CMS changes and Trustpilot reactivation are yours to apply, and publisher and reviewer coverage is something we pursue, not something anyone can promise.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">Phase 2 and beyond</p>
+  <p>Phase 1 connects the reputation Stream2Sea already has. Phase 2 grows the off-site footprint that is the real driver of the live answer, and keeps it current. This is the work that is not a one-time fix: continuous AI behavior monitoring per dimension with drift alerts, an entity establishment campaign so the brand resolves cleanly across engines, getting Stream2Sea placed in the category sources AI engines cite, and tracking the schema and protocol changes that move every quarter. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+  <p>For Phase 2 design partners we are standing up a vetted panel of independent reviewers and UGC creators, scored for neutrality, that can seed genuine third-party reviews of your products across YouTube, Reddit, and short-form video. Mentions of that kind are the single strongest correlate of AI visibility, well ahead of backlinks, and they are exactly the gap in Stream2Sea's reputation that on-site schema fixes cannot reach. It is a capability we are building, not a finished network, and we will not promise a specific reviewer count it cannot yet back. For a brand the models already respect from memory, this is the lever that turns that respect into a live recommendation.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what the brand publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled Stream2Sea's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>llms.txt</code>, <code>agents.md</code>, <code>/.well-known/ucp</code>, and the product and blog sitemaps. Counts (82 products, 195 blog posts) and the agent-layer status come from those pulls, dated June 29, 2026. Freezing this first means no engine output can contaminate what we treat as ground truth.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. ChatGPT ran in Temporary Chat and Claude in fresh chats so saved history did not bias the result; Copilot and Gemini ran as guests; Perplexity ran logged in on a profile with no prior sunscreen searches, which we note. Each engine and pass was captured to a screenshot. The split between memory and live retrieval is the basis of finding 1, and every per-engine result is logged in battery-log.md.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled Stream2Sea's third-party reputation from Trustpilot, BBB, ConsumerAffairs, Reddit, YouTube, and Amazon, recorded each rating and review count, and checked whether any of it is linked to the site's entity. The Amazon review presence is real, more than 1,000 ratings on the flagship; the missing link to it is finding 2.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>Badger, Raw Elements, and Thinksport were checked the same day on the same signals (crawler access, entity schema, product schema, agent layer, AI category presence). Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>llms.txt</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries and the same six-engine battery. Pulled June 29, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises &middot; Armaan Priyadarshan &middot; Samarjit Deshmukh &middot; Ethan Zhou &middot; Shamit D'Souza &middot; ethanpzhou@berkeley.edu</div></div>
+</section>
+
+</body>
+</html>
