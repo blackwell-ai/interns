@@ -1,0 +1,1189 @@
+{
+ "n_products": 28,
+ "by_product": [
+  {
+   "product": "Fenty Pro Filtr Soft Matte",
+   "product_id": "fenty-pro-filtr-soft-matte",
+   "brand": "Fenty Beauty",
+   "n_reviews": 21,
+   "video_type": {
+    "single_review": 17,
+    "comparison": 2,
+    "roundup": 2
+   },
+   "skin_type_tags": {
+    "oily": 14,
+    "combination": 10,
+    "unspecified": 2,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 16,
+     "negative": 2,
+     "mixed": 3
+    },
+    "stayed_matte": {
+     "mostly": 16,
+     "no": 3,
+     "not_tested": 1,
+     "yes": 1
+    },
+    "broke_out": {
+     "not_mentioned": 19,
+     "no": 2
+    },
+    "oxidized": {
+     "yes": 8,
+     "no": 9,
+     "not_mentioned": 4
+    },
+    "would_repurchase": {
+     "not_mentioned": 15,
+     "yes": 4,
+     "no": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 17,
+    "avg": 8.8
+   }
+  },
+  {
+   "product": "L'Oreal Infallible Fresh Wear",
+   "product_id": "l-oreal-infallible-fresh-wear",
+   "brand": "L'Oréal",
+   "n_reviews": 20,
+   "video_type": {
+    "single_review": 17,
+    "comparison": 2,
+    "roundup": 1
+   },
+   "skin_type_tags": {
+    "dry": 4,
+    "sensitive": 2,
+    "oily": 10,
+    "combination": 3,
+    "unspecified": 4
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 15,
+     "mixed": 5
+    },
+    "stayed_matte": {
+     "mostly": 15,
+     "no": 3,
+     "yes": 1,
+     "not_tested": 1
+    },
+    "broke_out": {
+     "not_mentioned": 16,
+     "no": 2,
+     "yes": 2
+    },
+    "oxidized": {
+     "no": 12,
+     "not_mentioned": 8
+    },
+    "would_repurchase": {
+     "not_mentioned": 11,
+     "yes": 8,
+     "no": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 16,
+    "avg": 11.5
+   }
+  },
+  {
+   "product": "NARS Soft Matte Complete",
+   "product_id": "nars-soft-matte-complete",
+   "brand": "NARS",
+   "n_reviews": 19,
+   "video_type": {
+    "single_review": 14,
+    "roundup": 2,
+    "comparison": 3
+   },
+   "skin_type_tags": {
+    "oily": 15,
+    "combination": 5,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 17,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "mostly": 18,
+     "yes": 1
+    },
+    "broke_out": {
+     "not_mentioned": 16,
+     "no": 3
+    },
+    "oxidized": {
+     "yes": 3,
+     "not_mentioned": 4,
+     "no": 12
+    },
+    "would_repurchase": {
+     "not_mentioned": 12,
+     "yes": 7
+    }
+   },
+   "wear_hours": {
+    "n_reported": 15,
+    "avg": 8.5
+   }
+  },
+  {
+   "product": "Revlon ColorStay",
+   "product_id": "revlon-colorstay",
+   "brand": "Revlon",
+   "n_reviews": 19,
+   "video_type": {
+    "single_review": 18,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "oily": 15,
+    "combination": 6,
+    "dry": 2,
+    "normal": 2
+   },
+   "outcomes": {
+    "overall": {
+     "negative": 1,
+     "mixed": 5,
+     "positive": 13
+    },
+    "stayed_matte": {
+     "not_tested": 1,
+     "mostly": 11,
+     "no": 5,
+     "yes": 2
+    },
+    "broke_out": {
+     "yes": 2,
+     "not_mentioned": 15,
+     "no": 2
+    },
+    "oxidized": {
+     "not_mentioned": 8,
+     "no": 10,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "no": 2,
+     "not_mentioned": 10,
+     "yes": 7
+    }
+   },
+   "wear_hours": {
+    "n_reported": 16,
+    "avg": 10.7
+   }
+  },
+  {
+   "product": "Maybelline Super Stay Full Coverage",
+   "product_id": "maybelline-super-stay-full-coverage",
+   "brand": "Maybelline",
+   "n_reviews": 18,
+   "video_type": {
+    "single_review": 14,
+    "roundup": 3,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "unspecified": 1,
+    "oily": 9,
+    "dry": 3,
+    "combination": 8
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 18
+    },
+    "stayed_matte": {
+     "not_tested": 4,
+     "mostly": 13,
+     "no": 1
+    },
+    "broke_out": {
+     "not_mentioned": 18
+    },
+    "oxidized": {
+     "yes": 3,
+     "no": 8,
+     "not_mentioned": 7
+    },
+    "would_repurchase": {
+     "not_mentioned": 13,
+     "yes": 5
+    }
+   },
+   "wear_hours": {
+    "n_reported": 12,
+    "avg": 9.2
+   }
+  },
+  {
+   "product": "Catrice HD Liquid Coverage",
+   "product_id": "catrice-hd-liquid-coverage",
+   "brand": "Catrice",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "combination": 3,
+    "oily": 2,
+    "dry": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 6
+    },
+    "stayed_matte": {
+     "mostly": 5,
+     "no": 1
+    },
+    "broke_out": {
+     "not_mentioned": 5,
+     "no": 1
+    },
+    "oxidized": {
+     "yes": 2,
+     "no": 3,
+     "not_mentioned": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 8.6
+   }
+  },
+  {
+   "product": "Charlotte Tilbury Airbrush Flawless",
+   "product_id": "charlotte-tilbury-airbrush-flawless",
+   "brand": "Charlotte Tilbury",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 3,
+    "comparison": 3
+   },
+   "skin_type_tags": {
+    "oily": 4,
+    "combination": 2
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 1,
+     "positive": 5
+    },
+    "stayed_matte": {
+     "no": 1,
+     "mostly": 5
+    },
+    "broke_out": {
+     "yes": 1,
+     "not_mentioned": 4,
+     "no": 1
+    },
+    "oxidized": {
+     "not_mentioned": 1,
+     "no": 2,
+     "yes": 3
+    },
+    "would_repurchase": {
+     "not_mentioned": 5,
+     "yes": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 9.8
+   }
+  },
+  {
+   "product": "CoverGirl Outlast",
+   "product_id": "covergirl-outlast",
+   "brand": "CoverGirl",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "combination": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 4,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "mostly": 4,
+     "yes": 1,
+     "no": 1
+    },
+    "broke_out": {
+     "no": 2,
+     "not_mentioned": 4
+    },
+    "oxidized": {
+     "yes": 2,
+     "no": 2,
+     "not_mentioned": 2
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 11.4
+   }
+  },
+  {
+   "product": "Dior Forever",
+   "product_id": "dior-forever",
+   "brand": "Dior",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 3,
+    "combination": 1,
+    "normal": 1,
+    "dry": 2
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 4,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "mostly": 5,
+     "not_tested": 1
+    },
+    "broke_out": {
+     "no": 2,
+     "not_mentioned": 4
+    },
+    "oxidized": {
+     "yes": 2,
+     "no": 3,
+     "not_mentioned": 1
+    },
+    "would_repurchase": {
+     "yes": 3,
+     "no": 1,
+     "not_mentioned": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 4,
+    "avg": 11.4
+   }
+  },
+  {
+   "product": "Giorgio Armani Luminous Silk",
+   "product_id": "giorgio-armani-luminous-silk",
+   "brand": "Giorgio Armani",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "oily": 2,
+    "combination": 4,
+    "dry": 1,
+    "sensitive": 1,
+    "unspecified": 1
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 3,
+     "positive": 3
+    },
+    "stayed_matte": {
+     "mostly": 5,
+     "not_tested": 1
+    },
+    "broke_out": {
+     "no": 2,
+     "not_mentioned": 4
+    },
+    "oxidized": {
+     "yes": 1,
+     "no": 4,
+     "not_mentioned": 1
+    },
+    "would_repurchase": {
+     "no": 1,
+     "yes": 1,
+     "not_mentioned": 4
+    }
+   },
+   "wear_hours": {
+    "n_reported": 4,
+    "avg": 9.5
+   }
+  },
+  {
+   "product": "Hourglass Vanish",
+   "product_id": "hourglass-vanish",
+   "brand": "Hourglass",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "normal": 1,
+    "combination": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 2,
+     "mixed": 1,
+     "negative": 3
+    },
+    "stayed_matte": {
+     "mostly": 3,
+     "no": 3
+    },
+    "broke_out": {
+     "no": 1,
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "no": 4,
+     "not_mentioned": 2
+    },
+    "would_repurchase": {
+     "not_mentioned": 2,
+     "yes": 1,
+     "no": 3
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 8.3
+   }
+  },
+  {
+   "product": "Huda Beauty FauxFilter",
+   "product_id": "huda-beauty-fauxfilter",
+   "brand": "Huda Beauty",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "roundup": 1
+   },
+   "skin_type_tags": {
+    "oily": 4,
+    "combination": 2,
+    "dry": 2
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 5,
+     "mixed": 1
+    },
+    "stayed_matte": {
+     "mostly": 4,
+     "no": 1,
+     "not_tested": 1
+    },
+    "broke_out": {
+     "not_mentioned": 6
+    },
+    "oxidized": {
+     "not_mentioned": 1,
+     "no": 4,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "yes": 2,
+     "not_mentioned": 4
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 7.7
+   }
+  },
+  {
+   "product": "IT Cosmetics CC Cream",
+   "product_id": "it-cosmetics-cc-cream",
+   "brand": "IT Cosmetics",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "oily": 4,
+    "combination": 3,
+    "unspecified": 1,
+    "sensitive": 1
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 3,
+     "positive": 3
+    },
+    "stayed_matte": {
+     "no": 2,
+     "mostly": 4
+    },
+    "broke_out": {
+     "not_mentioned": 4,
+     "no": 1,
+     "yes": 1
+    },
+    "oxidized": {
+     "not_mentioned": 2,
+     "no": 4
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 9.3
+   }
+  },
+  {
+   "product": "Kosas Revealer",
+   "product_id": "kosas-revealer",
+   "brand": "Kosas",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 2,
+    "dry": 2,
+    "normal": 2,
+    "combination": 2
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 5,
+     "mixed": 1
+    },
+    "stayed_matte": {
+     "mostly": 4,
+     "not_tested": 1,
+     "no": 1
+    },
+    "broke_out": {
+     "not_mentioned": 5,
+     "no": 1
+    },
+    "oxidized": {
+     "yes": 1,
+     "not_mentioned": 2,
+     "no": 3
+    },
+    "would_repurchase": {
+     "yes": 2,
+     "not_mentioned": 3,
+     "no": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 4,
+    "avg": 10.5
+   }
+  },
+  {
+   "product": "MAC Studio Fix Fluid",
+   "product_id": "mac-studio-fix-fluid",
+   "brand": "MAC",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "combination": 1,
+    "unspecified": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 5,
+     "negative": 1
+    },
+    "stayed_matte": {
+     "mostly": 5,
+     "not_tested": 1
+    },
+    "broke_out": {
+     "no": 2,
+     "not_mentioned": 3,
+     "yes": 1
+    },
+    "oxidized": {
+     "no": 3,
+     "yes": 3
+    },
+    "would_repurchase": {
+     "yes": 2,
+     "not_mentioned": 3,
+     "no": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 9.6
+   }
+  },
+  {
+   "product": "Make Up For Ever HD Skin",
+   "product_id": "make-up-for-ever-hd-skin",
+   "brand": "Make Up For Ever",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "combination": 1,
+    "dry": 1,
+    "sensitive": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 6
+    },
+    "stayed_matte": {
+     "mostly": 4,
+     "no": 2
+    },
+    "broke_out": {
+     "no": 1,
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "yes": 2,
+     "no": 3,
+     "not_mentioned": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 6
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 9.4
+   }
+  },
+  {
+   "product": "Maybelline Fit Me Matte Poreless",
+   "product_id": "maybelline-fit-me-matte-poreless",
+   "brand": "Maybelline",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "roundup": 1
+   },
+   "skin_type_tags": {
+    "oily": 2,
+    "combination": 2,
+    "dry": 2,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 3,
+     "positive": 3
+    },
+    "stayed_matte": {
+     "mostly": 3,
+     "no": 2,
+     "not_tested": 1
+    },
+    "broke_out": {
+     "no": 1,
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "not_mentioned": 3,
+     "yes": 1,
+     "no": 2
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 8.7
+   }
+  },
+  {
+   "product": "NARS Sheer Glow",
+   "product_id": "nars-sheer-glow",
+   "brand": "NARS",
+   "n_reviews": 6,
+   "video_type": {
+    "comparison": 3,
+    "single_review": 3
+   },
+   "skin_type_tags": {
+    "oily": 1,
+    "unspecified": 3,
+    "normal": 1,
+    "dry": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 4,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "no": 5,
+     "mostly": 1
+    },
+    "broke_out": {
+     "yes": 1,
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "no": 3,
+     "yes": 1,
+     "not_mentioned": 2
+    },
+    "would_repurchase": {
+     "yes": 1,
+     "no": 1,
+     "not_mentioned": 4
+    }
+   },
+   "wear_hours": {
+    "n_reported": 3,
+    "avg": 8.3
+   }
+  },
+  {
+   "product": "NYX Cant Stop Wont Stop",
+   "product_id": "nyx-cant-stop-wont-stop",
+   "brand": "NYX",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "combination": 1,
+    "oily": 5
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 1,
+     "positive": 5
+    },
+    "stayed_matte": {
+     "no": 1,
+     "mostly": 5
+    },
+    "broke_out": {
+     "not_mentioned": 6
+    },
+    "oxidized": {
+     "no": 4,
+     "not_mentioned": 1,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 5,
+     "yes": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 8.8
+   }
+  },
+  {
+   "product": "Rare Beauty Liquid Touch",
+   "product_id": "rare-beauty-liquid-touch",
+   "brand": "Rare Beauty",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 4,
+    "combination": 2
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 4,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "no": 2,
+     "not_tested": 1,
+     "mostly": 3
+    },
+    "broke_out": {
+     "no": 1,
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "no": 4,
+     "yes": 2
+    },
+    "would_repurchase": {
+     "yes": 2,
+     "not_mentioned": 4
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 8.2
+   }
+  },
+  {
+   "product": "Smashbox Studio Skin",
+   "product_id": "smashbox-studio-skin",
+   "brand": "Smashbox",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "combination": 1,
+    "oily": 5
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 2,
+     "positive": 3,
+     "negative": 1
+    },
+    "stayed_matte": {
+     "mostly": 4,
+     "yes": 1,
+     "no": 1
+    },
+    "broke_out": {
+     "not_mentioned": 6
+    },
+    "oxidized": {
+     "yes": 1,
+     "no": 3,
+     "not_mentioned": 2
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 1,
+     "no": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 9.8
+   }
+  },
+  {
+   "product": "Tarte Shape Tape",
+   "product_id": "tarte-shape-tape",
+   "brand": "Tarte",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "roundup": 1
+   },
+   "skin_type_tags": {
+    "oily": 4,
+    "combination": 1,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "negative": 2,
+     "positive": 3,
+     "mixed": 1
+    },
+    "stayed_matte": {
+     "no": 3,
+     "mostly": 3
+    },
+    "broke_out": {
+     "not_mentioned": 6
+    },
+    "oxidized": {
+     "no": 6
+    },
+    "would_repurchase": {
+     "no": 2,
+     "yes": 2,
+     "not_mentioned": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 9.4
+   }
+  },
+  {
+   "product": "Too Faced Born This Way",
+   "product_id": "too-faced-born-this-way",
+   "brand": "Too Faced",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 5,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "oily": 6
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 1,
+     "negative": 1,
+     "positive": 4
+    },
+    "stayed_matte": {
+     "no": 1,
+     "yes": 1,
+     "mostly": 4
+    },
+    "broke_out": {
+     "not_mentioned": 6
+    },
+    "oxidized": {
+     "no": 5,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "no": 1,
+     "yes": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 9.5
+   }
+  },
+  {
+   "product": "elf Flawless Satin",
+   "product_id": "elf-flawless-satin",
+   "brand": "e.l.f.",
+   "n_reviews": 6,
+   "video_type": {
+    "single_review": 6
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "combination": 1,
+    "dry": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 2,
+     "mixed": 4
+    },
+    "stayed_matte": {
+     "mostly": 3,
+     "no": 3
+    },
+    "broke_out": {
+     "not_mentioned": 6
+    },
+    "oxidized": {
+     "no": 1,
+     "not_mentioned": 4,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "no": 2
+    }
+   },
+   "wear_hours": {
+    "n_reported": 6,
+    "avg": 10.2
+   }
+  },
+  {
+   "product": "Clinique Even Better",
+   "product_id": "clinique-even-better",
+   "brand": "Clinique",
+   "n_reviews": 5,
+   "video_type": {
+    "single_review": 5
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "mixed": 3,
+     "positive": 2
+    },
+    "stayed_matte": {
+     "mostly": 4,
+     "no": 1
+    },
+    "broke_out": {
+     "not_mentioned": 4,
+     "no": 1
+    },
+    "oxidized": {
+     "yes": 1,
+     "no": 3,
+     "not_mentioned": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 9.5
+   }
+  },
+  {
+   "product": "Estee Lauder Double Wear",
+   "product_id": "estee-lauder-double-wear",
+   "brand": "Estée Lauder",
+   "n_reviews": 5,
+   "video_type": {
+    "single_review": 2,
+    "comparison": 3
+   },
+   "skin_type_tags": {
+    "oily": 4,
+    "dry": 1,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 3,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "mostly": 5
+    },
+    "broke_out": {
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "no": 4,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 1,
+     "yes": 4
+    }
+   },
+   "wear_hours": {
+    "n_reported": 5,
+    "avg": 13.8
+   }
+  },
+  {
+   "product": "Lancome Teint Idole Ultra Wear",
+   "product_id": "lancome-teint-idole-ultra-wear",
+   "brand": "Lancôme",
+   "n_reviews": 5,
+   "video_type": {
+    "single_review": 4,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "oily": 5,
+    "combination": 2,
+    "normal": 1
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 5
+    },
+    "stayed_matte": {
+     "no": 1,
+     "mostly": 4
+    },
+    "broke_out": {
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "not_mentioned": 1,
+     "yes": 3,
+     "no": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 4,
+     "yes": 1
+    }
+   },
+   "wear_hours": {
+    "n_reported": 4,
+    "avg": 11.5
+   }
+  },
+  {
+   "product": "Milk Makeup Future Fluid",
+   "product_id": "milk-makeup-future-fluid",
+   "brand": "Milk Makeup",
+   "n_reviews": 5,
+   "video_type": {
+    "single_review": 4,
+    "comparison": 1
+   },
+   "skin_type_tags": {
+    "unspecified": 3,
+    "oily": 2
+   },
+   "outcomes": {
+    "overall": {
+     "positive": 3,
+     "mixed": 2
+    },
+    "stayed_matte": {
+     "mostly": 2,
+     "not_tested": 2,
+     "no": 1
+    },
+    "broke_out": {
+     "not_mentioned": 5
+    },
+    "oxidized": {
+     "not_mentioned": 4,
+     "yes": 1
+    },
+    "would_repurchase": {
+     "not_mentioned": 5
+    }
+   },
+   "wear_hours": {
+    "n_reported": 2,
+    "avg": 9.2
+   }
+  }
+ ]
+}

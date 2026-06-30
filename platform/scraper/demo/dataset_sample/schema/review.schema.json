@@ -1,0 +1,181 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Structured product review",
+ "type": "object",
+ "required": [
+  "product",
+  "video",
+  "reviewer_profile",
+  "outcomes"
+ ],
+ "properties": {
+  "product": {
+   "type": "object",
+   "required": [
+    "name",
+    "product_id",
+    "brand"
+   ],
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "product_id": {
+     "type": "string",
+     "description": "stable slug shared by all reviews of one product"
+    },
+    "brand": {
+     "type": "string"
+    }
+   }
+  },
+  "video": {
+   "type": "object",
+   "properties": {
+    "reviewer": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "title": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "published_at": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "ISO 8601 date"
+    },
+    "duration_seconds": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "view_count": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "review_type": {
+     "enum": [
+      "single_review",
+      "comparison",
+      "roundup"
+     ]
+    }
+   }
+  },
+  "transcript": {
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "reviewer_profile": {
+   "type": "object",
+   "properties": {
+    "skin_type": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "acne_prone": {
+     "enum": [
+      "yes",
+      "no",
+      "unknown"
+     ]
+    },
+    "skin_tone_depth": {
+     "enum": [
+      "fair",
+      "light",
+      "medium",
+      "tan",
+      "deep",
+      "unknown"
+     ]
+    },
+    "undertone": {
+     "enum": [
+      "warm",
+      "cool",
+      "neutral",
+      "olive",
+      "unknown"
+     ]
+    },
+    "shade_used": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   }
+  },
+  "outcomes": {
+   "type": "object",
+   "properties": {
+    "stayed_matte": {
+     "enum": [
+      "yes",
+      "mostly",
+      "no",
+      "not_tested"
+     ]
+    },
+    "wear_hours": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "broke_out": {
+     "enum": [
+      "yes",
+      "no",
+      "not_mentioned"
+     ]
+    },
+    "oxidized": {
+     "enum": [
+      "yes",
+      "no",
+      "not_mentioned"
+     ]
+    },
+    "would_repurchase": {
+     "enum": [
+      "yes",
+      "no",
+      "not_mentioned"
+     ]
+    },
+    "overall": {
+     "enum": [
+      "positive",
+      "mixed",
+      "negative"
+     ]
+    }
+   }
+  },
+  "is_sponsored": {
+   "type": "boolean"
+  },
+  "key_quote": {
+   "type": [
+    "string",
+    "null"
+   ]
+  }
+ }
+}
