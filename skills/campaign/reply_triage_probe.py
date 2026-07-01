@@ -334,8 +334,17 @@ async def _candidate_threads(gmail, our_addrs, contacts, use_ledger, since_days,
 
         async def batch_query(chunk):
             q = f"in:inbox newer_than:{since_days}d from:({' OR '.join(chunk)})"
-            async with gsem:
-                return await list_all(gmail, q, cap=recent)
+            # Retry a transient Gmail 429/5xx a couple times with backoff rather
+            # than crash the whole scan on one throttled batch.
+            for attempt in range(3):
+                async with gsem:
+                    try:
+                        return await list_all(gmail, q, cap=recent)
+                    except Exception:  # noqa: BLE001 - tolerate a throttled batch
+                        pass
+                await asyncio.sleep(1.5 * (attempt + 1))
+            events.emit("triage.candidate_batch_dropped", level="warn", size=len(chunk))
+            return []
         results = await asyncio.gather(*(batch_query(c) for c in batches))
         mids = list(dict.fromkeys(m for r in results for m in r))  # flatten + de-dupe
 
@@ -385,7 +394,8 @@ async def _candidate_threads(gmail, our_addrs, contacts, use_ledger, since_days,
 
 async def probe(log_path: str, account_override: str, since_days: int, max_threads: int,
                 use_ledger: bool, recent: int, concurrency: int,
-                as_json: bool = False, persist_replies: bool = False) -> None:
+                as_json: bool = False, persist_replies: bool = False,
+                needs_only: bool = False) -> None:
     t_start = time.perf_counter()
     our_addrs: set[str] = set(TEAM)
     contacts: dict = {}
@@ -447,6 +457,19 @@ async def probe(log_path: str, account_override: str, since_days: int, max_threa
                              "reply_mid": (last_in or {}).get("id", ""),
                              "reply_at": _received_iso(last_in),
                              "snippet": ((last_in or {}).get("snippet") or "")[:500]})
+
+        # Fast path for the Slack /respond deck: a thread can only be a "needs
+        # reply" if THIS account first emailed the prospect (owner) and the prospect
+        # sent the latest message. Both are known from the fetched thread, with no
+        # LLM. Dropping the rest here (instead of after triage) skips the dominant
+        # cost - the per-thread Anthropic call - on the ~90% that are guaranteed
+        # skips (other founders' threads, and ones we already answered).
+        if needs_only:
+            before = len(prepared)
+            prepared = [p for p in prepared
+                        if p["owner"] == account.lower() and p["last_sender"] == "THEM"]
+            events.emit("triage.needs_prefilter", level="info",
+                        kept=len(prepared), dropped=before - len(prepared))
 
         # Triage all threads concurrently.
         use_api = bool(os.environ.get("ANTHROPIC_API_KEY"))
@@ -569,12 +592,16 @@ def main() -> None:
                     help="Upsert every detected reply into the Supabase replies "
                          "table (dedupes on message_id). Used by the server so "
                          "reply-rate stats have real data.")
+    ap.add_argument("--needs-only", action="store_true", dest="needs_only",
+                    help="Only triage threads this account owns where the prospect "
+                         "sent last (the 'needs reply' candidates), skipping the LLM "
+                         "on guaranteed skips. Fast path for the Slack /respond deck.")
     args = ap.parse_args()
     if not args.log and not args.account:
         ap.error("pass --log or --account")
     asyncio.run(probe(args.log, args.account, args.since_days, args.max_threads,
                       args.ledger, args.recent, args.concurrency, args.as_json,
-                      args.persist_replies))
+                      args.persist_replies, args.needs_only))
 
 
 if __name__ == "__main__":

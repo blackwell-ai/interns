@@ -31,9 +31,13 @@ def _short(email: str) -> str:
     return (email or "?").split("@")[0]
 
 
-async def _run_account(email: str, env: dict, concurrency: int = 20) -> dict:
+async def _run_account(email: str, env: dict, concurrency: int = 20,
+                       needs_only: bool = False) -> dict:
     cmd = ["python3", "-u", str(_PROBE), "--account", email, "--ledger",
-           "--concurrency", str(concurrency), "--json", "--persist-replies"]
+           "--concurrency", str(concurrency), "--json"]
+    # /respond wants only this founder's awaiting-reply threads, and skips the
+    # replies-table persist (the morning job owns that). The full triage keeps it.
+    cmd.append("--needs-only" if needs_only else "--persist-replies")
     proc = await asyncio.create_subprocess_exec(
         *cmd, env=env, cwd=str(executor.REPO_ROOT),
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
@@ -289,11 +293,15 @@ async def needs_for_founder(founder_email: str,
         env[f"GMAIL_TOKEN_{suffix}"] = await asyncio.to_thread(
             gmail_auth.get_access_token, founder_email)
 
-    res = await _run_account(founder_email, env)
-    # Only this founder's OWN threads. Everyone is CC'd on everyone's sends, so a
-    # scan of Armaan's inbox surfaces threads Ethan originally sent (owner=ethan);
-    # a prospect would find it odd for a different person to answer, so we keep
-    # each founder answering only the prospects they first emailed.
+    # needs_only makes the probe triage only this founder's own awaiting-reply
+    # threads (owner == account, prospect sent last), skipping the LLM on the ~90%
+    # that are guaranteed skips. Concurrency stays at 20: Gmail 429s the candidate
+    # queries above that, and the win here is doing less work, not more in parallel.
+    res = await _run_account(founder_email, env, concurrency=20, needs_only=True)
+    # Belt and braces: the probe already scoped to this owner, but re-filter in
+    # case it ran in full mode. Everyone is CC'd on everyone's sends, so a scan can
+    # surface threads another founder originated, and a prospect would find a
+    # different person answering odd.
     fe = founder_email.strip().lower()
     needs = [r for r in res.get("needs", [])
              if (r.get("owner") or "").strip().lower() == fe]
