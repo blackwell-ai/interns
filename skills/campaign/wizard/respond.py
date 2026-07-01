@@ -1,20 +1,18 @@
-"""The /respond reply-review queue: pull each reply-worthy email in turn, show a
-Claude draft grounded in the founder's past replies, let them edit it, and send
-it in-thread as that founder. Every reply they send is written back to the
-`reply_examples` corpus as a gold example, so the drafts compound toward what
-founders actually send.
+"""The /respond reply-review deck: a founder pulls up their reply-worthy emails as
+a deck they can page through. Each card shows who we are answering, their message,
+and an editable Claude draft grounded in the founder's past replies. They edit,
+Accept & send (in-thread, as that founder), or move Prev/Next. Every reply they
+send is written back to the `reply_examples` corpus as a gold example.
 
-Handlers live in `slack_bot.py`; this module owns the per-user review sessions and
-the flow (build the queue, draft, step, send, record). Modal layouts are in
-`blocks.py`.
+To make navigation instant, the whole deck is drafted in the background in
+parallel as soon as the queue is built, so by the time the founder pages forward
+the next card is usually ready. Cards still drafting show a loading state.
 
-Session state is in memory and per Slack user, so two founders can review at once
-without colliding. A review session is short; if the process restarts mid-review
-the session is gone and the user simply re-runs /respond. Nothing here is a source
-of truth: an unsent email stays in the triage queue, and a sent one drops out on
-its own because our reply lands in-thread (the next triage sees us as last sender)
-while a genuine new reply from the same prospect correctly re-surfaces. So there is
-no persistent "handled" marker to get wrong.
+Handlers live in `slack_bot.py`; modal layout in `blocks.py`. Session state is in
+memory, per Slack user, so two founders can review at once. A restart mid-review
+just means re-running /respond. Nothing here is a source of truth: an unsent email
+stays in the triage queue, and a sent one drops out on its own (our reply lands
+in-thread, so the next triage sees us as last sender).
 """
 import asyncio
 import html as html_mod
@@ -28,9 +26,12 @@ from .session import app
 
 log = logging.getLogger(__name__)
 
-# Slack user id -> review session. Each: founder_key, founder_email, queue (needs
-# rows), pos, draft (current reply_drafter output), view_id, sent, skipped.
+# Slack user id -> review session.
 _review_sessions: dict[str, dict] = {}
+
+# How many drafts to generate at once in the background. Gmail + Opus per draft,
+# so keep it modest to stay under rate limits while still filling the deck fast.
+_DRAFT_CONCURRENCY = 5
 
 
 def _founder_email(founder_key: str) -> str:
@@ -43,95 +44,101 @@ def _founder_name(founder_key: str) -> str:
 
 
 def _text_to_html(text: str) -> str:
-    """Founder-edited plain text -> a simple HTML body for the Gmail message."""
     return html_mod.escape(text).replace("\n", "<br>")
 
 
 async def _update(view_id: str, view: dict) -> None:
-    """Replace a modal in place. Best-effort: a lost race (user closed it) is not
-    fatal to the background task."""
+    """Replace a modal in place. Best-effort: a lost race (user closed it) is fine."""
     try:
         await app.client.views_update(view_id=view_id, view=view)
     except Exception as e:  # noqa: BLE001
         log.warning("views_update failed: %s", str(e)[:150])
 
 
+def picker_view() -> dict:
+    return blocks._respond_picker_modal()
+
+
 def loading_view(text: str = ":mage: Working...") -> dict:
     return blocks._respond_info_modal("Working", text)
 
 
-# ---- building and stepping the queue ----------------------------------------
+# ---- rendering --------------------------------------------------------------
 
-def _review_view(session: dict, note: str = "") -> dict:
-    """The review modal for the session's current email, optionally with a
-    warning note (e.g. after a failed send) prepended."""
-    d = session["draft"]
-    row = session["queue"][session["pos"]]
-    meta = json.dumps({"user_id": session["user_id"],
-                       "thread_id": d.get("thread_id", ""), "pos": session["pos"]})
-    view = blocks._respond_review_modal(
+def _ready_count(session: dict) -> int:
+    return sum(1 for it in session["deck"]
+               if it["draft_status"] in ("ready", "failed") or it["sent"])
+
+
+def _render(session: dict) -> dict:
+    """Build the modal for the session's current card."""
+    deck = session["deck"]
+    pos = session["pos"]
+    it = deck[pos]
+    row = it["row"]
+    d = it.get("draft") or {}
+
+    if it["sent"]:
+        mode, body = "sent", (it.get("edited") or d.get("draft", ""))
+    elif it["draft_status"] == "ready":
+        mode, body = "review", (it.get("edited") if it.get("edited") is not None
+                                else d.get("draft", ""))
+    elif it["draft_status"] == "failed":
+        mode, body = "failed", ""
+    else:
+        mode, body = "pending", ""
+
+    meta = json.dumps({"user_id": session["user_id"], "pos": pos,
+                       "thread_id": row.get("thread_id", "")})
+    return blocks._respond_deck_modal(
         founder_name=_founder_name(session["founder_key"]),
-        pos=session["pos"] + 1, total=len(session["queue"]),
-        who=row.get("who", d.get("to", "")), subject=d.get("incoming_subject", ""),
-        thread_preview=d.get("thread_preview", ""), draft=d.get("draft", ""),
-        category=d.get("category", "other"), n_examples=d.get("n_examples", 0),
+        pos=pos + 1, total=len(deck),
+        sent=session["sent"], skipped=session["skipped"], ready=_ready_count(session),
+        who=row.get("who", d.get("to", "")),
+        subject=d.get("incoming_subject", ""),
+        thread_preview=d.get("thread_preview", ""),
+        body=body, category=d.get("category", "other"),
+        n_examples=d.get("n_examples", 0), mode=mode,
+        can_prev=pos > 0, can_next=pos < len(deck) - 1,
         private_metadata=meta)
-    if note:
-        view["blocks"].insert(0, {"type": "context", "elements": [
-            {"type": "mrkdwn", "text": f":warning: {note}"}]})
-    return view
 
 
-def _summary(session: dict) -> str:
-    return (f"Done. Sent *{session['sent']}* and skipped *{session['skipped']}*. "
-            "Nothing else waiting. :sparkles:")
+async def _show(session: dict) -> None:
+    """Render the current card. Remember which card a loading screen is waiting on,
+    so the background drafter can refresh it in place when the draft lands."""
+    it = session["deck"][session["pos"]]
+    session["loading_pos"] = session["pos"] if (
+        it["draft_status"] == "pending" and not it["sent"]) else None
+    await _update(session["view_id"], _render(session))
 
 
-async def _advance_to_next_draftable(session: dict) -> bool:
-    """Draft the current queue item, skipping any that cannot be drafted (an
-    unreadable thread, or one with no inbound to answer). Returns True when a draft
-    is ready in session['draft'], False when the queue is exhausted."""
-    while session["pos"] < len(session["queue"]):
-        item = session["queue"][session["pos"]]
-        try:
-            session["draft"] = await reply_drafter.generate_draft(
-                session["founder_key"], session["founder_email"], item["thread_id"])
-            return True
-        except Exception as e:  # noqa: BLE001 - a bad thread must not stall the queue
-            log.warning("draft generation failed, skipping thread: %s", str(e)[:120])
-            session["pos"] += 1
-            session["skipped"] += 1
-    return False
-
-
-async def _present(session: dict) -> None:
-    """Draft the next email (showing a loading modal meanwhile) and show it, or the
-    done summary if the queue is exhausted."""
-    view_id = session["view_id"]
-    await _update(view_id, loading_view(":mage: Drafting the reply..."))
-    ready = await _advance_to_next_draftable(session)
-    if not ready:
-        await _update(view_id, blocks._respond_info_modal("All done", _summary(session)))
-        _review_sessions.pop(session["user_id"], None)
+def _save_edit(session: dict, edited: str | None) -> None:
+    """Persist the founder's in-progress edit for the current card so paging away
+    and back keeps it. Only meaningful while the card is an editable draft."""
+    if edited is None:
         return
-    await _update(view_id, _review_view(session))
+    it = session["deck"][session["pos"]]
+    if it["draft_status"] == "ready" and not it["sent"]:
+        it["edited"] = edited
 
+
+# ---- building the deck + background drafting --------------------------------
 
 async def build_first(user_id: str, founder_key: str, view_id: str) -> None:
-    """Start a review session: pull the founder's awaiting-reply queue and show the
-    first draft. Called in the background after the picker is submitted."""
+    """Pull the founder's awaiting-reply queue, build the deck, show the first
+    card, and kick off drafting the whole deck in the background."""
     fe = _founder_email(founder_key)
     session = {"user_id": user_id, "founder_key": founder_key, "founder_email": fe,
-               "queue": [], "pos": 0, "draft": None, "view_id": view_id,
-               "sent": 0, "skipped": 0}
+               "deck": [], "pos": 0, "view_id": view_id, "sent": 0, "skipped": 0,
+               "loading_pos": None, "draft_task": None}
     _review_sessions[user_id] = session
-    await _update(view_id, loading_view(f":crystal_ball: Gathering {_founder_name(founder_key)}'s replies..."))
+    await _update(view_id, loading_view(
+        f":crystal_ball: Gathering {_founder_name(founder_key)}'s replies..."))
     try:
         needs = await triage.needs_for_founder(fe)
     except Exception as e:  # noqa: BLE001
         await _update(view_id, blocks._respond_info_modal(
-            "Trouble", f"I could not read {_founder_name(founder_key)}'s inbox.\n\n"
-                       f"`{str(e)[:200]}`"))
+            "Trouble", f"I could not read {_founder_name(founder_key)}'s inbox.\n\n`{str(e)[:200]}`"))
         _review_sessions.pop(user_id, None)
         return
     if not needs:
@@ -139,56 +146,82 @@ async def build_first(user_id: str, founder_key: str, view_id: str) -> None:
             "All clear", f"No replies are waiting for {_founder_name(founder_key)}. :sparkles:"))
         _review_sessions.pop(user_id, None)
         return
-    session["queue"] = needs
-    await _present(session)
+    session["deck"] = [{"row": r, "draft": None, "edited": None,
+                        "draft_status": "pending", "sent": False} for r in needs]
+    await _show(session)
+    session["draft_task"] = asyncio.create_task(_draft_all(session))
 
 
-# ---- button actions ---------------------------------------------------------
+async def _draft_all(session: dict) -> None:
+    """Draft every card in the background, in parallel. As each lands, refresh the
+    view only if the founder is currently sitting on that card's loading screen."""
+    sem = asyncio.Semaphore(_DRAFT_CONCURRENCY)
+    fk, fe = session["founder_key"], session["founder_email"]
 
-async def on_skip(user_id: str, view_id: str) -> None:
+    async def one(i: int) -> None:
+        async with sem:
+            if _review_sessions.get(session["user_id"]) is not session:
+                return  # session ended or replaced; stop working
+            it = session["deck"][i]
+            try:
+                it["draft"] = await reply_drafter.generate_draft(
+                    fk, fe, it["row"]["thread_id"])
+                it["draft_status"] = "ready"
+            except Exception as e:  # noqa: BLE001 - one bad thread must not stall the deck
+                it["draft_status"] = "failed"
+                log.warning("draft generation failed for a thread: %s", str(e)[:120])
+        if session.get("loading_pos") == i and _review_sessions.get(session["user_id"]) is session:
+            await _show(session)
+
+    await asyncio.gather(*(one(i) for i in range(len(session["deck"]))))
+
+
+# ---- navigation -------------------------------------------------------------
+
+async def on_nav(user_id: str, view_id: str, delta: int, edited: str | None) -> None:
     session = _review_sessions.get(user_id)
     if not session:
         await _update(view_id, blocks._respond_info_modal(
-            "Session ended", "Run `/respond` again to pick up where you left off."))
+            "Session ended", "Run `/respond` again to start over."))
         return
     session["view_id"] = view_id
-    session["pos"] += 1
-    session["skipped"] += 1
-    session["draft"] = None
-    await _present(session)
+    _save_edit(session, edited)
+    session["pos"] = max(0, min(len(session["deck"]) - 1, session["pos"] + delta))
+    await _show(session)
 
 
-async def on_regen(user_id: str, view_id: str) -> None:
+async def on_regen(user_id: str, view_id: str, edited: str | None) -> None:
     session = _review_sessions.get(user_id)
-    if not session or not session.get("draft"):
-        await _update(view_id, blocks._respond_info_modal(
-            "Session ended", "Run `/respond` again."))
+    if not session:
+        await _update(view_id, blocks._respond_info_modal("Session ended", "Run `/respond` again."))
         return
     session["view_id"] = view_id
-    thread_id = session["draft"].get("thread_id") or session["queue"][session["pos"]]["thread_id"]
-    await _update(view_id, loading_view(":mage: Drafting a fresh version..."))
+    _save_edit(session, edited)
+    it = session["deck"][session["pos"]]
+    it["draft_status"] = "pending"
+    it["edited"] = None
+    await _show(session)
     try:
-        session["draft"] = await reply_drafter.generate_draft(
-            session["founder_key"], session["founder_email"], thread_id)
-        await _update(view_id, _review_view(session))
+        it["draft"] = await reply_drafter.generate_draft(
+            session["founder_key"], session["founder_email"], it["row"]["thread_id"])
+        it["draft_status"] = "ready"
     except Exception as e:  # noqa: BLE001
-        await _update(view_id, _review_view(
-            session, note=f"Could not regenerate ({str(e)[:80]}). Kept the previous draft."))
+        it["draft_status"] = "failed"
+        log.warning("regenerate failed: %s", str(e)[:120])
+    await _show(session)
 
 
-# ---- send (with the feedback-loop write-back) -------------------------------
+# ---- accept & send (with the feedback-loop write-back) ----------------------
 
 async def _send_reply(session: dict, body: str) -> tuple[bool, str]:
-    """Send the edited body in-thread as the founder, via the reply_followup REST
+    """Send the edited body in-thread as the founder, via reply_followup's REST
     helpers (create draft then send). Returns (ok, sent_message_id_or_detail)."""
-    d = session["draft"]
+    d = session["deck"][session["pos"]]["draft"]
     spec = {
-        "to": d["to"],
-        "subject": d["reply_subject"],
+        "to": d["to"], "subject": d["reply_subject"],
         "body_html": _text_to_html(body),
         "reply_to_message_id": d["reply_to_message_id"],
-        "thread_id": d["thread_id"],
-        "quote": False,
+        "thread_id": d["thread_id"], "quote": False,
     }
     try:
         token = await asyncio.to_thread(gmail_auth.get_access_token, session["founder_email"])
@@ -203,7 +236,7 @@ async def _send_reply(session: dict, body: str) -> tuple[bool, str]:
 async def _record_gold(session: dict, body: str, sent_id: str) -> None:
     """Feedback loop: store the reply the founder actually sent as a gold example.
     Best-effort; a corpus write must never fail a successful send."""
-    d = session["draft"]
+    d = session["deck"][session["pos"]]["draft"]
     try:
         await reply_examples.add_gold_example(
             founder=session["founder_key"], category=d.get("category", "other"),
@@ -215,39 +248,56 @@ async def _record_gold(session: dict, body: str, sent_id: str) -> None:
         log.warning("gold example write failed: %s", str(e)[:150])
 
 
+def _next_unsent(session: dict) -> int | None:
+    """Index of the next not-yet-sent card after the current one (wrapping once),
+    or None when every card has been sent."""
+    n = len(session["deck"])
+    for step in range(1, n + 1):
+        j = (session["pos"] + step) % n
+        if not session["deck"][j]["sent"]:
+            return j
+    return None
+
+
 async def on_send(user_id: str, view_id: str, body: str) -> None:
-    """Send the founder's edited reply, record it as a gold example, and advance.
-    On any send failure, nothing is recorded and the email stays in the queue
-    (the review modal reappears with the edit intact so they can retry)."""
+    """Accept & send the current card. On any send failure nothing is recorded and
+    the card stays put (the review modal reappears with the edit intact to retry)."""
     session = _review_sessions.get(user_id)
-    if not session or not session.get("draft"):
-        await _update(view_id, blocks._respond_info_modal(
-            "Session ended", "Run `/respond` again."))
+    if not session:
+        await _update(view_id, blocks._respond_info_modal("Session ended", "Run `/respond` again."))
         return
     session["view_id"] = view_id
+    it = session["deck"][session["pos"]]
+    if it["sent"] or it["draft_status"] != "ready":
+        await _show(session)  # stale submit (already sent, or not ready) — just redraw
+        return
+    it["edited"] = body
     if not body.strip():
-        session["draft"]["draft"] = body
-        await _update(view_id, _review_view(session, note="The reply was empty. Nothing was sent."))
+        await _update(view_id, _render(session))  # empty; leave them on the card
         return
 
     await _update(view_id, loading_view(":envelope_with_arrow: Sending your reply..."))
     ok, detail = await _send_reply(session, body)
     if not ok:
-        # Keep the edit, do NOT advance, do NOT record. Let them retry or skip.
-        session["draft"]["draft"] = body
-        await _update(view_id, _review_view(
-            session, note=f"Send failed, nothing left your outbox: {detail}. "
-                          "This email is still in your queue."))
+        # Edit preserved, nothing sent, nothing recorded; let them retry or move on.
+        await _update(view_id, _with_note(session, f"Send failed, nothing left your outbox: {detail}"))
         return
 
-    await _record_gold(session, body, detail)  # detail is the sent message id
+    await _record_gold(session, body, detail)
+    it["sent"] = True
     session["sent"] += 1
-    session["pos"] += 1
-    session["draft"] = None
-    await _present(session)
+    nxt = _next_unsent(session)
+    if nxt is None:
+        await _update(view_id, blocks._respond_info_modal(
+            "All done", f"Sent *{session['sent']}*. Nothing else to answer. :sparkles:"))
+        _review_sessions.pop(user_id, None)
+        return
+    session["pos"] = nxt
+    await _show(session)
 
 
-# ---- entry ------------------------------------------------------------------
-
-def picker_view() -> dict:
-    return blocks._respond_picker_modal()
+def _with_note(session: dict, note: str) -> dict:
+    view = _render(session)
+    view["blocks"].insert(0, {"type": "context", "elements": [
+        {"type": "mrkdwn", "text": f":warning: {note}"}]})
+    return view

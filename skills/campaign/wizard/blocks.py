@@ -188,44 +188,86 @@ def _respond_info_modal(title: str, text: str) -> dict:
     }
 
 
-def _respond_review_modal(*, founder_name: str, pos: int, total: int, who: str,
-                          subject: str, thread_preview: str, draft: str,
-                          category: str, n_examples: int,
-                          private_metadata: str) -> dict:
-    """The per-email review modal: the incoming thread for context, an editable
-    draft prefilled from Claude, and Send / Skip / Regenerate. Submit = Send."""
-    src = (f"drafted from {n_examples} of your past repl"
-           f"{'y' if n_examples == 1 else 'ies'} (category: {category})"
-           if n_examples else "no past examples yet, so this is a plain first draft")
-    return {
+def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
+                        skipped: int, ready: int, who: str, subject: str,
+                        thread_preview: str, body: str, category: str,
+                        n_examples: int, mode: str, can_prev: bool, can_next: bool,
+                        private_metadata: str) -> dict:
+    """One card in the reply-review deck. `mode` selects the state:
+      review  - draft ready: editable reply + Accept & send (submit)
+      pending - still drafting this one (no submit)
+      sent    - already sent this session (read-only, no submit)
+      failed  - could not draft (no submit; Regenerate offered)
+    Prev/Next page through the whole deck; edits are captured on every button."""
+    counters = f"{pos} of {total}"
+    tallies = []
+    if sent:
+        tallies.append(f":white_check_mark: {sent} sent")
+    if skipped:
+        tallies.append(f":fast_forward: {skipped} skipped")
+    if ready < total:
+        tallies.append(f":hourglass_flowing_sand: {ready}/{total} drafted")
+    tail = ("  ·  " + "  ·  ".join(tallies)) if tallies else ""
+
+    quoted = "\n".join("> " + ln for ln in
+                       (thread_preview or "(could not load thread)").splitlines())[:2600]
+    blocks: list = [
+        {"type": "context", "elements": [{"type": "mrkdwn",
+         "text": f":mage: *{founder_name}*  ·  {counters}{tail}"}]},
+        {"type": "section", "text": {"type": "mrkdwn",
+         "text": f"*To:* {who or '(unknown)'}\n*Subject:* {subject or '(none)'}"}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their message*\n" + quoted}},
+        {"type": "divider"},
+    ]
+
+    submit = None
+    if mode == "review":
+        src = (f"drafted from {n_examples} of your past repl"
+               f"{'y' if n_examples == 1 else 'ies'} (category: {category})"
+               if n_examples else "no past examples yet, so this is a plain first draft")
+        blocks.append({"type": "input", "block_id": "resp_body",
+                       "label": {"type": "plain_text", "text": "Your reply"},
+                       "element": {"type": "plain_text_input", "action_id": "v",
+                                   "multiline": True, "initial_value": body[:2900]}})
+        blocks.append({"type": "context", "elements": [{"type": "mrkdwn", "text": f":sparkles: {src}"}]})
+        submit = "Accept & send ✨"
+    elif mode == "pending":
+        blocks.append({"type": "section", "text": {"type": "mrkdwn",
+                       "text": ":hourglass_flowing_sand: _Drafting this reply..._ "
+                               "Use Next to review others while it finishes."}})
+    elif mode == "sent":
+        blocks.append({"type": "section", "text": {"type": "mrkdwn",
+                       "text": ":white_check_mark: *Sent.*\n"
+                               + "\n".join("> " + ln for ln in body.splitlines())[:2600]}})
+    else:  # failed
+        blocks.append({"type": "section", "text": {"type": "mrkdwn",
+                       "text": ":warning: Could not draft this one. Hit Regenerate to "
+                               "retry, or Next to move on."}})
+
+    nav: list = []
+    if can_prev:
+        nav.append({"type": "button", "action_id": "resp_prev",
+                    "text": {"type": "plain_text", "text": "◀ Prev"}})
+    if can_next:
+        nav.append({"type": "button", "action_id": "resp_next",
+                    "text": {"type": "plain_text", "text": "Next ▶"}})
+    if mode in ("review", "failed"):
+        nav.append({"type": "button", "action_id": "resp_regen",
+                    "text": {"type": "plain_text", "text": "Regenerate ♻️"}})
+    if nav:
+        blocks.append({"type": "actions", "block_id": "resp_actions", "elements": nav})
+
+    view = {
         "type": "modal",
         "callback_id": "resp_review",
         "private_metadata": private_metadata,
-        "title": {"type": "plain_text", "text": "Review reply"},
-        "submit": {"type": "plain_text", "text": "Send"},
-        "close": {"type": "plain_text", "text": "Cancel"},
-        "blocks": [
-            {"type": "context", "elements": [{"type": "mrkdwn",
-             "text": f":mage: *{founder_name}*  ·  {pos} of {total}  ·  to *{who}*"}]},
-            {"type": "section", "text": {"type": "mrkdwn",
-             "text": f"*Subject:* {subject or '(none)'}"}},
-            {"type": "section", "text": {"type": "mrkdwn",
-             "text": "*Their message*\n" + "\n".join(
-                 "> " + ln for ln in (thread_preview or "(could not load thread)").splitlines())[:2800]}},
-            {"type": "divider"},
-            {"type": "input", "block_id": "resp_body",
-             "label": {"type": "plain_text", "text": "Your reply"},
-             "element": {"type": "plain_text_input", "action_id": "v",
-                         "multiline": True, "initial_value": draft[:2900]}},
-            {"type": "context", "elements": [{"type": "mrkdwn", "text": f":sparkles: {src}"}]},
-            {"type": "actions", "block_id": "resp_actions", "elements": [
-                {"type": "button", "action_id": "resp_skip",
-                 "text": {"type": "plain_text", "text": "Skip ⏭"}},
-                {"type": "button", "action_id": "resp_regen",
-                 "text": {"type": "plain_text", "text": "Regenerate ♻️"}},
-            ]},
-        ],
+        "title": {"type": "plain_text", "text": "Review replies"},
+        "close": {"type": "plain_text", "text": "Close"},
+        "blocks": blocks,
     }
+    if submit:
+        view["submit"] = {"type": "plain_text", "text": submit}
+    return view
 
 
 _RUN_ICON = {

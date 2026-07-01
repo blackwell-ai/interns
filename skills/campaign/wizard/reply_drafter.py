@@ -181,7 +181,7 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         "incoming_body": incoming_body,
         "reply_subject": _reply_subject(incoming_subject),
         "to": to,
-        "anchor_message_id": anchor_message_id,
+        "reply_to_message_id": reply_to_message_id,
         "thread_id": thread_id,
         "thread_preview": thread_preview,
         "n_examples": len(examples),

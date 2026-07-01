@@ -335,22 +335,38 @@ async def on_respond_pick(ack, body, view, logger) -> None:
     asyncio.create_task(respond.build_first(user_id, founder_key, view_id))
 
 
-@app.action("resp_skip")
-async def on_respond_skip(ack, body, logger) -> None:
+def _current_edit(body) -> str | None:
+    """The founder's in-progress reply text from a modal interaction, or None when
+    the current card has no editable input (a pending/sent/failed card)."""
+    values = (body.get("view", {}).get("state", {}) or {}).get("values", {})
+    return values.get("resp_body", {}).get("v", {}).get("value")
+
+
+@app.action("resp_prev")
+async def on_respond_prev(ack, body, logger) -> None:
     await ack()
-    asyncio.create_task(respond.on_skip(body["user"]["id"], body["view"]["id"]))
+    asyncio.create_task(respond.on_nav(
+        body["user"]["id"], body["view"]["id"], -1, _current_edit(body)))
+
+
+@app.action("resp_next")
+async def on_respond_next(ack, body, logger) -> None:
+    await ack()
+    asyncio.create_task(respond.on_nav(
+        body["user"]["id"], body["view"]["id"], +1, _current_edit(body)))
 
 
 @app.action("resp_regen")
 async def on_respond_regen(ack, body, logger) -> None:
     await ack()
-    asyncio.create_task(respond.on_regen(body["user"]["id"], body["view"]["id"]))
+    asyncio.create_task(respond.on_regen(
+        body["user"]["id"], body["view"]["id"], _current_edit(body)))
 
 
 @app.view("resp_review")
 async def on_respond_send(ack, body, view, logger) -> None:
-    """Send button. Update the modal to a loading state, then send the edited reply
-    in-thread and advance the queue in the background."""
+    """Accept & send. Update the modal to a loading state, then send the edited
+    reply in-thread and advance to the next card in the background."""
     body_text = view["state"]["values"].get("resp_body", {}).get("v", {}).get("value") or ""
     await ack(response_action="update", view=respond.loading_view())
     user_id = body["user"]["id"]

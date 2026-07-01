@@ -303,10 +303,13 @@ handlers are dead code. The modal stepping uses `views_update` /
   handlers and startup -> `slack_bot.py`; the Block Kit layout -> `blocks.py`.
 - The send mechanics (sourcing, dedupe, actual send) -> `run.py` and the toolbox
   gmail primitive, not the wizard package.
-- The /respond queue flow (build queue, step, send, feedback) -> `respond.py`; its
-  handlers -> `slack_bot.py` (`on_respond_command`, `on_respond_pick`,
-  `on_respond_skip`, `on_respond_regen`, `on_respond_send`); its modals ->
-  `blocks.py` (`_respond_*`). The queue source -> `triage.needs_for_founder`.
+- The /respond deck flow (build deck, background-draft all, prev/next nav,
+  accept-and-send, feedback) -> `respond.py`; its handlers -> `slack_bot.py`
+  (`on_respond_command`, `on_respond_pick`, `on_respond_prev`, `on_respond_next`,
+  `on_respond_regen`, `on_respond_send`); its modal -> `blocks._respond_deck_modal`
+  (states: review / pending / sent / failed). The deck source ->
+  `triage.needs_for_founder`. Drafts are generated in parallel in the background
+  (`_draft_all`, concurrency `_DRAFT_CONCURRENCY`) so navigation is instant.
 - How a reply draft is written (prompt, retrieval, voice) -> `reply_drafter.py`
   (`_SYSTEM`) + `reply_examples.retrieve` + `voice_cards`. The category taxonomy
   -> `reply_examples.CATEGORIES` / `classify_category`.
