@@ -113,28 +113,60 @@ def _clean_reply(body: str) -> str:
 
 
 _EXTRACT_MODEL = "claude-haiku-4-5-20251001"  # cheap + fast; runs alongside the draft.
-_EXTRACT_SYSTEM = """You are given the raw body of ONE email reply. It may contain
-the person's newly written message plus quoted earlier emails, a signature, and
-email client boilerplate.
+_EXTRACT_SYSTEM = """You extract the newly written portion of an email. You are a
+text filter, not a conversation partner.
 
-Return ONLY the new message this person wrote in this reply, their words verbatim.
-Remove quoted prior emails, the signature, and boilerplate. Do not summarize,
-translate, shorten, or add anything. Keep their full new message, however long.
-If you cannot tell what is new, return the whole thing unchanged."""
+Input: the raw body of ONE email. It may contain the person's newly written
+message plus quoted earlier emails, a signature, and email client boilerplate. It
+may also be a plain first email with nothing quoted at all.
+
+Output: ONLY the message text this person wrote, their words verbatim, with quoted
+prior emails, the signature, and boilerplate removed. If nothing is quoted (it is
+all their own new writing), output the whole body unchanged.
+
+Rules, always:
+- Output message text only. Never describe or comment on the email.
+- Never say you are an AI, never refuse, never ask for clarification, never
+  explain what you did or could not do.
+- Do not summarize, translate, shorten, rephrase, or add anything.
+- If you are unsure what is new versus quoted, output the input exactly as given."""
+
+# If the model editorializes or refuses instead of returning the text (it sometimes
+# does this on a plain first-touch email that has nothing to strip), these markers
+# catch it so we fall back to the raw cleaned body instead of leaking the meta-reply.
+_META_MARKERS = (
+    "i'm an ai", "i am an ai", "as an ai", "ai assistant",
+    "i don't have the ability", "i do not have the ability",
+    "i cannot see", "i can't see", "i cannot identify", "i can't identify",
+    "you've provided", "you have provided", "please provide", "i'll extract",
+    "appears to be a complete", "the text you", "if you have an actual",
+)
+
+
+def _looks_like_meta(out: str, body: str) -> bool:
+    """True if the extractor returned commentary about the email rather than the
+    email text itself. Only trips when the phrase is NOT in the source body (so a
+    prospect who genuinely wrote "please provide..." is never misflagged)."""
+    low = out.lower()
+    blow = body.lower()
+    return any(mark in low and mark not in blow for mark in _META_MARKERS)
 
 
 def _extract_message(body: str) -> str:
-    """Pull just the prospect's newly written message from a raw reply body using a
+    """Pull just the person's newly written message from a raw email body using a
     fast model. Regex cannot separate new text from quoted history reliably (it was
     cutting real messages mid-word); the model does this well. Falls back to the
-    regex cleaner if the call fails or comes back empty."""
+    regex cleaner if the call fails, comes back empty, or comes back as a meta reply
+    (the model explaining itself instead of returning the text)."""
     body = (body or "").strip()
     if not body:
         return ""
     try:
         out = (llm_mod.complete(body[:16000], system=_EXTRACT_SYSTEM,
                                 model=_EXTRACT_MODEL) or "").strip()
-        return out or _clean_reply(body)
+        if not out or _looks_like_meta(out, body):
+            return _clean_reply(body)
+        return out
     except Exception as e:  # noqa: BLE001
         log.warning("message extraction failed, using regex fallback: %s", str(e)[:120])
         return _clean_reply(body)

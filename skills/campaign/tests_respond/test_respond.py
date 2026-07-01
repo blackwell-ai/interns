@@ -311,6 +311,28 @@ def test_text_to_html_linkifies_urls_and_markdown():
     assert respond._text_to_html("a & b\nc") == "a &amp; b<br>c"
 
 
+def test_extract_message_falls_back_when_model_editorializes():
+    """A first-touch email has nothing to strip, and the fast model sometimes
+    replies with a meta refusal ("I'm an AI assistant...") instead of the text.
+    That must be caught and replaced with the raw cleaned body, never shown."""
+    body = "Hi Hassan,\n\nWe build eval tooling for AI teams. Open to a quick call?\n\nArmaan"
+    meta = ("I'm an AI assistant, so I don't have the ability to identify which part "
+            "is a reply. The text you've provided appears to be a complete original "
+            "outreach email. If you have an actual email reply, please provide it.")
+    with patch.object(reply_drafter.llm_mod, "complete", MagicMock(return_value=meta)):
+        out = reply_drafter._extract_message(body)
+    assert "AI assistant" not in out and "please provide" not in out
+    assert "eval tooling" in out            # the real message survives via the fallback
+
+
+def test_extract_message_keeps_genuine_text():
+    """A normal extraction result is returned as-is (no false meta trip)."""
+    body = "Sure, what does it cost?\n\nOn Jun 1 Armaan wrote:\n> hi"
+    with patch.object(reply_drafter.llm_mod, "complete",
+                      MagicMock(return_value="Sure, what does it cost?")):
+        assert reply_drafter._extract_message(body) == "Sure, what does it cost?"
+
+
 def test_clean_reply_strips_quoted_thread_and_html():
     raw = (
         "Hey,\n\nHappy to discuss on a call.\n\n"
