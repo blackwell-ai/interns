@@ -168,6 +168,9 @@ async def run_campaign(
                 "--template", template_path,
                 "--skip-preflight",
             ]
+            # GEO pilot: fill {{personal_line}} per brand from an AI-visibility check.
+            if item.get("geo"):
+                cmd.append("--personalize-visibility")
 
     proc = await asyncio.create_subprocess_exec(
         *cmd,

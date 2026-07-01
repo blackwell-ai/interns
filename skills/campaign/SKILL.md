@@ -130,7 +130,9 @@ reply counts to Notion. Output goes to `runs/cron-campaign.log`.
 Templates live in `skills/campaign/templates/`. Each is a markdown file with
 frontmatter `subject:` and a body that uses `{{slots}}` for personalisation.
 Available slots: `{{first_name}}`, `{{company}}`, `{{from_name}}`,
-`{{segment_phrase}}`.
+`{{segment_phrase}}`, `{{personal_line}}` (per-brand line; see AI-visibility
+mode below). Every slot a template uses must be non-empty for every row or that
+row fails compose.
 
 HTML templates are auto-detected: if the body starts with `<`, the email is
 sent as multipart HTML. Use `<p>` tags for paragraphs. Do not add extra
@@ -144,6 +146,46 @@ python3 skills/campaign/run.py --template skills/campaign/templates/brands.md ..
 
 Always pass `--template` explicitly when using `--leads` — the pipeline
 defaults to `template_a.md` if you omit it.
+
+### AI-visibility (GEO) mode
+
+`--personalize-visibility` fills a `{{personal_line}}` slot per brand from a
+live check: it asks an AI which brands it names for the buyer's niche and
+whether this brand is one of them, then opens the email with what it found
+(brand absent -> names real competitors; present -> softer line; check failed
+-> a safe generic line that claims nothing unverified). The line is never
+empty, so it never breaks compose. Off by default; one extra LLM call per
+contact, so only GEO runs pay for it. Template: `templates/ai_visibility.md`.
+
+Through the Slack/Telegram wizard this turns on automatically: frame the ask
+around AI visibility ("40 emails to DTC apparel brands about how they show up
+in ChatGPT") and the planner sets `geo: true`, which routes to the GEO template
+and passes `--personalize-visibility`. The claim-making logic lives in one
+tested module, `visibility.py`.
+
+**Preview the real line before sending — `geo test`.** The wizard's normal
+preview runs before any brand is sourced, so it shows `{{personal_line}}`
+unfilled; the real line is generated per brand at send time. To see it, ask the
+Slack wizard:
+
+```
+@wizard geo test women's lingerie          # sources 2 live brands for the niche
+@wizard geo test orange-lingerie.com       # tests one exact brand (most reliable)
+```
+
+It sources live brands (StoreLeads), runs the real check, and posts the
+finished email. Read-only, sends nothing. Use the domain form when you want a
+trustworthy preview: the niche form adds sourcing + niche-inference noise (a
+loosely matched store or a wrong niche guess can slip in), which is exactly what
+this command lets you catch. Handler: `server/geo_test.py`.
+
+Direct CLI:
+
+```bash
+python3 skills/campaign/run.py --icp "DTC apparel brands" \
+  --template skills/campaign/templates/ai_visibility.md \
+  --personalize-visibility --limit 20 --dry-run ...
+```
 
 ---
 

@@ -28,7 +28,8 @@ from slack_bolt.async_app import AsyncApp
 
 from skills.campaign import reply_followup
 
-from . import agent, config, executor, gmail_auth, qa, slack_config, triage, triage_dismiss
+from . import (agent, config, executor, geo_test, gmail_auth, qa, slack_config,
+               triage, triage_dismiss)
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -325,7 +326,31 @@ def _sample_blocks(run: dict) -> list:
         f"A sample scroll from {run['from_name']} ({school})", subject, sample)]
 
 
-def _preview_blocks(plan_runs: list[dict], deferred: int) -> tuple[str, list]:
+def _niche_blocks(niche_preview: list[dict]) -> list:
+    """Render the target niches (and a few sample domains) so a teammate can spot
+    intent drift before confirming. Niche labels are capped per ICP to stay under
+    Slack's 3000-char section limit; sample domains go in a context line."""
+    blocks: list = []
+    for np in niche_preview:
+        if not np.get("niches"):
+            continue
+        shown = np["niches"][:14]
+        more = len(np["niches"]) - len(shown)
+        niche_str = ", ".join(shown) + (f"  _+{more} more_" if more > 0 else "")
+        blocks.append({"type": "section", "text": {"type": "mrkdwn",
+            "text": f"*Target niches — {np['label']}:*\n{niche_str}"}})
+        for s in np.get("samples", []):
+            blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
+                "text": f"e.g. _{s['niche']}_: " + ", ".join(s["domains"])}]})
+    if blocks:
+        blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
+            "text": ":eyes: Check these match your target. If a niche or sample "
+                    "looks off, hit Cancel and rephrase before sending."}]})
+    return blocks
+
+
+def _preview_blocks(plan_runs: list[dict], deferred: int,
+                    niche_preview: list[dict] | None = None) -> tuple[str, list]:
     total = sum(p["n_emails"] for p in plan_runs)
     n_senders = len({p["sender_key"] for p in plan_runs})
     run_lines = "\n".join(
@@ -342,6 +367,8 @@ def _preview_blocks(plan_runs: list[dict], deferred: int) -> tuple[str, list]:
                  f"*{n_senders}* sender{'s' if n_senders != 1 else ''}"}},
         {"type": "section", "text": {"type": "mrkdwn", "text": run_lines}},
     ]
+    if niche_preview:
+        blocks += _niche_blocks(niche_preview)
     if deferred:
         cap_total = len(agent.SENDERS) * agent.PER_ACCOUNT_DAILY_CAP
         blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
@@ -573,7 +600,18 @@ async def _present_plan(reply, plan_runs: list[dict], deferred: int) -> None:
     _state["mode"] = "awaiting_preview"
     log.info("plan: %s", [(p["from_name"], p["icp_label"], p["n_emails"])
                           for p in plan_runs])
-    fallback, blocks = _preview_blocks(plan_runs, deferred)
+    # Generate the target niches now so they show in the preview and a human can
+    # catch intent drift (e.g. "affiliate marketing" returning Robinhood) before
+    # any send. This populates the cache run.py reads, so it is not wasted work.
+    niche_preview: list[dict] = []
+    if any((p.get("icp_desc") or "").lower() != "direct send" for p in plan_runs):
+        await reply(":mag: Scrying the target niches...")
+        try:
+            niche_preview = await agent.preview_niches(plan_runs)
+        except Exception:
+            log.exception("niche preview failed")
+    _state["niche_preview"] = niche_preview
+    fallback, blocks = _preview_blocks(plan_runs, deferred, niche_preview)
     await reply(fallback, blocks)
 
 
@@ -738,7 +776,8 @@ def _reset() -> None:
             pass
     _state.update({"mode": "idle", "pending_plan": None, "pending_request": None,
                    "running_task": None, "progress": "", "thread_ts": None,
-                   "request_text": "", "deferred": 0, "draft_template": None})
+                   "request_text": "", "deferred": 0, "draft_template": None,
+                   "niche_preview": []})
 
 
 def _register(thread_ts: str | None, record: dict) -> None:
@@ -953,17 +992,27 @@ async def on_message(event, logger) -> None:
             else:
                 await _route(text, _thread_reply())
             return
-        # A fresh @mention. Triage and questions are read-only; a send request
-        # starts a (gated) campaign session.
+        # A fresh @mention. One intent classifier decides send vs triage vs
+        # question, so a question that merely mentions "replies"/"responses" (e.g.
+        # "what did the aerospace folks say") reaches the Q&A loop instead of being
+        # swallowed by a keyword-matched full-inbox triage. CSV handoffs always go
+        # to the gated send path. Both triage and Q&A are read-only.
         if is_mention:
-            if not csv_leads and _is_triage(text):
-                await _start_triage(thread_ts or event.get("ts"))
+            # GEO test: source a live brand, run the real visibility check, and
+            # post the finished email so the per-brand comparison line can be
+            # read before any campaign. Read-only; checked before the classifier
+            # so "geo test ..." is never read as a send or a question.
+            if not csv_leads and geo_test.is_geo_test(text):
+                await geo_test.run(text, _reply_to(thread_ts or event.get("ts")))
                 return
-            # Not a CSV handoff and not a send request -> answer it as a question.
-            if not csv_leads and text.strip() and \
-                    await qa.classify_intent(text) == "question":
-                await _start_qa(text, thread_ts or event.get("ts"))
-                return
+            if not csv_leads and text.strip():
+                intent = await qa.classify_intent(text)
+                if intent == "triage":
+                    await _start_triage(thread_ts or event.get("ts"))
+                    return
+                if intent == "question":
+                    await _start_qa(text, thread_ts or event.get("ts"))
+                    return
             if _state["mode"] != "idle" and active:
                 await app.client.chat_postMessage(
                     channel=slack_config.SLACK_CHANNEL_ID,

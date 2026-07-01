@@ -14,6 +14,11 @@ _CAMPAIGN_DIR = Path(__file__).resolve().parents[1]
 # so a mixed-sender campaign never misstates who is emailing.
 DEFAULT_TEMPLATE = "templates/brands.md"
 
+# GEO pilot: when a segment is framed around AI visibility (showing up when a
+# shopper asks ChatGPT for recommendations), it uses this template and run.py
+# fills {{personal_line}} per brand from a live AI-visibility check.
+AI_VISIBILITY_TEMPLATE = "templates/ai_visibility.md"
+
 # For a direct/CSV send, the wizard drafts a shared template that fits the
 # audience with this model. The per-audience voice matters more here than for the
 # cheap intent-parsing the planner does, so it uses the latest Opus.
@@ -95,7 +100,10 @@ STANDARD MODE (ICP campaign): Return ONLY a JSON object, no prose:
   "segments": [
     {{"label": "<short name for the ICP, from the user's words>",
       "icp": "<one-line description of who to target, for domain sourcing>",
-      "weight": <relative weight, any positive number>}}
+      "weight": <relative weight, any positive number>,
+      "geo": <true if the user frames this outreach around AI visibility / GEO —
+              getting the brand named when shoppers ask ChatGPT or other AI
+              assistants for recommendations, showing up in AI search — else false>}}
   ],
   "senders": ["<first names of the accounts to send from, if the user names any, lowercased>"],
   "clarify": "<a question to ask the user, or empty string>"
@@ -210,7 +218,12 @@ def _divide(total: int, segments: list[dict],
         label = (seg.get("label") or "").strip()
         if w <= 0 or not label:
             continue
-        weighted.append(({"label": label, "icp": (seg.get("icp") or label).strip()}, w))
+        weighted.append((
+            {"label": label,
+             "icp": (seg.get("icp") or label).strip(),
+             "geo": bool(seg.get("geo", False))},
+            w,
+        ))
     if not weighted:  # no ICP given — nothing to send (clarify normally prevents this)
         return [], deferred
 
@@ -221,6 +234,7 @@ def _divide(total: int, segments: list[dict],
     runs: list[dict] = []
     for sender, vol in zip(pool[:n_senders], volumes):
         for sd, n in _split_with_min_batch(vol, weighted):
+            geo = sd.get("geo", False)
             runs.append({
                 "sender_key": sender["key"],
                 "email": sender["email"],
@@ -228,7 +242,8 @@ def _divide(total: int, segments: list[dict],
                 "cc": sender["cc"],
                 "icp_label": sd["label"],
                 "icp_desc": sd["icp"],
-                "template": DEFAULT_TEMPLATE,
+                "template": AI_VISIBILITY_TEMPLATE if geo else DEFAULT_TEMPLATE,
+                "geo": geo,
                 "n_emails": n,
             })
     return runs, deferred
@@ -412,6 +427,58 @@ def plan(user_message: str, allow_clarify: bool = True) -> dict:
     return {"runs": runs, "deferred": deferred}
 
 
+async def preview_niches(plan_runs: list[dict], sample_niches: int = 2,
+                         max_icps: int = 4) -> list[dict]:
+    """Surface the niches sourcing will target, so a human can catch intent drift
+    before any send. Returns one entry per distinct sourced ICP:
+    {"label", "icp", "niches": [...], "samples": [{"niche", "domains"}]}.
+
+    The niches are generated into the same SubcategoryCache the run.py pipeline
+    reads (keyed on the ICP string the executor passes as --icp), so this preview
+    is the exact set that will be used, not a throwaway, and the real run reuses
+    it instead of regenerating. Direct/CSV sends carry no sourced ICP and are
+    skipped. Failures degrade to an empty preview rather than blocking the plan.
+    """
+    import asyncio
+
+    # Imported lazily: run.py pulls in the whole sourcing stack (toolbox
+    # primitives, gog_auth, storeleads), which we do not want at bot startup.
+    from skills.campaign import run as campaign_run
+
+    out: list[dict] = []
+    seen: set[str] = set()
+    for p in plan_runs:
+        icp = (p.get("icp_desc") or "").strip()
+        label = p.get("icp_label") or icp
+        if not icp or icp.lower() == "direct send" or icp in seen:
+            continue
+        seen.add(icp)
+        if len(seen) > max_icps:
+            break
+        try:
+            cache = campaign_run.SubcategoryCache(icp)
+            niches = cache.all_labels()
+            if not niches:
+                niches = await asyncio.to_thread(
+                    campaign_run.generate_subcategories, icp)
+                cache.add(niches)
+        except Exception:  # noqa: BLE001 - a preview must never break planning
+            continue
+        if not niches:
+            continue
+        samples: list[dict] = []
+        for sub in niches[:sample_niches]:
+            try:
+                domains = await campaign_run.source_domains_for_subcat(sub, count=4)
+            except Exception:  # noqa: BLE001
+                domains = []
+            if domains:
+                samples.append({"niche": sub, "domains": domains[:4]})
+        out.append({"label": label, "icp": icp, "niches": niches,
+                    "samples": samples})
+    return out
+
+
 _QA_SYSTEM = """You are the email_wizard, a helpful wizard who runs cold outreach
 campaigns for Blackwell and answers a teammate's question in a Slack thread.
 
@@ -498,9 +565,13 @@ def _fill(s: str, values: dict) -> str:
     return s
 
 
-def render_sample(run: dict, first_name: str = "Alex", company: str = "Acme Brands") -> tuple[str, str]:
+def render_sample(run: dict, first_name: str = "Alex", company: str = "Acme Brands",
+                  extra: dict | None = None) -> tuple[str, str]:
     """Render one example email (subject, plain-text body) for a run using a
-    placeholder contact and the sender's school. No network, no credits."""
+    placeholder contact and the sender's school. No network, no credits.
+
+    `extra` fills additional slots (e.g. {{personal_line}} for a GEO preview);
+    unknown slots are left untouched by _fill."""
     raw = (_CAMPAIGN_DIR / run["template"]).read_text(encoding="utf-8")
     subject, body = _split_template(raw)
     school, other = school_for_email(run["email"])
@@ -510,6 +581,7 @@ def render_sample(run: dict, first_name: str = "Alex", company: str = "Acme Bran
         "from_name": run["from_name"],
         "school": school,
         "other_schools": other,
+        **(extra or {}),
     }
     return _fill(subject, values).strip(), _strip_html(_fill(body, values))
 
