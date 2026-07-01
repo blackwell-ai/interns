@@ -192,7 +192,8 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
                         skipped: int, ready: int, who: str, subject: str,
                         their_message: str, body: str, category: str,
                         n_examples: int, mode: str, can_prev: bool, can_next: bool,
-                        private_metadata: str, body_block_id: str = "resp_body") -> dict:
+                        private_metadata: str, received: str = "",
+                        body_block_id: str = "resp_body") -> dict:
     """One card in the reply-review deck. `mode` selects the state:
       review  - draft ready: editable reply + Accept & send (submit)
       pending - still drafting this one (no submit)
@@ -210,15 +211,17 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
     tail = ("  ·  " + "  ·  ".join(tallies)) if tallies else ""
 
     msg = (their_message or "").strip() or "(no message text)"
-    if len(msg) > 1500:
-        msg = msg[:1500].rstrip() + "\n…"
+    if len(msg) > 2600:
+        msg = msg[:2600].rstrip() + "\n… (truncated)"
     quoted = "\n".join("> " + ln for ln in msg.splitlines())
+    hdr = f"*To:* {who or '(unknown)'}\n*Subject:* {subject or '(none)'}"
+    if received:
+        hdr += f"\n*Replied:* {received}"
     blocks: list = [
         {"type": "context", "elements": [{"type": "mrkdwn",
          "text": f":mage: *{founder_name}*  ·  {counters}{tail}"}]},
-        {"type": "section", "text": {"type": "mrkdwn",
-         "text": f"*To:* {who or '(unknown)'}\n*Subject:* {subject or '(none)'}"}},
-        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*\n" + quoted}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": hdr}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*\n" + quoted[:2900]}},
         {"type": "divider"},
     ]
 
@@ -235,8 +238,10 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         submit = "Accept & send ✨"
     elif mode == "pending":
         blocks.append({"type": "section", "text": {"type": "mrkdwn",
-                       "text": ":hourglass_flowing_sand: _Drafting this reply..._ "
-                               "Use Next to review others while it finishes."}})
+                       "text": f":hourglass_flowing_sand: *Step 2 of 2: drafting replies* "
+                               f"({ready} of {total} ready).\n\nThis card is still "
+                               "drafting. It will fill in here on its own, or hit Next "
+                               "to review one that is already done."}})
     elif mode == "sent":
         blocks.append({"type": "section", "text": {"type": "mrkdwn",
                        "text": ":white_check_mark: *Sent.*\n"

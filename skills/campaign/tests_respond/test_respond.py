@@ -258,9 +258,13 @@ def test_reply_subject_does_not_double_prefix():
     assert reply_drafter._reply_subject("") == "Re:"
 
 
-def test_text_to_html_linkifies_urls():
-    html = respond._text_to_html("Grab a time: https://cal.com/team/blackwell/30-min?overlayCalendar=true")
-    assert '<a href="https://cal.com/team/blackwell/30-min?overlayCalendar=true">' in html
+def test_text_to_html_linkifies_urls_and_markdown():
+    url = "https://cal.com/team/blackwell/30-min?overlayCalendar=true"
+    # a markdown link hyperlinks the visible word, not the raw URL
+    md = respond._text_to_html(f"grab a time [here]({url})")
+    assert f'<a href="{url}">here</a>' in md and "[here]" not in md
+    # a bare URL is still linked
+    assert f'<a href="{url}">{url}</a>' in respond._text_to_html(f"book: {url}")
     # non-url text is still escaped and newline-converted
     assert respond._text_to_html("a & b\nc") == "a &amp; b<br>c"
 
@@ -275,6 +279,18 @@ def test_clean_reply_strips_quoted_thread_and_html():
     cleaned = reply_drafter._clean_reply(raw)
     assert cleaned == "Hey,\n\nHappy to discuss on a call."
     assert "wrote:" not in cleaned and ">" not in cleaned and "<div" not in cleaned
+
+
+def test_clean_reply_handles_html_quote_mobile_and_outlook():
+    # gmail HTML quote container
+    assert reply_drafter._clean_reply(
+        'Sounds good.<div class="gmail_quote">On Mon X wrote: old stuff</div>') == "Sounds good."
+    # mobile signature + quoted original
+    assert reply_drafter._clean_reply(
+        "Yes let's talk.\n\nSent from my iPhone\n\nOn Jun 1 A wrote:\n> hi") == "Yes let's talk."
+    # outlook From/Sent header block
+    assert reply_drafter._clean_reply(
+        "Interested.\n\nFrom: Armaan\nSent: Monday\nTo: me\n> old") == "Interested."
 
 
 if __name__ == "__main__":

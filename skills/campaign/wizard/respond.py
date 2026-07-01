@@ -33,6 +33,7 @@ _review_sessions: dict[str, dict] = {}
 _DRAFT_CONCURRENCY = 6
 
 _URL_RE = re.compile(r"(https?://[^\s<>]+)")
+_MD_LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
 
 
 def _founder_email(founder_key: str) -> str:
@@ -44,15 +45,29 @@ def _founder_name(founder_key: str) -> str:
                founder_key.title())
 
 
-def _text_to_html(text: str) -> str:
-    """Founder-edited plain text -> an HTML body, with any URLs (e.g. the scheduling
-    link) turned into real clickable hyperlinks."""
+def _linkify_plain(seg: str) -> str:
+    """Escape a plain segment and turn any bare URLs in it into links."""
     out = []
-    for i, part in enumerate(_URL_RE.split(text or "")):
-        if i % 2 == 1:  # a URL
+    for i, part in enumerate(_URL_RE.split(seg)):
+        if i % 2 == 1:
             out.append(f'<a href="{html_mod.escape(part, quote=True)}">{html_mod.escape(part)}</a>')
         else:
             out.append(html_mod.escape(part).replace("\n", "<br>"))
+    return "".join(out)
+
+
+def _text_to_html(text: str) -> str:
+    """Founder-edited text -> an HTML body. Markdown links `[here](url)` become an
+    anchor on the visible word (so the scheduling link reads as "here" instead of a
+    raw URL); any remaining bare URLs are linked too."""
+    text = text or ""
+    out, idx = [], 0
+    for m in _MD_LINK_RE.finditer(text):
+        out.append(_linkify_plain(text[idx:m.start()]))
+        label, url = m.group(1), m.group(2)
+        out.append(f'<a href="{html_mod.escape(url, quote=True)}">{html_mod.escape(label)}</a>')
+        idx = m.end()
+    out.append(_linkify_plain(text[idx:]))
     return "".join(out)
 
 
@@ -108,6 +123,7 @@ def _render(session: dict) -> dict:
         sent=session["sent"], skipped=session["skipped"], ready=_ready_count(session),
         who=row.get("who", d.get("to", "")),
         subject=d.get("incoming_subject", ""),
+        received=d.get("received", ""),
         their_message=d.get("incoming_clean", ""),
         body=body, category=d.get("category", "other"),
         n_examples=d.get("n_examples", 0), mode=mode,
@@ -139,8 +155,11 @@ async def build_first(user_id: str, founder_key: str, view_id: str) -> None:
                "deck": [], "pos": 0, "view_id": view_id, "sent": 0, "skipped": 0,
                "sem": asyncio.Semaphore(_DRAFT_CONCURRENCY)}
     _review_sessions[user_id] = session
+    name = _founder_name(founder_key)
     await _update(view_id, loading_view(
-        f":crystal_ball: Gathering {_founder_name(founder_key)}'s replies..."))
+        f":mag: *Step 1 of 2: reading {name}'s inbox.*\n\nScanning every reply from "
+        "people we've emailed and picking the ones still waiting on us. This takes "
+        "about 30 seconds. I'll then draft each one and you can review them here."))
     try:
         needs = await triage.needs_for_founder(fe)
     except Exception as e:  # noqa: BLE001

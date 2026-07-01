@@ -47,10 +47,12 @@ Write ONLY the reply body the founder would send. Hard rules:
 - Sound like the founder: a real person, warm, concise, specific. Not corporate,
   not salesy. Answer what they asked; if a call makes sense, propose it plainly.
 - SCHEDULING: whenever it fits to get time on the calendar (they are open to a
-  call, asking for a time, or saying yes), point them to our scheduling page and
-  paste this exact URL on its own line so they can pick a slot:
+  call, asking for a time, or saying yes), point them to our scheduling page.
+  Write it as a markdown link whose visible text is a natural word like "here",
+  for example "you can grab a time [here](URL)" or "feel free to book a slot
+  [here](URL)". Put this exact URL inside the parentheses, verbatim, and do NOT
+  paste the raw URL anywhere else in the email:
   {SCHEDULING_LINK}
-  Use it verbatim, do not shorten or alter it. Do not invent any other link.
 - Keep it short, a few sentences. One blank line between paragraphs.
 - No em dashes or en dashes. Use periods and commas. No AI or sales filler ("I
   hope this finds you well", "reaching out", "leverage", and the like).
@@ -61,38 +63,76 @@ Write ONLY the reply body the founder would send. Hard rules:
 Output the reply body as plain text, nothing else."""
 
 
-# Markers that begin quoted reply history; everything from the earliest one is the
-# prior thread, not the prospect's new message.
-_QUOTE_MARKERS = [
-    re.compile(r"\nOn .{0,300}? wrote:", re.S),        # gmail "On <date>, <name> wrote:"
-    re.compile(r"\n_{5,}"),                             # outlook divider
-    re.compile(r"\n-----Original Message-----"),
-    re.compile(r"\nFrom:\s.*\nSent:\s", re.S),         # outlook header block
-    re.compile(r"<div[^>]*gmail_quote", re.I),          # gmail quote container
+# HTML containers that wrap the quoted prior message (cut on the raw HTML, before
+# tags are stripped, so the quote text never leaks into the plain rendering).
+_HTML_QUOTE_RE = re.compile(
+    r"<(blockquote|div[^>]*(?:gmail_quote|gmail_extra|gmail_attr)|"
+    r"div[^>]*id=[\"']?(?:appendonsend|divRplyFwdMsg))", re.I)
+
+# Plain-text markers that begin quoted reply history / a signature; everything
+# from the earliest one on is prior thread, not the prospect's new message.
+_TEXT_QUOTE_MARKERS = [
+    # "On <date>, <name> wrote:" and its localized variants.
+    re.compile(r"\n\s*(?:On|El|Le|Am)\b.{0,400}?"
+               r"(?:wrote|a écrit|schrieb|escribió|ha scritto|napisał|schreef)\s*:",
+               re.S | re.I),
+    re.compile(r"\n-{2,}\s*Original Message\s*-{2,}", re.I),
+    re.compile(r"\n_{5,}"),                                    # outlook divider
+    re.compile(r"\n\s*From:\s.{0,200}?\n\s*Sent:\s", re.S | re.I),   # outlook header
+    re.compile(r"\n\s*Sent from my \w+", re.I),               # mobile signature
+    re.compile(r"\n-- \n"),                                     # standard sig delimiter
 ]
 
 
 def _clean_reply(body: str) -> str:
-    """Extract just the prospect's newly written message from a reply body:
-    drop the quoted thread history, HTML markup, and a trailing signature, so the
-    review card shows their actual words instead of the whole ugly thread."""
+    """Extract just the prospect's newly written message from a reply body: drop
+    the quoted thread history (in either the HTML or the plain form), the markup,
+    and a trailing signature, so the card shows their actual words. Email reply
+    parsing is heuristic, so this is best-effort but covers the common clients."""
     text = body or ""
-    # Normalize the common HTML into text, then strip any remaining tags.
+    # 1. Cut an HTML quote container on the raw text first.
+    m = _HTML_QUOTE_RE.search(text)
+    if m:
+        text = text[:m.start()]
+    # 2. Normalize the remaining HTML into text, then strip any leftover tags.
     text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
-    text = re.sub(r"</p\s*>", "\n\n", text, flags=re.I)
+    text = re.sub(r"</(p|div)\s*>", "\n", text, flags=re.I)
     text = re.sub(r"<[^>]+>", "", text)
     text = html_mod.unescape(text)
-    # Cut at the earliest quote marker (the start of the prior thread).
+    # 3. Cut at the earliest plain-text quote/signature marker.
     cut = len(text)
-    for rx in _QUOTE_MARKERS:
-        m = rx.search(text)
-        if m:
-            cut = min(cut, m.start())
+    for rx in _TEXT_QUOTE_MARKERS:
+        mm = rx.search(text)
+        if mm:
+            cut = min(cut, mm.start())
     text = text[:cut]
-    # Drop any stray quoted lines and a trailing signature block.
+    # 4. Drop any stray quoted lines and collapse blank runs.
     text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith(">"))
-    text = re.split(r"\n--\s*\n", text)[0]
     return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def _received_display(inbound: dict) -> str:
+    """A short human timestamp for when the prospect replied, from the message's
+    Date header (falling back to internalDate). Empty on failure."""
+    import datetime
+    import email.utils
+    raw = gmail_lib.header(inbound, "Date")
+    dt = None
+    if raw:
+        try:
+            dt = email.utils.parsedate_to_datetime(raw)
+        except (TypeError, ValueError):
+            dt = None
+    if dt is None:
+        try:
+            dt = datetime.datetime.fromtimestamp(
+                int(inbound.get("internalDate", 0)) / 1000, tz=datetime.timezone.utc)
+        except (TypeError, ValueError):
+            return ""
+    try:
+        return dt.strftime("%b %-d, %Y at %-I:%M %p")
+    except ValueError:  # platforms without %-d/%-I
+        return dt.strftime("%b %d, %Y at %I:%M %p")
 
 
 def _team_addrs() -> set[str]:
@@ -195,6 +235,7 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
     # pass the Gmail id (not the RFC header) as spec["reply_to_message_id"].
     reply_to_message_id = inbound.get("id", "")
     to = _addr(inbound)
+    received = _received_display(inbound)
     # Just the prospect's newly written words, for both the prompt and the card.
     incoming_clean = _clean_reply(incoming_body)
 
@@ -226,6 +267,7 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         "incoming_subject": incoming_subject,
         "incoming_body": incoming_body,
         "incoming_clean": incoming_clean,
+        "received": received,
         "reply_subject": _reply_subject(incoming_subject),
         "to": to,
         "reply_to_message_id": reply_to_message_id,

@@ -290,7 +290,13 @@ async def needs_for_founder(founder_email: str,
             gmail_auth.get_access_token, founder_email)
 
     res = await _run_account(founder_email, env)
-    needs = res.get("needs", [])
+    # Only this founder's OWN threads. Everyone is CC'd on everyone's sends, so a
+    # scan of Armaan's inbox surfaces threads Ethan originally sent (owner=ethan);
+    # a prospect would find it odd for a different person to answer, so we keep
+    # each founder answering only the prospects they first emailed.
+    fe = founder_email.strip().lower()
+    needs = [r for r in res.get("needs", [])
+             if (r.get("owner") or "").strip().lower() == fe]
     dismissed = await triage_dismiss.load_dismissed()
     needs, _, _ = apply_dismissals(needs, [], [], dismissed)
     needs.sort(key=lambda r: _PRIORITY_ORDER.get(r.get("priority", ""), 3))
