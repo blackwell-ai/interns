@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /
 COPY . /app/
 
 RUN pip install --no-cache-dir -e toolbox/
-RUN pip install --no-cache-dir -r skills/campaign/server/requirements.txt
+RUN pip install --no-cache-dir -r skills/campaign/wizard/requirements.txt
 
 # Entry point starts the Slack campaign wizard (slack_wiz service).
-CMD ["python", "-m", "skills.campaign.server.launch"]
+CMD ["python", "-m", "skills.campaign.wizard.launch"]

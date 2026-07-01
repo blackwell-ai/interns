@@ -2,7 +2,7 @@
 """Set all Railway variables for the campaign bot.
 
 Usage:
-  GOOGLE_OAUTH_CLIENT_SECRET=<secret> python3 skills/campaign/server/setup_railway.py
+  GOOGLE_OAUTH_CLIENT_SECRET=<secret> python3 skills/campaign/wizard/setup_railway.py
 """
 import json
 import os

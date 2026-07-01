@@ -215,7 +215,7 @@ def test_run_all_reports_campaign_wide_total(monkeypatch):
     """The fix for per-sender attribution: run_all reports one authoritative
     total = last sender's account `after` minus first sender's `before`, not the
     sum of per-sender deltas of the shared, latently-updated counter."""
-    from skills.campaign.server import executor
+    from skills.campaign.wizard import executor
 
     sends: list = []
 

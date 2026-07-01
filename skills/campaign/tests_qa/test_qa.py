@@ -26,8 +26,8 @@ for k, v in _DUMMY.items():
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
-from skills.campaign.server import qa  # noqa: E402
-from skills.campaign.server import slack_bot  # noqa: E402
+from skills.campaign.wizard import qa  # noqa: E402
+from skills.campaign.wizard import slack_bot  # noqa: E402
 
 
 # ---- fake anthropic plumbing -------------------------------------------------

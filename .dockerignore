@@ -1,4 +1,4 @@
-# Keep the image lean. Build only needs source: toolbox/ + skills/campaign/server/.
+# Keep the image lean. Build only needs source: toolbox/ + skills/campaign/wizard/.
 .git/
 **/__pycache__/
 **/*.pyc

@@ -183,7 +183,7 @@ async def test_geo_template_renders_without_empty_slot(monkeypatch):
 # ── wizard wiring: a GEO segment routes to the GEO template + flag ──────────
 
 async def test_divide_routes_geo_segment_to_visibility_template():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     segments = [{"label": "DTC apparel", "icp": "DTC apparel brands",
                  "weight": 1, "geo": True}]
@@ -195,7 +195,7 @@ async def test_divide_routes_geo_segment_to_visibility_template():
 
 
 async def test_divide_non_geo_segment_uses_default_template():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     segments = [{"label": "3PLs", "icp": "third-party logistics providers",
                  "weight": 1}]  # no geo key -> defaults false
@@ -208,7 +208,7 @@ async def test_divide_non_geo_segment_uses_default_template():
 # ── geo test command (Slack): parse, source, render finished email ──────────
 
 async def test_geo_test_detection_and_argument():
-    from skills.campaign.server import geo_test
+    from skills.campaign.wizard import geo_test
     assert geo_test.is_geo_test("geo test women's lingerie")
     assert geo_test.is_geo_test("Test AI Visibility for acme.co")
     assert not geo_test.is_geo_test("40 emails to DTC brands")
@@ -218,7 +218,7 @@ async def test_geo_test_detection_and_argument():
 
 
 async def test_geo_test_domain_arg_renders_finished_email(monkeypatch):
-    from skills.campaign.server import geo_test
+    from skills.campaign.wizard import geo_test
 
     # A domain argument skips StoreLeads and tests that exact brand.
     async def fake_slots(company, hint, *, domain="", sem=None):
@@ -242,7 +242,7 @@ async def test_geo_test_domain_arg_renders_finished_email(monkeypatch):
 
 
 async def test_geo_test_empty_arg_prompts(monkeypatch):
-    from skills.campaign.server import geo_test
+    from skills.campaign.wizard import geo_test
     posted: list[str] = []
 
     async def reply(text=None, blocks=None):

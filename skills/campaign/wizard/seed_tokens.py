@@ -2,7 +2,7 @@
 """Extract Gmail refresh tokens from gog and print fly secrets set commands.
 
 Run this once on the Mac before first deploy:
-  python3 skills/campaign/server/seed_tokens.py | tee /tmp/fly_secrets.sh
+  python3 skills/campaign/wizard/seed_tokens.py | tee /tmp/fly_secrets.sh
   bash /tmp/fly_secrets.sh
 
 You still need to fill in GOOGLE_OAUTH_CLIENT_SECRET manually.

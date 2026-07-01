@@ -257,3 +257,37 @@ async def run_triage(send_update: Callable[[str], Awaitable[None]],
     dismissed = await triage_dismiss.load_dismissed()
     needs, reroute, gray = apply_dismissals(needs, reroute, gray, dismissed)
     return format_messages(needs, reroute, gray, errors, since_days)
+
+
+def _founder_env() -> dict:
+    """Env for a probe subprocess: the team-wide service key for the ledger and
+    the replies persist, mirroring run_triage."""
+    env = {**os.environ}
+    env["TRIAGE_LEDGER_SERVICE_KEY"] = os.environ.get("SUPABASE_SECRET_KEY", "")
+    return env
+
+
+async def needs_for_founder(founder_email: str,
+                            since_days: int = SINCE_DAYS) -> list[dict]:
+    """The 'awaiting reply' rows for ONE founder's inbox, hottest first, for the
+    /respond review queue. Runs the same validated probe run_triage uses, scoped
+    to that inbox, and applies the team dismiss list. Each row carries at least
+    `thread_id`, `who`, `owner`, `subject`, `ask`, `priority`. Raises if the inbox
+    cannot be authenticated or the probe fails, so the caller can surface it."""
+    env = _founder_env()
+    try:
+        env["TOOLBOX_SESSION_TOKEN"] = await asyncio.to_thread(
+            executor._get_supabase_session_token)
+    except Exception:
+        env["TOOLBOX_SESSION_TOKEN"] = os.environ.get("SUPABASE_SECRET_KEY", "")
+    suffix = gog_auth._SENDER_ENV_KEYS.get(founder_email)
+    if suffix:
+        env[f"GMAIL_TOKEN_{suffix}"] = await asyncio.to_thread(
+            gmail_auth.get_access_token, founder_email)
+
+    res = await _run_account(founder_email, env)
+    needs = res.get("needs", [])
+    dismissed = await triage_dismiss.load_dismissed()
+    needs, _, _ = apply_dismissals(needs, [], [], dismissed)
+    needs.sort(key=lambda r: _PRIORITY_ORDER.get(r.get("priority", ""), 3))
+    return needs

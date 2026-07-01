@@ -139,15 +139,29 @@ campaign sending is untouched. The list is a Supabase table read with the
 service-role key, so it is team-wide and survives restarts. The handler requires
 a real email for dismiss/undo, so a normal question or send is never hijacked.
 
-The table is created by `server/migrations/2026-06-29_triage_dismissed.sql` (run
+The table is created by `wizard/migrations/2026-06-29_triage_dismissed.sql` (run
 once against prod). Until then, dismissing reports that the store is not set up
 and triage runs unfiltered, since `load_dismissed` fails open to an empty set.
+
+## Feeding the /respond review queue
+
+The `reply` bucket (people awaiting a real answer) is also the source for the
+Slack `/respond` review queue. `wizard/triage.py` `needs_for_founder(email)` runs
+this same probe scoped to one founder's inbox, applies the dismiss list, and
+returns the structured `needs` rows (thread id, prospect, subject, priority) so
+the queue can draft and send a reply per row. See the wizard architecture doc.
+
+That queue does NOT mark a handled email via the dismiss store. A reply sent from
+it lands in-thread, so on the next run this probe sees us as the last sender and
+drops the thread into `skip` on its own, while a genuine new reply from the same
+prospect re-surfaces as `reply`. Dismissal stays what it is: hiding people who are
+not relevant, keyed on the prospect email, forever until undone.
 
 ## Files
 
 - `reply_triage_probe.py` is the probe.
 - It reuses `gog_auth`, `toolbox.primitives.gmail.lib`, and the `contacted` ledger
   that `run.py` and `reply_scan.py` already use.
-- `server/triage_dismiss.py` is the dismiss list (parsing + the Supabase store);
-  `server/triage.py` applies it via `apply_dismissals`; `server/slack_bot.py`
+- `wizard/triage_dismiss.py` is the dismiss list (parsing + the Supabase store);
+  `wizard/triage.py` applies it via `apply_dismissals`; `wizard/slack_bot.py`
   routes the thread commands through `_handle_triage_edit`.

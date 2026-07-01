@@ -62,8 +62,8 @@ python3 skills/campaign/run.py \
 A hosted wizard runs the same pipeline from chat: describe the send in plain
 English, it plans and previews, you confirm, it sends. The Telegram bot and the
 Slack bot (mention `@email_wizard` in the configured channel) share one codebase
-under `server/`. Setup, deployment, and the Railway services are documented in
-`server/README.md`.
+under `wizard/`. Setup, deployment, and the Railway services are documented in
+`wizard/README.md`.
 
 ---
 
@@ -198,7 +198,7 @@ It sources live brands (StoreLeads), runs the real check, and posts the
 finished email. Read-only, sends nothing. Use the domain form when you want a
 trustworthy preview: the niche form adds sourcing + niche-inference noise (a
 loosely matched store or a wrong niche guess can slip in), which is exactly what
-this command lets you catch. Handler: `server/geo_test.py`.
+this command lets you catch. Handler: `wizard/geo_test.py`.
 
 Direct CLI:
 

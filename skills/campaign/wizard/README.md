@@ -249,7 +249,7 @@ longer read (the dispatcher was removed); leaving it set is harmless.
   a response?" and the wizard scans the sender inboxes (via the existing probe,
   run per account with Gmail tokens minted from the refresh tokens) and reports
   which prospect replies await an answer, which reroute to a new contact, and
-  which need a glance. Lives in `server/triage.py` and `reply_triage_probe.py
+  which need a glance. Lives in `wizard/triage.py` and `reply_triage_probe.py
   --json`.
 - 2026-06-25: Wizard voice and live progress. The wizard's messages and Claude
   answers now use a light wizard persona. The executor pushes proactive progress
