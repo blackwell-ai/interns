@@ -21,7 +21,7 @@ import os
 
 import pytest
 
-from skills.campaign.server import executor
+from skills.campaign.wizard import executor
 
 
 # ---- Fakes -------------------------------------------------------------

@@ -23,7 +23,7 @@ def _defaults():
 # ---- small campaigns consolidate to one sender -------------------------
 
 def test_small_campaign_uses_one_sender_one_run():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, deferred = agent._divide(10, _defaults())
     assert deferred == 0
@@ -34,7 +34,7 @@ def test_small_campaign_uses_one_sender_one_run():
 
 
 def test_explicit_single_icp_is_respected():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, deferred = agent._divide(30, [{"label": "Agent transaction companies", "weight": 1.0}])
     assert deferred == 0
@@ -46,7 +46,7 @@ def test_explicit_single_icp_is_respected():
 # ---- the dominant case: large campaigns spread across senders ----------
 
 def test_large_campaign_spreads_across_senders_under_cap():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, deferred = agent._divide(2000, _defaults())
     assert deferred == 0
@@ -61,7 +61,7 @@ def test_large_campaign_spreads_across_senders_under_cap():
 
 
 def test_two_thousand_uses_minimum_senders_not_all_when_fewer_fit():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     # 800 fits in exactly one sender at the cap — must not fan out to 3.
     runs, deferred = agent._divide(800, _defaults())
@@ -76,7 +76,7 @@ def test_two_thousand_uses_minimum_senders_not_all_when_fewer_fit():
 # ---- over-capacity: cap and warn ---------------------------------------
 
 def test_over_capacity_caps_and_reports_deferred():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     cap_total = len(agent.SENDERS) * agent.PER_ACCOUNT_DAILY_CAP  # 2400
     runs, deferred = agent._divide(3000, _defaults())
@@ -91,7 +91,7 @@ def test_over_capacity_caps_and_reports_deferred():
 # ---- invariants --------------------------------------------------------
 
 def test_no_run_below_min_batch_unless_collapsed():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     for total in (10, 25, 50, 120, 667, 800, 2000):
         runs, _ = agent._divide(total, _defaults())
@@ -101,7 +101,7 @@ def test_no_run_below_min_batch_unless_collapsed():
 
 
 def test_allocate_sums_exactly():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     for total in (0, 1, 7, 10, 13, 100, 667, 2000):
         counts = agent._allocate(total, [0.40, 0.25, 0.25, 0.05, 0.05])
@@ -109,7 +109,7 @@ def test_allocate_sums_exactly():
 
 
 def test_zero_total_yields_nothing():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, deferred = agent._divide(0, _defaults())
     assert runs == []
@@ -117,7 +117,7 @@ def test_zero_total_yields_nothing():
 
 
 def test_every_run_has_executor_required_keys():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, _ = agent._divide(2000, _defaults())
     required = {"sender_key", "email", "from_name", "cc", "icp_label", "icp_desc",

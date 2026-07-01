@@ -32,8 +32,8 @@ for k, v in _DUMMY.items():
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
-from skills.campaign.server import slack_bot  # noqa: E402
-from skills.campaign.server import agent, executor, triage  # noqa: E402
+from skills.campaign.wizard import slack_bot  # noqa: E402
+from skills.campaign.wizard import agent, executor, triage  # noqa: E402
 from toolbox.primitives.gmail import lib as gmail_lib  # noqa: E402
 
 
@@ -572,14 +572,14 @@ def _reset_pester():
 
 
 async def test_run_reminder_mentions_user():
-    from skills.campaign.server import slack_config
+    from skills.campaign.wizard import slack_config
     slack_config.SLACK_REMINDER_USER = "U123"
     _reset_pester()
     assert "<@U123>" in slack_bot._run_reminder_text()
 
 
 async def test_remind_run_skips_when_target_met():
-    from skills.campaign.server import slack_config
+    from skills.campaign.wizard import slack_config
     posts = _capture_channel()
     _reset_pester()
     slack_bot.record_campaign_sent(slack_config.SLACK_DAILY_TARGET)  # quota filled

@@ -10,7 +10,7 @@ from __future__ import annotations
 # ---- school mapping ----------------------------------------------------
 
 def test_school_for_email_maps_each_sender():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     assert agent.school_for_email("armaan.priyadarshan.29@dartmouth.edu") == ("Dartmouth", "Stanford/Berkeley")
     assert agent.school_for_email("samarjit.deshmukh.29@dartmouth.edu") == ("Dartmouth", "Stanford/Berkeley")
@@ -22,7 +22,7 @@ def test_school_for_email_maps_each_sender():
 def test_run_and_agent_school_helpers_agree():
     """The server-side helper (for preview) and run.py's (for the real send)
     must produce identical text, or the preview would lie about the send."""
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
     from skills.campaign import run as camp
 
     for email in ("armaan.priyadarshan.29@dartmouth.edu", "ethanpzhou@berkeley.edu",
@@ -33,7 +33,7 @@ def test_run_and_agent_school_helpers_agree():
 # ---- the core fix: each sender's sample uses its own school -------------
 
 def test_sample_uses_senders_real_school():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     dartmouth_run = {"email": "armaan.priyadarshan.29@dartmouth.edu",
                      "from_name": "Armaan", "template": agent.DEFAULT_TEMPLATE}
@@ -55,7 +55,7 @@ def test_sample_uses_senders_real_school():
 
 def test_sample_subject_stays_stanford_for_all():
     """Per the chosen policy, the subject does NOT adapt to the sender's school."""
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     subj, _ = agent.render_sample({"email": "ethanpzhou@berkeley.edu",
                                    "from_name": "Ethan", "template": agent.DEFAULT_TEMPLATE})
@@ -65,7 +65,7 @@ def test_sample_subject_stays_stanford_for_all():
 # ---- free-text ICP pass-through ---------------------------------------
 
 def test_freetext_icp_passes_through_with_brand_template():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, deferred = agent._divide(
         50, [{"label": "neo labs", "icp": "neobanking infrastructure startups", "weight": 1.0}])
@@ -77,7 +77,7 @@ def test_freetext_icp_passes_through_with_brand_template():
 
 
 def test_all_runs_use_brand_template_by_default():
-    from skills.campaign.server import agent
+    from skills.campaign.wizard import agent
 
     runs, _ = agent._divide(2000, [
         {"label": "DTC brands", "icp": "DTC brands", "weight": 0.6},

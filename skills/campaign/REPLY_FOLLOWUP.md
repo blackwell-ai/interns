@@ -59,7 +59,7 @@ obvious next version; it needs a scheduled job that runs `gog gmail drafts send`
 
 ## The 9am morning job (Slack wizard)
 
-`server/slack_bot.py` runs a scheduled job at 9am Pacific (`SLACK_FOLLOWUP_ENABLED`,
+`wizard/slack_bot.py` runs a scheduled job at 9am Pacific (`SLACK_FOLLOWUP_ENABLED`,
 default on) that calls `run_morning` for each sender mailbox, then posts a Block Kit
 report, then the inbox triage tables right after.
 

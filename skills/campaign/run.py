@@ -61,7 +61,7 @@ from toolbox.core import llm as llm_mod
 from toolbox.primitives.compose import lib as compose_lib
 from toolbox.primitives.findemail import cli as findemail_cli
 from toolbox.primitives.gmail import cli as gmail_cli
-from skills.campaign import gog_auth, storeleads
+from skills.campaign import gog_auth, storeleads, visibility
 
 
 # ---- LLM helpers -------------------------------------------------------
@@ -209,11 +209,18 @@ class SubcategoryCache:
 
 
 def generate_subcategories(icp: str, count: int = _SUBCAT_COUNT,
-                           exclude_labels: list[str] | None = None) -> list[str]:
+                           exclude_labels: list[str] | None = None,
+                           critique: bool = True) -> list[str]:
     """Ask Claude to map the ICP into specific, narrow sub-categories.
 
     `exclude_labels` are already-known niches passed verbatim into the prompt so
     a second call (when all sub-categories are exhausted) returns fresh niches.
+
+    The biggest failure here is intent drift: an ICP like "affiliate marketing
+    companies" gets read as "companies that RUN affiliate programs", which returns
+    big consumer brands (Robinhood, Coinbase) instead of affiliate businesses. The
+    prompt is written to read the market literally, and `critique` runs a second
+    pass that drops any niche that wandered into a different industry.
     """
     exclude_note = ""
     if exclude_labels:
@@ -222,16 +229,61 @@ def generate_subcategories(icp: str, count: int = _SUBCAT_COUNT,
             + ", ".join(exclude_labels[:60])
         )
     result = llm_mod.parse(
-        f"Map this market into specific, narrow sub-categories: {icp}\n\n"
+        f"Map this target market into specific, narrow sub-categories: {icp}\n\n"
+        "Read the market literally. Every sub-category must name a group of "
+        "companies that ARE this kind of business. Never list companies that "
+        "merely use, buy, have, or run this thing. For example, for 'affiliate "
+        "marketing companies' the answer is affiliate networks, partner/affiliate "
+        "SaaS, and performance-marketing agencies, NOT well-known brands that "
+        "happen to run an affiliate program.\n\n"
         f"Generate {count} sub-categories. Each must be narrow enough that there are "
-        "10-30 real companies in it — not hundreds. Make them distinct with no overlap. "
-        "Do not name any specific companies.\n"
+        "10-30 real companies in it, not hundreds. Make them distinct with no overlap. "
+        "Do not name any specific companies. Phrase each one as '<qualifier> "
+        "<target market>' so it stays anchored to the market above.\n"
         "Example for 'DTC brands': 'DTC maternity clothing', 'DTC men's grooming', "
         "'DTC pet supplements', 'DTC functional beverages'."
         + exclude_note,
         _SubcategoryList,
     )
-    return [s.strip() for s in result.subcategories if s.strip()]
+    subcats = [s.strip() for s in result.subcategories if s.strip()]
+    if critique:
+        subcats = _critique_subcategories(icp, subcats)
+    return subcats
+
+
+def _critique_subcategories(icp: str, subcats: list[str]) -> list[str]:
+    """Drop sub-categories that drifted off the target market.
+
+    A second, cheap structured call that audits the generated list against the
+    ICP and returns only the niches that genuinely describe companies in that
+    market. This is the catch for intent drift the generation prompt still lets
+    through. It never zeroes out sourcing: if the audit keeps nothing (an overcautious
+    pass) or errors, the original list is returned unchanged.
+    """
+    if not subcats:
+        return subcats
+    listing = "\n".join(f"- {s}" for s in subcats)
+    try:
+        result = llm_mod.parse(
+            "You are auditing sub-categories generated for an outreach target "
+            f"market.\nTarget market: {icp}\n\nSub-categories:\n{listing}\n\n"
+            "Return only the sub-categories that genuinely describe companies that "
+            "ARE in this target market. Drop any that drifted to a different "
+            "industry, or that describe companies which merely use, buy, or run the "
+            "thing rather than being it. Keep the wording of the kept ones exactly "
+            "as given. If every sub-category is a good fit, return all of them.",
+            _SubcategoryList,
+        )
+    except Exception as e:  # noqa: BLE001 - the audit is best-effort, never fatal
+        events.emit("campaign.subcat_critique_error", level="warn",
+                    reason=str(e)[:120], icp=icp)
+        return subcats
+    kept = [s.strip() for s in result.subcategories if s.strip()]
+    dropped = [s for s in subcats if s not in set(kept)]
+    if dropped:
+        events.emit("campaign.subcat_critique_dropped", level="info",
+                    icp=icp, dropped=dropped[:20], kept=len(kept))
+    return kept or subcats
 
 
 def generate_domains_for_subcat(
@@ -1178,6 +1230,32 @@ def _text_to_html(text: str) -> str:
     )
 
 
+async def _personalize_visibility(
+    contacts: list[models.Contact],
+    niche: str,
+    concurrency: int,
+) -> list[models.Contact]:
+    """Set each contact's modular GEO slots ({{niche}}, {{competitor_N}}) from an
+    AI-visibility check.
+
+    Runs the checks concurrently (bounded), and reconstructs each Contact with
+    the extra slot fields so they flow through model_dump() into compose.
+    visibility.personalize_slots guarantees every slot is non-empty, so no row can
+    later fail compose on an empty slot. A per-contact failure degrades to safe
+    slot values, never dropping the contact.
+    """
+    sem = asyncio.Semaphore(max(1, concurrency))
+
+    async def one(c: models.Contact) -> models.Contact:
+        company = c.company or (c.domain.split(".")[0].title() if c.domain else "")
+        slots = await visibility.personalize_slots(company, niche, domain=c.domain, sem=sem)
+        # Every slot (personal_line, niche, competitors) rides on the contact via
+        # extra="allow" so any of them can be used as a {{slot}} in the template.
+        return models.Contact(**{**c.model_dump(), **slots})
+
+    return await asyncio.gather(*(one(c) for c in contacts))
+
+
 def compose_outbox(
     contacts: list[models.Contact],
     subject_t: str,
@@ -1459,6 +1537,10 @@ def main() -> None:
     parser.add_argument("--segment-phrase", default="",
                         dest="segment_phrase",
                         help="Value for {{segment_phrase}} template slot (used with --leads)")
+    parser.add_argument("--personalize-visibility", action="store_true",
+                        dest="personalize_visibility",
+                        help="Fill {{personal_line}} per brand with an AI-visibility "
+                             "check (GEO pilot). One extra LLM call per contact.")
     parser.add_argument("--log", default="",
                         help="Campaign log path for reply tracking (default: /tmp/campaign_<id>.jsonl)")
     parser.add_argument("--dry-run", action="store_true",
@@ -1610,6 +1692,17 @@ def main() -> None:
     if not contacts:
         print("No new contacts — exiting.")
         sys.exit(0)
+
+    # 1b. AI-visibility personalization (GEO pilot) -----------------------
+    # Fill each brand's {{personal_line}} from a live "does this brand show up
+    # when a shopper asks an AI?" check. Off by default; only GEO runs pay the
+    # one-LLM-call-per-contact cost. Reconstructing the Contact carries the
+    # extra field through model_dump() into compose (Row is extra="allow").
+    if args.personalize_visibility:
+        _banner(f"Personalizing  [AI-visibility check x{len(contacts)}]")
+        contacts = asyncio.run(
+            _personalize_visibility(contacts, args.icp or "brands", args.concurrency)
+        )
 
     # 2. Load template A --------------------------------------------------
     _banner("Composing")
