@@ -118,6 +118,27 @@ async def test_personalize_slots_all_present_and_nonempty(monkeypatch):
     assert "Hatch" in slots["competitors"]
 
 
+async def test_individual_competitor_slots_present_and_nonempty(monkeypatch):
+    _patch_check(monkeypatch, brands=["Hatch", "Ingrid", "Bravado"],
+                 mentions=False, niche="maternity clothing")
+    slots = await visibility.personalize_slots("Acme", "apparel")
+    assert slots["competitor_1"] == "Hatch"
+    assert slots["competitor_2"] == "Ingrid"
+    assert slots["competitor_3"] == "Bravado"
+    # every advertised competitor_N slot exists and is non-empty
+    for name in visibility.SLOTS:
+        assert str(slots[name]).strip()
+
+
+async def test_individual_competitor_slots_backfill_when_few(monkeypatch):
+    # Only one real competitor -> competitor_2/3 fall back, never empty.
+    _patch_check(monkeypatch, brands=["Hatch"], mentions=False, niche="apparel")
+    slots = await visibility.personalize_slots("Acme", "apparel")
+    assert slots["competitor_1"] == "Hatch"
+    assert slots["competitor_2"].strip() and slots["competitor_2"] != "Hatch"
+    assert slots["competitor_3"].strip()
+
+
 async def test_personalize_slots_competitors_fallback_nonempty(monkeypatch):
     # No competitors found -> the {{competitors}} slot must still be non-empty.
     _patch_check(monkeypatch, brands=[], mentions=False, niche="lingerie")

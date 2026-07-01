@@ -94,6 +94,29 @@ def _competitors_phrase(competitors: list[str]) -> str:
     return _COMPETITORS_FALLBACK
 
 
+# How many individual {{competitor_N}} slots to expose. The check returns up to
+# ~6 brands, so a real name usually fills each; the rare gap gets a graceful,
+# non-empty stand-in (a slot can never be empty or the row fails compose).
+_N_COMPETITOR_SLOTS = 3
+_INDIVIDUAL_FALLBACKS = (
+    "a top brand in the space",
+    "another established name",
+    "a well-known competitor",
+)
+
+
+def _competitor_slots(competitors: list[str]) -> dict[str, str]:
+    """{{competitor_1..N}}, each non-empty. Real names first; positions past the
+    real ones use a graceful descriptor so the slot is never blank."""
+    out: dict[str, str] = {}
+    for i in range(_N_COMPETITOR_SLOTS):
+        if i < len(competitors):
+            out[f"competitor_{i + 1}"] = competitors[i]
+        else:
+            out[f"competitor_{i + 1}"] = _INDIVIDUAL_FALLBACKS[i]
+    return out
+
+
 def _line_absent(company: str, niche: str, competitors_phrase: str) -> str:
     """Brand is not surfaced by AI, and we have real competitors to name."""
     return (
@@ -131,7 +154,8 @@ def _check(company: str, domain: str, hint: str) -> _AIRanking:
 # user which {{parameters}} a GEO email can use. Every one is guaranteed
 # non-empty by personalize_slots (compose_lib.render fails a row on an empty
 # slot).
-SLOTS = ("personal_line", "niche", "competitors")
+SLOTS = ("personal_line", "niche", "competitors") + tuple(
+    f"competitor_{i + 1}" for i in range(_N_COMPETITOR_SLOTS))
 
 
 async def personalize_slots(
@@ -159,7 +183,7 @@ async def personalize_slots(
 
     def _fallback(niche: str) -> dict[str, str]:
         return {"personal_line": _line_generic(niche), "niche": niche,
-                "competitors": _COMPETITORS_FALLBACK}
+                "competitors": _COMPETITORS_FALLBACK, **_competitor_slots([])}
 
     if not company:
         return _fallback(hint)
@@ -194,7 +218,8 @@ async def personalize_slots(
     events.emit("campaign.visibility_ok", level="info",
                 company=company, niche=niche, mentioned=ranking.mentions_target,
                 competitors=len(competitors))
-    return {"personal_line": line, "niche": niche, "competitors": phrase}
+    return {"personal_line": line, "niche": niche, "competitors": phrase,
+            **_competitor_slots(competitors)}
 
 
 async def personalize(

@@ -170,7 +170,8 @@ them (like `{{first_name}}` / `{{school}}`) instead of using the pre-made line:
 | Slot | Example | Notes |
 |---|---|---|
 | `{{niche}}` | `women's lingerie` | the brand's specific niche |
-| `{{competitors}}` | `Victoria's Secret and Aerie` | up to 2 real rivals the AI named (falls back to "the established names in the space") |
+| `{{competitors}}` | `Victoria's Secret and Aerie` | up to 2 rivals as one phrase (falls back to "the established names in the space") |
+| `{{competitor_1}}` `{{competitor_2}}` `{{competitor_3}}` | `Victoria's Secret`, `Aerie`, `Savage X Fenty` | individual rivals, for listing them separately. `_1` is the most reliable; `_2`/`_3` fall back to a descriptor if the check named fewer |
 | `{{personal_line}}` | full opening sentence | the ready-made line |
 
 Every one is guaranteed non-empty (an empty slot fails that row's compose). The
