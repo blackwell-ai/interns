@@ -410,16 +410,29 @@ async def probe(log_path: str, account_override: str, since_days: int, max_threa
         thread_ids, n_found, scope = await _candidate_threads(
             gmail, our_addrs, contacts, use_ledger, since_days, recent, max_threads, gsem)
 
-        # Fetch full threads in parallel.
+        # Fetch full threads in parallel. A transient Gmail error (429/5xx) on one
+        # thread must not sink the whole run, so retry once then drop just that
+        # thread. Over hundreds of fetches a stray failure is otherwise fatal.
         async def fetch(tid):
             async with gsem:
-                return tid, await get_thread(gmail, tid)
+                for attempt in range(2):
+                    try:
+                        return tid, await get_thread(gmail, tid)
+                    except Exception:  # noqa: BLE001 - tolerate a flaky fetch
+                        if attempt == 0:
+                            await asyncio.sleep(1.0)
+                return tid, None
         fetched = await asyncio.gather(*(fetch(t) for t in thread_ids))
+        n_fetch_failed = sum(1 for _, th in fetched if th is None)
+        if n_fetch_failed:
+            events.emit("triage.fetch_dropped", level="warn", dropped=n_fetch_failed)
         t_fetch = time.perf_counter() - t0
 
         # Prepare per-thread metadata (owner = first US sender = original outbound).
         prepared = []
         for tid, th in fetched:
+            if th is None:
+                continue  # fetch failed after a retry; skip rather than crash
             msgs = th.get("messages") or []
             rendered, last_sender = render_thread(msgs, our_addrs)
             owner = next((_addr(m) for m in msgs if _addr(m) in our_addrs), account)

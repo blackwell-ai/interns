@@ -39,7 +39,11 @@ async def _run_account(email: str, env: dict, concurrency: int = 20) -> dict:
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     out, err = await proc.communicate()
     if proc.returncode != 0:
-        raise RuntimeError((err.decode(errors="replace") or "probe failed")[:300])
+        detail = err.decode(errors="replace") or "probe failed"
+        # Log the full traceback so a probe crash is diagnosable from the server
+        # logs, not just the truncated line that reaches the Slack modal.
+        log.warning("probe[%s] exited %s:\n%s", email, proc.returncode, detail[-3000:])
+        raise RuntimeError(detail.strip()[:300])
     text = out.decode(errors="replace").strip()
     if not text:
         raise RuntimeError("probe produced no output")
