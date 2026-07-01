@@ -107,6 +107,32 @@ async def test_blank_niche_defaults(monkeypatch):
     assert line                              # "brands" default keeps the sentence valid
 
 
+# ── structured slots: every slot present and non-empty ─────────────────────
+
+async def test_personalize_slots_all_present_and_nonempty(monkeypatch):
+    _patch_check(monkeypatch, brands=["Hatch", "Ingrid"], mentions=False, niche="lingerie")
+    slots = await visibility.personalize_slots("Acme", "DTC apparel brands")
+    assert set(visibility.SLOTS) <= set(slots)          # every advertised slot returned
+    assert all(str(v).strip() for v in slots.values())  # none empty (render would crash)
+    assert slots["niche"] == "lingerie"
+    assert "Hatch" in slots["competitors"]
+
+
+async def test_personalize_slots_competitors_fallback_nonempty(monkeypatch):
+    # No competitors found -> the {{competitors}} slot must still be non-empty.
+    _patch_check(monkeypatch, brands=[], mentions=False, niche="lingerie")
+    slots = await visibility.personalize_slots("Acme", "apparel")
+    assert slots["competitors"].strip()
+    assert slots["competitors"] == visibility._COMPETITORS_FALLBACK
+
+
+async def test_personalize_slots_error_all_slots_safe(monkeypatch):
+    _patch_raise(monkeypatch)
+    slots = await visibility.personalize_slots("Acme", "apparel")
+    assert all(str(v).strip() for v in slots.values())
+    assert slots["niche"] == "apparel"                  # falls back to the hint
+
+
 # ── competitor cleaning ────────────────────────────────────────────────────
 
 async def test_clean_competitors_drops_target_dupes_blanks():
@@ -199,9 +225,11 @@ async def test_geo_test_domain_arg_renders_finished_email(monkeypatch):
     from skills.campaign.server import geo_test
 
     # A domain argument skips StoreLeads and tests that exact brand.
-    async def fake_personalize(company, hint, *, domain="", sem=None):
-        return f"I asked ChatGPT to recommend the best lingerie and {company} never came up."
-    monkeypatch.setattr(visibility, "personalize", fake_personalize)
+    async def fake_slots(company, hint, *, domain="", sem=None):
+        return {"personal_line": f"I asked ChatGPT to recommend the best lingerie "
+                                 f"and {company} never came up.",
+                "niche": "lingerie", "competitors": "ThirdLove and Aerie"}
+    monkeypatch.setattr(visibility, "personalize_slots", fake_slots)
 
     posted: list[str] = []
 

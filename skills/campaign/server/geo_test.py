@@ -89,10 +89,9 @@ async def run(text: str, reply) -> None:
 
     for domain in domains:
         company = _company_of(domain)
-        line = await visibility.personalize(company, hint or company, domain=domain)
+        slots = await visibility.personalize_slots(company, hint or company, domain=domain)
         subject, body = agent.render_sample(
-            run_stub, first_name="there", company=company,
-            extra={"personal_line": line})
+            run_stub, first_name="there", company=company, extra=slots)
         await reply(f"*{company}*  ({domain})\n"
                     f"*Subject:* {subject}\n\n{body}")
 

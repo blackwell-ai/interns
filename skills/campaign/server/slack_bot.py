@@ -26,7 +26,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 
-from skills.campaign import reply_followup
+from skills.campaign import reply_followup, visibility
 
 from . import (agent, config, executor, geo_test, gmail_auth, qa, slack_config,
                triage, triage_dismiss)
@@ -377,6 +377,12 @@ def _preview_blocks(plan_runs: list[dict], deferred: int,
                     f"{cap_total}/day) and were set aside."}]})
     blocks.append({"type": "divider"})
     blocks += _sample_blocks(plan_runs[0])
+    if any(p.get("geo") for p in plan_runs):
+        names = ["first_name", "company", *visibility.SLOTS]
+        listed = ", ".join("`{{" + n + "}}`" for n in names)
+        blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
+            "text": ":sparkles: GEO fields you can use in the copy (hit *Edit "
+                    f"draft*): {listed}. Each is filled per brand at send time."}]})
     if executor._test_mode():
         blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
             "text": ":test_tube: *Test mode.* The sending is mere illusion. No "

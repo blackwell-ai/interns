@@ -163,6 +163,23 @@ in ChatGPT") and the planner sets `geo: true`, which routes to the GEO template
 and passes `--personalize-visibility`. The claim-making logic lives in one
 tested module, `visibility.py`.
 
+**Per-brand GEO slots you can craft copy with.** A GEO run fills these
+`{{slots}}` per brand at send time, so you can write your own sentence around
+them (like `{{first_name}}` / `{{school}}`) instead of using the pre-made line:
+
+| Slot | Example | Notes |
+|---|---|---|
+| `{{niche}}` | `women's lingerie` | the brand's specific niche |
+| `{{competitors}}` | `Victoria's Secret and Aerie` | up to 2 real rivals the AI named (falls back to "the established names in the space") |
+| `{{personal_line}}` | full opening sentence | the ready-made line |
+
+Every one is guaranteed non-empty (an empty slot fails that row's compose). The
+canonical list is `visibility.SLOTS`. To craft custom copy, start a GEO campaign
+in the wizard and hit **Edit draft ✏️** on the preview — the wizard lists these
+fields and your edited template keeps the `{{slots}}`, which get filled per brand
+on send. Example line: `When I ask ChatGPT for the best {{niche}}, it names
+{{competitors}} but not {{company}}.`
+
 **Preview the real line before sending — `geo test`.** The wizard's normal
 preview runs before any brand is sourced, so it shows `{{personal_line}}`
 unfilled; the real line is generated per brand at send time. To see it, ask the

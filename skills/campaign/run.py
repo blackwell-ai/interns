@@ -1247,8 +1247,10 @@ async def _personalize_visibility(
 
     async def one(c: models.Contact) -> models.Contact:
         company = c.company or (c.domain.split(".")[0].title() if c.domain else "")
-        line = await visibility.personalize(company, niche, domain=c.domain, sem=sem)
-        return models.Contact(**{**c.model_dump(), "personal_line": line})
+        slots = await visibility.personalize_slots(company, niche, domain=c.domain, sem=sem)
+        # Every slot (personal_line, niche, competitors) rides on the contact via
+        # extra="allow" so any of them can be used as a {{slot}} in the template.
+        return models.Contact(**{**c.model_dump(), **slots})
 
     return await asyncio.gather(*(one(c) for c in contacts))
 
