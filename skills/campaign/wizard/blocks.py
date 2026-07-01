@@ -218,7 +218,7 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
                         skipped: int, ready: int, who: str, subject: str,
                         their_message: str, body: str, category: str,
                         n_examples: int, mode: str, can_prev: bool, can_next: bool,
-                        private_metadata: str, received: str = "",
+                        private_metadata: str, received: str = "", gmail_url: str = "",
                         body_block_id: str = "resp_body") -> dict:
     """One card in the reply-review deck. `mode` selects the state:
       review  - draft ready: editable reply + Accept & send (submit)
@@ -246,8 +246,11 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*"}},
         # The message is split across as many blocks as it needs; the modal scrolls.
         *_message_sections(their_message),
-        {"type": "divider"},
     ]
+    if gmail_url:
+        blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
+                       "text": f"<{gmail_url}|Open the full thread in Gmail ↗>"}]})
+    blocks.append({"type": "divider"})
 
     submit = None
     if mode == "review":

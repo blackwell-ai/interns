@@ -124,6 +124,7 @@ def _render(session: dict) -> dict:
         who=row.get("who", d.get("to", "")),
         subject=d.get("incoming_subject", ""),
         received=d.get("received", ""),
+        gmail_url=d.get("gmail_url", ""),
         their_message=d.get("incoming_clean", ""),
         body=body, category=d.get("category", "other"),
         n_examples=d.get("n_examples", 0), mode=mode,

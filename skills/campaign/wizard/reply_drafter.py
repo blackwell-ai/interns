@@ -11,6 +11,7 @@ writes back after a send.
 Runs on the wizard server, so LLM calls go through `toolbox.core.llm` (routes to
 the Anthropic SDK when ANTHROPIC_API_KEY is set). Never log email bodies.
 """
+import asyncio
 import html as html_mod
 import logging
 import re
@@ -109,6 +110,34 @@ def _clean_reply(body: str) -> str:
     # 4. Drop any stray quoted lines and collapse blank runs.
     text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith(">"))
     return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+_EXTRACT_MODEL = "claude-haiku-4-5-20251001"  # cheap + fast; runs alongside the draft.
+_EXTRACT_SYSTEM = """You are given the raw body of ONE email reply. It may contain
+the person's newly written message plus quoted earlier emails, a signature, and
+email client boilerplate.
+
+Return ONLY the new message this person wrote in this reply, their words verbatim.
+Remove quoted prior emails, the signature, and boilerplate. Do not summarize,
+translate, shorten, or add anything. Keep their full new message, however long.
+If you cannot tell what is new, return the whole thing unchanged."""
+
+
+def _extract_message(body: str) -> str:
+    """Pull just the prospect's newly written message from a raw reply body using a
+    fast model. Regex cannot separate new text from quoted history reliably (it was
+    cutting real messages mid-word); the model does this well. Falls back to the
+    regex cleaner if the call fails or comes back empty."""
+    body = (body or "").strip()
+    if not body:
+        return ""
+    try:
+        out = (llm_mod.complete(body[:16000], system=_EXTRACT_SYSTEM,
+                                model=_EXTRACT_MODEL) or "").strip()
+        return out or _clean_reply(body)
+    except Exception as e:  # noqa: BLE001
+        log.warning("message extraction failed, using regex fallback: %s", str(e)[:120])
+        return _clean_reply(body)
 
 
 def _received_display(inbound: dict) -> str:
@@ -236,8 +265,6 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
     reply_to_message_id = inbound.get("id", "")
     to = _addr(inbound)
     received = _received_display(inbound)
-    # Just the prospect's newly written words, for both the prompt and the card.
-    incoming_clean = _clean_reply(incoming_body)
 
     category = await _to_thread(reply_examples.classify_category,
                                 incoming_subject, incoming_body)
@@ -252,12 +279,17 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         f"Voice guide:\n{voice or '(none on file — infer their voice from the examples)'}\n\n"
         f"Worked examples of how {from_name} has replied before:\n"
         f"{_format_examples(examples) or '(no examples on file yet — write a plain, honest, human reply)'}\n\n"
-        f"The prospect just replied. Answer this message:\n"
-        f"Subject: {incoming_subject}\n{incoming_clean or incoming_body[:1500]}\n\n"
+        f"The prospect just replied. Answer this message (ignore any quoted earlier "
+        f"emails below it):\n"
+        f"Subject: {incoming_subject}\n{incoming_body[:6000]}\n\n"
         f"Write {from_name}'s reply body now."
     )
-    draft = await _to_thread(
-        lambda: llm_mod.complete(prompt, system=_SYSTEM, model=_MODEL))
+    # Draft (Opus) and the display-extraction (fast model) run concurrently, so the
+    # clean message costs no extra wall-clock beyond the draft.
+    draft, incoming_clean = await asyncio.gather(
+        asyncio.to_thread(lambda: llm_mod.complete(prompt, system=_SYSTEM, model=_MODEL)),
+        asyncio.to_thread(_extract_message, incoming_body),
+    )
     draft = (draft or "").strip().replace("—", ", ").replace("–", ", ")
 
     return {
@@ -268,6 +300,7 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         "incoming_body": incoming_body,
         "incoming_clean": incoming_clean,
         "received": received,
+        "gmail_url": f"https://mail.google.com/mail/u/0/#all/{thread_id}",
         "reply_subject": _reply_subject(incoming_subject),
         "to": to,
         "reply_to_message_id": reply_to_message_id,
