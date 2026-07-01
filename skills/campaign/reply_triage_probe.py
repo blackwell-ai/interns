@@ -39,9 +39,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT))
 sys.path.insert(0, str(_REPO_ROOT / "toolbox" / "src"))
 
-from toolbox.core import auth, config, llm as llm_mod
+from datetime import datetime, timezone
+
+from toolbox.core import auth, config, events, llm as llm_mod
 from toolbox.primitives.gmail import lib as gmail_lib
-from skills.campaign import gog_auth
+from skills.campaign import gog_auth, reply_scan
 from skills.campaign.reply_scan import load_campaign_log
 from pydantic import BaseModel
 
@@ -252,6 +254,58 @@ def _addr(m: dict) -> str:
     return gmail_lib.address_of(gmail_lib.header(m, "From")).lower()
 
 
+def _received_iso(m: dict | None) -> str:
+    """UTC ISO timestamp of a Gmail message from its internalDate (epoch ms).
+    Empty string when unavailable, so the caller can fall back to now()."""
+    if not m:
+        return ""
+    raw = m.get("internalDate")
+    try:
+        return datetime.fromtimestamp(int(raw) / 1000, tz=timezone.utc).isoformat()
+    except (TypeError, ValueError):
+        return ""
+
+
+async def _persist_replies(rows: list[dict]) -> int:
+    """Upsert each detected prospect reply into the Supabase `replies` table so
+    reply-rate and sentiment stats have real data. Dedupes on message_id (the
+    table's unique key), so re-running triage never double-counts. Returns the
+    number of newly inserted replies.
+
+    Auth: the team-wide service key (TOOLBOX_SESSION_TOKEN, set by the server) so
+    inserts are not hidden by RLS. A missing token is a no-op, not a crash."""
+    token = (os.environ.get("TOOLBOX_SESSION_TOKEN")
+             or os.environ.get("SUPABASE_SECRET_KEY", ""))
+    if not token:
+        events.emit("reply.persist_skipped", level="warn", reason="no session token")
+        return 0
+    sem = asyncio.Semaphore(4)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    inserted = 0
+
+    async with httpx.AsyncClient(timeout=30) as s:
+        async def one(r: dict) -> None:
+            nonlocal inserted
+            mid = r.get("reply_mid")
+            who = r.get("who")
+            if not mid or not who or who == "unknown":
+                return
+            body = (r.get("snippet") or "") or r.get("rendered", "")[:2000]
+            async with sem:
+                sentiment = await asyncio.to_thread(reply_scan.classify_sentiment, body)
+                ok = await reply_scan.upsert_reply(
+                    s, token, recipient=who,
+                    received_at=r.get("reply_at") or now_iso,
+                    subject=r.get("subject", ""), snippet=(r.get("snippet") or "")[:500],
+                    sentiment=sentiment, run_id="", variant="", message_id=mid)
+            if ok:
+                inserted += 1
+
+        await asyncio.gather(*(one(r) for r in rows))
+    events.emit("reply.persisted", level="info", inserted=inserted, seen=len(rows))
+    return inserted
+
+
 def render_thread(msgs: list[dict], our_addrs: set[str]) -> tuple[str, str]:
     """Render the thread as US/THEM labelled blocks. Returns (rendered, last_sender)."""
     lines: list[str] = []
@@ -331,7 +385,7 @@ async def _candidate_threads(gmail, our_addrs, contacts, use_ledger, since_days,
 
 async def probe(log_path: str, account_override: str, since_days: int, max_threads: int,
                 use_ledger: bool, recent: int, concurrency: int,
-                as_json: bool = False) -> None:
+                as_json: bool = False, persist_replies: bool = False) -> None:
     t_start = time.perf_counter()
     our_addrs: set[str] = set(TEAM)
     contacts: dict = {}
@@ -371,8 +425,15 @@ async def probe(log_path: str, account_override: str, since_days: int, max_threa
             owner = next((_addr(m) for m in msgs if _addr(m) in our_addrs), account)
             other = next((_addr(m) for m in msgs if _addr(m) not in our_addrs), "unknown")
             subject = gmail_lib.header(msgs[0], "Subject") if msgs else ""
+            # Last inbound (THEM) message — the actual reply we persist to the
+            # replies table for reply-rate/sentiment stats.
+            inbound = [m for m in msgs if _addr(m) not in our_addrs]
+            last_in = inbound[-1] if inbound else None
             prepared.append({"tid": tid, "rendered": rendered, "last_sender": last_sender,
-                             "owner": owner, "who": other, "subject": subject, "n": len(msgs)})
+                             "owner": owner, "who": other, "subject": subject, "n": len(msgs),
+                             "reply_mid": (last_in or {}).get("id", ""),
+                             "reply_at": _received_iso(last_in),
+                             "snippet": ((last_in or {}).get("snippet") or "")[:500]})
 
         # Triage all threads concurrently.
         use_api = bool(os.environ.get("ANTHROPIC_API_KEY"))
@@ -404,6 +465,10 @@ async def probe(log_path: str, account_override: str, since_days: int, max_threa
         else:
             skip.append(row)            # dead end: decline, OOO, bounce, left-no-contact
 
+    # Persist every detected inbound reply (regardless of triage action) so the
+    # replies table reflects reality, not just the "needs response" subset.
+    persisted = await _persist_replies(rows) if persist_replies else 0
+
     if as_json:
         def slim(r: dict) -> dict:
             return {"thread_id": r["tid"], "who": r["who"], "owner": r["owner"],
@@ -414,6 +479,7 @@ async def probe(log_path: str, account_override: str, since_days: int, max_threa
             "account": account,
             "found": n_found,
             "scope": scope.strip(),
+            "persisted_replies": persisted,
             "counts": {"reply": len(needs), "reroute": len(reroute),
                        "gray": len(gray), "skip": len(skip)},
             "needs": [slim(r) for r in needs],
@@ -486,11 +552,16 @@ def main() -> None:
                     help="Parallel API/Gmail requests in flight")
     ap.add_argument("--json", action="store_true", dest="as_json",
                     help="Emit a JSON summary instead of the text report")
+    ap.add_argument("--persist-replies", action="store_true", dest="persist_replies",
+                    help="Upsert every detected reply into the Supabase replies "
+                         "table (dedupes on message_id). Used by the server so "
+                         "reply-rate stats have real data.")
     args = ap.parse_args()
     if not args.log and not args.account:
         ap.error("pass --log or --account")
     asyncio.run(probe(args.log, args.account, args.since_days, args.max_threads,
-                      args.ledger, args.recent, args.concurrency, args.as_json))
+                      args.ledger, args.recent, args.concurrency, args.as_json,
+                      args.persist_replies))
 
 
 if __name__ == "__main__":

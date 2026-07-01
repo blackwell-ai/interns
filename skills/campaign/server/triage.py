@@ -33,7 +33,7 @@ def _short(email: str) -> str:
 
 async def _run_account(email: str, env: dict, concurrency: int = 20) -> dict:
     cmd = ["python3", "-u", str(_PROBE), "--account", email, "--ledger",
-           "--concurrency", str(concurrency), "--json"]
+           "--concurrency", str(concurrency), "--json", "--persist-replies"]
     proc = await asyncio.create_subprocess_exec(
         *cmd, env=env, cwd=str(executor.REPO_ROOT),
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)

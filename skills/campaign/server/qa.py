@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 
 QA_MODEL = "claude-sonnet-4-6"
 CLASSIFY_MODEL = "claude-sonnet-4-6"
-MAX_ITERS = 6  # cap the tool-use loop so a question can never run away on cost
+MAX_ITERS = 8  # cap the tool-use loop so a question can never run away on cost
 
 _CAMPAIGN_DIR = Path(__file__).resolve().parents[1]
 _DOCS = {
@@ -62,6 +62,11 @@ For THIS question, use the tools to find real answers rather than guessing:
   source of truth for your own mechanics).
 - search_inbox / read_email_thread to answer anything about specific replies or
   threads ("did X write back", "what did they say").
+- list_replies for questions about a GROUP of people ("what are the aerospace
+  companies saying", "which DTC brands replied", "negative replies this month").
+  It scopes replies by the campaign ICP, sentiment, and window. To quote what a
+  group actually said, list them first, then read a few of their threads with
+  read_email_thread (or search_inbox on a recipient) and summarize the themes.
 - lookup_contact to check whether and when we emailed someone and if they replied.
 - sent_today for "how many have we sent today", "are we on track", or "how far
   from the daily target" — it is the exact calendar-day count from the ledger.
@@ -76,8 +81,13 @@ plain text, no markdown headers, no em or en dashes. A light wizard voice is fin
 _CLASSIFY_SYSTEM = """Classify the Slack message as exactly one word:
 - "send" if it asks to launch, run, or send an outreach campaign, or hands over
   leads/contacts to email (e.g. "40 to DTC brands via Ethan", "blast these").
-- "question" for anything else: a question, a status check, a request for
-  information, or asking what you can do.
+- "triage" ONLY if it is a command to scan the inboxes and process the whole
+  pile of replies/reroutes right now (e.g. "triage the inboxes", "scan replies",
+  "who is waiting on us", "run triage"). It is a bulk action over all inboxes.
+- "question" for anything else, including any question ABOUT replies or a group
+  of people ("what did the aerospace folks say", "how many DTC brands replied",
+  "did Nathan write back", "summarize the responses from X"). When a message asks
+  about replies rather than commanding a full inbox scan, it is a question.
 Reply with only that one word, nothing else."""
 
 
@@ -163,11 +173,42 @@ _TOOLS = [
         "name": "sent_today",
         "description": "Exact count of emails sent so far TODAY (since local "
                        "midnight), straight from the contacted ledger, plus the "
-                       "daily target and how many remain. Use this for 'how many "
+                       "daily target and how many remain. The ledger is TEAM-WIDE, "
+                       "so this sums every sender's runs; the result includes a "
+                       "by_sender / runs breakdown — always show it so the total is "
+                       "not mistaken for one person's sends. Use for 'how many "
                        "today', 'are we on track', 'how far to the target' — it is "
                        "the calendar-day truth, where campaign_stats is a multi-day "
                        "rolling window.",
         "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "list_replies",
+        "description": "List the people who replied, optionally scoped to a GROUP "
+                       "of targets, a sentiment, and a time window. Use this to "
+                       "answer questions about a slice of people, e.g. 'what are "
+                       "the aerospace companies saying', 'which DTC brands "
+                       "replied', 'show negative replies this month'. The group is "
+                       "matched against the campaign ICP description each person "
+                       "was emailed under. Returns recipients with sentiment, "
+                       "subject, date, and the ICP they came from. Read only; for "
+                       "the actual words of a reply, follow up with "
+                       "read_email_thread or search_inbox on a recipient.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "group": {"type": "string",
+                          "description": "Target group to scope to, matched against "
+                                         "the campaign ICP (e.g. 'aerospace', 'DTC', "
+                                         "'pet'). Omit for all replies."},
+                "sentiment": {"type": "string",
+                              "description": "Filter to one sentiment (e.g. "
+                                             "'positive', 'negative', 'neutral'). "
+                                             "Omit for any."},
+                "since_days": {"type": "integer",
+                               "description": "Lookback window in days (default 30)."},
+            },
+        },
     },
 ]
 
@@ -210,6 +251,9 @@ def _step_label(name: str, inp: dict) -> str:
         return ":bar_chart: tallying sends and replies..."
     if name == "sent_today":
         return ":bar_chart: counting today's sends..."
+    if name == "list_replies":
+        grp = inp.get("group")
+        return f":scroll: gathering replies{f' from {grp}' if grp else ''}..."
     return ":mage: working..."
 
 
@@ -355,13 +399,115 @@ async def _count_contacted_since(cutoff_iso: str, sent_only: bool = True) -> int
     return _parse_count(r.headers.get("content-range"))
 
 
+async def _sent_breakdown(cutoff_iso: str) -> dict:
+    """Per-sender / per-run split of today's sends, so the total is never a
+    mystery number: the contacted ledger is team-wide, so 'sent today' sums every
+    sender's runs. Maps each sent row's run_id to its campaign sender. Best-effort
+    — returns {} if the rows or campaigns cannot be read."""
+    base, h = config.SUPABASE_URL, _supa_headers()
+    rows: list[dict] = []
+    async with httpx.AsyncClient(timeout=30) as s:
+        off = 0
+        while True:
+            r = await s.get(f"{base}/rest/v1/contacted",
+                            params={"select": "run_id", "created_at": f"gte.{cutoff_iso}",
+                                    "status": "eq.sent", "order": "run_id.asc",
+                                    "offset": off, "limit": 1000}, headers=h)
+            if r.status_code not in (200, 206):
+                return {}
+            batch = r.json()
+            rows += batch
+            if len(batch) < 1000:
+                break
+            off += 1000
+        by_run: dict[str, int] = {}
+        for x in rows:
+            rid = x.get("run_id")
+            if rid:
+                by_run[rid] = by_run.get(rid, 0) + 1
+        sender_by_run: dict[str, str] = {}
+        if by_run:
+            ids = ",".join(f'"{k}"' for k in by_run)
+            c = await s.get(f"{base}/rest/v1/campaigns",
+                            params={"select": "run_id,sender", "run_id": f"in.({ids})"},
+                            headers=h)
+            for row in (c.json() if c.status_code == 200 else []):
+                sender_by_run[row.get("run_id")] = row.get("sender") or "unknown"
+    by_sender: dict[str, int] = {}
+    for rid, cnt in by_run.items():
+        key = sender_by_run.get(rid, "unknown")
+        by_sender[key] = by_sender.get(key, 0) + cnt
+    return {"runs": len(by_run), "by_sender": by_sender}
+
+
 async def _sent_today() -> str:
-    n = await _count_contacted_since(_local_midnight_utc().isoformat())
+    cutoff = _local_midnight_utc().isoformat()
+    n = await _count_contacted_since(cutoff)
     if n is None:
         return json.dumps({"error": "could not read the contacted ledger"})
     target = int(os.environ.get("SLACK_DAILY_TARGET", str(_DEFAULT_DAILY_TARGET)))
-    return json.dumps({"window": "today (since local midnight)", "sent": n,
-                       "target": target, "remaining": max(0, target - n)})
+    # The ledger is team-wide, so this counts every sender. Include the split so
+    # the number is transparent (e.g. "1445 across 12 runs: Samarjit 566, ...").
+    breakdown = await _sent_breakdown(cutoff)
+    return json.dumps({"window": "today (since local midnight, team-wide)",
+                       "sent": n, "target": target, "remaining": max(0, target - n),
+                       **breakdown})
+
+
+async def _list_replies(group: str | None = None, sentiment: str | None = None,
+                        since_days: int = 30) -> str:
+    """Replies scoped to a target group (by campaign ICP), sentiment, and window.
+
+    The join is campaigns(icp) -> run_id -> contacted(recipient) -> replies.
+    Done as a few cheap PostgREST calls inside this one tool so the model gets
+    clean rows to reason over instead of having to stitch the tables itself.
+    """
+    base, h = config.SUPABASE_URL, _supa_headers()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=since_days)).isoformat()
+    recipients: list[str] | None = None
+    matched_icps: list[str] = []
+    async with httpx.AsyncClient(timeout=30) as s:
+        if group:
+            c = await s.get(f"{base}/rest/v1/campaigns",
+                            params={"select": "run_id,icp_description",
+                                    "icp_description": f"ilike.*{group}*",
+                                    "limit": 500}, headers=h)
+            crows = c.json() if c.status_code == 200 else []
+            run_ids = [r["run_id"] for r in crows if r.get("run_id")]
+            matched_icps = sorted({r.get("icp_description", "") for r in crows})
+            if not run_ids:
+                return json.dumps({"group": group, "matched_campaigns": 0,
+                                   "note": "no campaigns match that group"})
+            ids = ",".join(f'"{r}"' for r in run_ids[:200])
+            ct = await s.get(f"{base}/rest/v1/contacted",
+                             params={"select": "recipient",
+                                     "run_id": f"in.({ids})", "limit": 2000},
+                             headers=h)
+            rows = ct.json() if ct.status_code == 200 else []
+            recipients = sorted({r["recipient"] for r in rows if r.get("recipient")})
+            if not recipients:
+                return json.dumps({"group": group, "matched_campaigns": len(run_ids),
+                                   "contacted": 0, "note": "no one contacted yet"})
+        params = {"select": "recipient,subject,sentiment,received_at",
+                  "received_at": f"gte.{cutoff}", "order": "received_at.desc",
+                  "limit": "200"}
+        if sentiment:
+            params["sentiment"] = f"ilike.{sentiment}"
+        if recipients is not None:
+            rids = ",".join(f'"{r}"' for r in recipients[:300])
+            params["recipient"] = f"in.({rids})"
+        r = await s.get(f"{base}/rest/v1/replies", params=params, headers=h)
+    reps = r.json() if r.status_code == 200 else []
+    counts: dict[str, int] = {}
+    for row in reps:
+        k = (row.get("sentiment") or "unknown").lower()
+        counts[k] = counts.get(k, 0) + 1
+    return json.dumps({
+        "group": group, "sentiment_filter": sentiment, "since_days": since_days,
+        "matched_icps": [i for i in matched_icps if i][:10],
+        "total_replies": len(reps), "sentiment_counts": counts,
+        "replies": reps[:60],
+    })
 
 
 _DISPATCH = {
@@ -373,6 +519,9 @@ _DISPATCH = {
     "lookup_contact": lambda i: _lookup_contact(i["needle"]),
     "campaign_stats": lambda i: _campaign_stats(int(i.get("since_days") or 7)),
     "sent_today": lambda i: _sent_today(),
+    "list_replies": lambda i: _list_replies(
+        i.get("group") or None, i.get("sentiment") or None,
+        int(i.get("since_days") or 30)),
 }
 
 
@@ -386,14 +535,20 @@ async def _run_tool(name: str, inp: dict) -> str:
 # ---- public entry points ------------------------------------------------------
 
 async def classify_intent(text: str) -> str:
-    """'send' if the message wants to run a campaign, else 'question'. On any
-    failure, default to 'question' (the safe, non-sending path)."""
+    """One of 'send', 'triage', or 'question'. 'send' runs the gated campaign
+    flow, 'triage' scans every inbox, 'question' answers via the read-only Q&A
+    loop. On any failure, default to 'question' (the safe, non-sending path)."""
     try:
         client = anthropic.AsyncAnthropic(api_key=config.ANTHROPIC_API_KEY)
         resp = await client.messages.create(
             model=CLASSIFY_MODEL, max_tokens=5, system=_CLASSIFY_SYSTEM,
             messages=[{"role": "user", "content": text[:2000]}])
-        return "send" if "send" in _text_of(resp).lower() else "question"
+        out = _text_of(resp).lower()
+        if "send" in out:
+            return "send"
+        if "triage" in out:
+            return "triage"
+        return "question"
     except Exception:  # noqa: BLE001
         log.exception("intent classify failed")
         return "question"
