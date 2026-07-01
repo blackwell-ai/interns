@@ -1,12 +1,12 @@
 """GEO test command — preview the real AI-visibility email for live brands.
 
 The wizard's normal preview (agent.render_sample) runs BEFORE any brand is
-sourced, so it fills placeholder values and cannot show the per-brand
-{{personal_line}} — that line is generated at send time, per contact. This
+sourced, so it fills placeholder values and cannot show the per-brand GEO slots
+({{niche}}, {{competitor_N}}) — those are filled at send time, per contact. This
 command closes that gap: given a niche or a specific domain, it sources a
-couple of real live brands, runs the exact visibility.personalize check the
+couple of real live brands, runs the exact visibility.personalize_slots check the
 send path uses, and renders the finished email so the user can read the actual
-comparison line before committing to a campaign. Read-only: sends nothing,
+filled copy before committing to a campaign. Read-only: sends nothing,
 spends no Hunter credit (StoreLeads sourcing + one LLM call per brand only).
 
 Trigger in Slack: "@wizard geo test women's lingerie" or

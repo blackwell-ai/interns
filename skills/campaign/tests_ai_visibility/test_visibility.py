@@ -55,56 +55,29 @@ def _patch_raise(monkeypatch):
     monkeypatch.setattr(visibility, "_check", boom)
 
 
-# ── personalize: the four branches, all non-empty ──────────────────────────
+# ── no prewritten prose: only modular data slots are returned ──────────────
 
-async def test_absent_names_real_competitor(monkeypatch):
-    _patch_check(monkeypatch, brands=["Hatch", "Ingrid & Isabel"], mentions=False)
-    line = await visibility.personalize("Acme Maternity", _NICHE)
-    assert line
-    assert "Hatch" in line
-    assert "Acme Maternity" in line          # the gap is framed against the target
-    assert "never came up" in line
+async def test_no_personal_line_slot():
+    # The tool is modular by design — it must not emit a prewritten sentence.
+    assert "personal_line" not in visibility.SLOTS
+    assert not hasattr(visibility, "personalize")   # back-compat wrapper removed
 
 
-async def test_present_is_softer_and_nonempty(monkeypatch):
-    _patch_check(monkeypatch, brands=["Acme Maternity", "Hatch"], mentions=True)
-    line = await visibility.personalize("Acme Maternity", _NICHE)
-    assert line
-    assert "does come up" in line
-    assert "Acme Maternity" in line
-
-
-async def test_not_mentioned_but_no_competitors_falls_back(monkeypatch):
-    # Model says the brand is absent but names nothing usable — no false claim.
-    _patch_check(monkeypatch, brands=[], mentions=False)
-    line = await visibility.personalize("Acme Maternity", _NICHE)
-    assert line
-    assert "invisible" in line
-    assert "Acme Maternity" not in line      # generic line makes no specific claim
-
-
-async def test_llm_error_degrades_to_generic(monkeypatch):
-    _patch_raise(monkeypatch)
-    line = await visibility.personalize("Acme Maternity", _NICHE)
-    assert line                              # never empty even on failure
-    assert "invisible" in line
-
-
-async def test_empty_company_is_generic(monkeypatch):
-    # Guard: an empty company never calls the model and never returns empty.
+async def test_empty_company_returns_safe_slots(monkeypatch):
+    # Guard: an empty company never calls the model and still returns full slots.
     called = {"n": 0}
     monkeypatch.setattr(visibility, "_check",
                         lambda c, d, h: called.__setitem__("n", called["n"] + 1)
                         or _ranking([], False))
-    line = await visibility.personalize("", _NICHE)
-    assert line
+    slots = await visibility.personalize_slots("", _NICHE)
     assert called["n"] == 0
+    assert all(str(v).strip() for v in slots.values())
 
 
 async def test_blank_niche_defaults(monkeypatch):
-    _patch_check(monkeypatch, brands=["Hatch", "Ingrid"], mentions=False)
-    line = await visibility.personalize("Acme", "")
-    assert line                              # "brands" default keeps the sentence valid
+    _patch_check(monkeypatch, brands=["Hatch", "Ingrid"], mentions=False, niche="")
+    slots = await visibility.personalize_slots("Acme", "")
+    assert slots["niche"].strip()            # "brands" default keeps {{niche}} valid
 
 
 # ── structured slots: every slot present and non-empty ─────────────────────
@@ -167,10 +140,10 @@ async def test_clean_competitors_drops_target_dupes_blanks():
     assert "" not in out and "  " not in out
 
 
-# ── run.py wiring: personal_line survives into compose ──────────────────────
+# ── run.py wiring: the modular slots survive into compose ───────────────────
 
-async def test_personalize_visibility_sets_line_and_survives_model_dump(monkeypatch):
-    _patch_check(monkeypatch, brands=["Hatch", "Ingrid"], mentions=False)
+async def test_personalize_visibility_sets_slots_and_survives_model_dump(monkeypatch):
+    _patch_check(monkeypatch, brands=["Hatch", "Ingrid"], mentions=False, niche="lingerie")
     contacts = [
         models.Contact(email="a@acme.co", first_name="Alex", company="Acme", domain="acme.co"),
         models.Contact(email="b@bravo.co", first_name="Bea", company="", domain="bravo.co"),
@@ -179,9 +152,11 @@ async def test_personalize_visibility_sets_line_and_survives_model_dump(monkeypa
     assert len(out) == 2
     for c in out:
         dumped = c.model_dump()
-        assert dumped["personal_line"]        # present and non-empty via extra="allow"
-    # second contact had no company — derived from the domain, still personalized
-    assert out[1].model_dump()["personal_line"]
+        # every advertised slot rides through model_dump via extra="allow"
+        for name in visibility.SLOTS:
+            assert dumped[name] and str(dumped[name]).strip()
+        assert "personal_line" not in dumped   # no prewritten prose leaks through
+    assert out[0].model_dump()["competitor_1"] == "Hatch"
 
 
 async def test_geo_template_renders_without_empty_slot(monkeypatch):
@@ -247,9 +222,9 @@ async def test_geo_test_domain_arg_renders_finished_email(monkeypatch):
 
     # A domain argument skips StoreLeads and tests that exact brand.
     async def fake_slots(company, hint, *, domain="", sem=None):
-        return {"personal_line": f"I asked ChatGPT to recommend the best lingerie "
-                                 f"and {company} never came up.",
-                "niche": "lingerie", "competitors": "ThirdLove and Aerie"}
+        return {"niche": "lingerie", "competitors": "ThirdLove and Aerie",
+                "competitor_1": "ThirdLove", "competitor_2": "Aerie",
+                "competitor_3": "Savage X Fenty"}
     monkeypatch.setattr(visibility, "personalize_slots", fake_slots)
 
     posted: list[str] = []
@@ -261,7 +236,7 @@ async def test_geo_test_domain_arg_renders_finished_email(monkeypatch):
 
     joined = "\n".join(posted)
     assert "Orange Lingerie" in joined            # company derived from domain
-    assert "never came up" in joined              # the real personalization line
+    assert "ThirdLove" in joined                  # a real competitor slot rendered
     assert "Subject:" in joined                   # a finished email was rendered
     assert "Nothing was sent" in joined           # read-only reassurance
 

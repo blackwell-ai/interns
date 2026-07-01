@@ -130,9 +130,9 @@ reply counts to Notion. Output goes to `runs/cron-campaign.log`.
 Templates live in `skills/campaign/templates/`. Each is a markdown file with
 frontmatter `subject:` and a body that uses `{{slots}}` for personalisation.
 Available slots: `{{first_name}}`, `{{company}}`, `{{from_name}}`,
-`{{segment_phrase}}`, `{{personal_line}}` (per-brand line; see AI-visibility
-mode below). Every slot a template uses must be non-empty for every row or that
-row fails compose.
+`{{segment_phrase}}`, plus the modular GEO fields (`{{niche}}`,
+`{{competitor_1}}`...; see AI-visibility mode below). Every slot a template uses
+must be non-empty for every row or that row fails compose.
 
 HTML templates are auto-detected: if the body starts with `<`, the email is
 sent as multipart HTML. Use `<p>` tags for paragraphs. Do not add extra
@@ -149,12 +149,12 @@ defaults to `template_a.md` if you omit it.
 
 ### AI-visibility (GEO) mode
 
-`--personalize-visibility` fills a `{{personal_line}}` slot per brand from a
-live check: it asks an AI which brands it names for the buyer's niche and
-whether this brand is one of them, then opens the email with what it found
-(brand absent -> names real competitors; present -> softer line; check failed
--> a safe generic line that claims nothing unverified). The line is never
-empty, so it never breaks compose. Off by default; one extra LLM call per
+`--personalize-visibility` fills the per-brand GEO slots from a live check: it
+asks an AI which brands it names for the buyer's niche and returns the raw facts
+— the brand's specific `{{niche}}` and the real `{{competitor_N}}` names. It does
+NOT write a sentence for you; the copy is yours to write out of those slots (the
+whole point is that it stays visible and modular). Every slot is guaranteed
+non-empty, so it never breaks compose. Off by default; one extra LLM call per
 contact, so only GEO runs pay for it. Template: `templates/ai_visibility.md`.
 
 Through the Slack/Telegram wizard this turns on automatically: frame the ask
@@ -163,28 +163,31 @@ in ChatGPT") and the planner sets `geo: true`, which routes to the GEO template
 and passes `--personalize-visibility`. The claim-making logic lives in one
 tested module, `visibility.py`.
 
-**Per-brand GEO slots you can craft copy with.** A GEO run fills these
-`{{slots}}` per brand at send time, so you can write your own sentence around
-them (like `{{first_name}}` / `{{school}}`) instead of using the pre-made line:
+**Per-brand GEO slots you write copy with.** A GEO run fills these `{{slots}}`
+per brand at send time — raw facts, no prewritten prose. You write the sentence
+yourself, the same way you use `{{first_name}}` / `{{school}}`:
 
 | Slot | Example | Notes |
 |---|---|---|
 | `{{niche}}` | `women's lingerie` | the brand's specific niche |
 | `{{competitors}}` | `Victoria's Secret and Aerie` | up to 2 rivals as one phrase (falls back to "the established names in the space") |
 | `{{competitor_1}}` `{{competitor_2}}` `{{competitor_3}}` | `Victoria's Secret`, `Aerie`, `Savage X Fenty` | individual rivals, for listing them separately. `_1` is the most reliable; `_2`/`_3` fall back to a descriptor if the check named fewer |
-| `{{personal_line}}` | full opening sentence | the ready-made line |
 
 Every one is guaranteed non-empty (an empty slot fails that row's compose). The
-canonical list is `visibility.SLOTS`. To craft custom copy, start a GEO campaign
-in the wizard and hit **Edit draft ✏️** on the preview — the wizard lists these
-fields and your edited template keeps the `{{slots}}`, which get filled per brand
-on send. Example line: `When I ask ChatGPT for the best {{niche}}, it names
-{{competitors}} but not {{company}}.`
+canonical list is `visibility.SLOTS`. The default `templates/ai_visibility.md` is
+already written from these slots, so hit **Edit draft ✏️** on the preview and
+rewrite it however you like — the wizard lists the fields and your edited
+template keeps the `{{slots}}`, which get filled per brand on send. Example line:
+`When I ask ChatGPT for the best {{niche}}, it names {{competitor_1}} and
+{{competitor_2}} but not {{company}}.`
 
-**Preview the real line before sending — `geo test`.** The wizard's normal
-preview runs before any brand is sourced, so it shows `{{personal_line}}`
-unfilled; the real line is generated per brand at send time. To see it, ask the
-Slack wizard:
+Caveat: a "but not {{company}}" line is only true for brands the AI does NOT
+already surface. GEO lists should target absent brands; use `geo test` to check
+before sending.
+
+**Preview the real filled email before sending — `geo test`.** The wizard's
+normal preview runs before any brand is sourced, so the GEO slots show unfilled;
+they are filled per brand at send time. To see a real one, ask the Slack wizard:
 
 ```
 @wizard geo test women's lingerie          # sources 2 live brands for the niche

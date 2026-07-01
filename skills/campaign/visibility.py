@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
-"""AI-visibility personalization — the per-brand opening line for GEO outreach.
+"""AI-visibility facts — modular per-brand slots for GEO outreach.
 
 The pitch of this campaign is generative-engine optimization: when a shopper
 asks an AI assistant ("what are the best maternity clothing brands?"), most DTC
-brands never get named, and that is quiet lost demand. The strongest cold email
-is the product demoing itself — we ask an AI the buyer question for the brand's
-niche, see whether the brand shows up, and open the email with what we found.
+brands never get named, and that is quiet lost demand.
 
-This module owns the one claim-making LLM call in the pipeline, so the honesty
-rules live here, not scattered through run.py:
+This module runs one structured LLM call per brand and exposes the RAW FACTS it
+returns as individual template slots — the brand's niche, and the real
+competitors an AI surfaces for it. It deliberately does NOT write a sentence for
+you: the whole point of the tool is that the copy is visible and modular, so the
+user writes the email themselves out of these slots (like {{first_name}} or
+{{company}}). See visibility.SLOTS for the full list.
 
-  - The line only ever states what the model actually returned ("I asked ChatGPT
-    which brands it recommends and it named A and B"). It never asserts an
-    absolute SEO fact we did not measure.
+Honesty rules (this is the one claim-making call in the pipeline):
   - Competitor names come straight from the model's answer; we never invent one,
     and we drop any name that is just the target brand again.
-  - personalize() NEVER returns an empty string. compose_lib.render raises on an
-    empty {{slot}}, so a blank line would fail the whole compose for that row.
-    Every path (absent / present / model error) yields a complete, true sentence.
+  - Every slot is guaranteed non-empty. compose_lib.render raises on an empty
+    {{slot}}, so a blank value would fail the whole compose for that row; a gap
+    (e.g. the check named fewer rivals than we expose) gets a graceful stand-in.
+  - `mentioned` reflects whether the AI already surfaces the brand — a template
+    that says "but not {{company}}" is only true when the brand does NOT appear,
+    so GEO lists should target brands that are absent (check with `geo test`).
 
-The check is one structured LLM call per brand, so it is gated behind run.py's
---personalize-visibility flag and only paid for on GEO runs.
+The check is gated behind run.py's --personalize-visibility flag and only paid
+for on GEO runs.
 """
 from __future__ import annotations
 
@@ -117,44 +120,14 @@ def _competitor_slots(competitors: list[str]) -> dict[str, str]:
     return out
 
 
-def _line_absent(company: str, niche: str, competitors_phrase: str) -> str:
-    """Brand is not surfaced by AI, and we have real competitors to name."""
-    return (
-        f"I asked ChatGPT to recommend the best {niche} and it pointed shoppers "
-        f"to {competitors_phrase}, but {company} never came up. With ChatGPT now "
-        "steering how people find brands, that gap is quietly sending your buyers "
-        "elsewhere."
-    )
-
-
-def _line_present(company: str, niche: str) -> str:
-    """Brand does surface — softer, still true opening."""
-    return (
-        f"I was checking how the top {niche} brands show up when shoppers ask "
-        f"ChatGPT for recommendations, and {company} does come up, which is rare. "
-        "The catch is those rankings shift constantly and most competitors are "
-        "working to take that spot."
-    )
-
-
-def _line_generic(niche: str) -> str:
-    """Fallback when the check is inconclusive or errors — asserts nothing false."""
-    return (
-        f"Most {niche} brands are effectively invisible when a shopper asks "
-        "ChatGPT for recommendations, and with AI now shaping how people discover "
-        "brands, that is quietly costing them customers."
-    )
-
-
 def _check(company: str, domain: str, hint: str) -> _AIRanking:
     return llm_mod.parse(_prompt(company, domain, hint), _AIRanking, system=_SYSTEM)
 
 
-# Template slots this module fills. Kept in one place so the wizard can show the
-# user which {{parameters}} a GEO email can use. Every one is guaranteed
-# non-empty by personalize_slots (compose_lib.render fails a row on an empty
-# slot).
-SLOTS = ("personal_line", "niche", "competitors") + tuple(
+# The modular template slots this module fills — the raw facts, no prewritten
+# prose. Kept in one place so the wizard can show the user which {{parameters}}
+# a GEO email can use. Every one is guaranteed non-empty by personalize_slots.
+SLOTS = ("niche", "competitors") + tuple(
     f"competitor_{i + 1}" for i in range(_N_COMPETITOR_SLOTS))
 
 
@@ -167,10 +140,10 @@ async def personalize_slots(
 ) -> dict[str, str]:
     """Return the per-brand GEO template slots. Every value is non-empty.
 
-    Keys (all usable as {{slot}} in a GEO template):
-      - personal_line: a complete, ready-to-use opening sentence.
+    Keys (all usable as {{slot}} in a template the user writes):
       - niche: the brand's specific niche, e.g. "women's lingerie".
       - competitors: a phrase naming up to two real rivals the AI surfaced.
+      - competitor_1..N: those rivals individually, for listing them separately.
 
     `hint` is the broad ICP (e.g. "DTC apparel brands"); the check narrows it to
     the brand's SPECIFIC niche so the facts are relevant per brand. On any model
@@ -181,12 +154,12 @@ async def personalize_slots(
     hint = (hint or "brands").strip()
     company = (company or "").strip()
 
-    def _fallback(niche: str) -> dict[str, str]:
-        return {"personal_line": _line_generic(niche), "niche": niche,
-                "competitors": _COMPETITORS_FALLBACK, **_competitor_slots([])}
+    def _slots(niche: str, competitors: list[str]) -> dict[str, str]:
+        return {"niche": niche, "competitors": _competitors_phrase(competitors),
+                **_competitor_slots(competitors)}
 
     if not company:
-        return _fallback(hint)
+        return _slots(hint, [])
 
     async def _run() -> _AIRanking:
         return await asyncio.to_thread(_check, company, domain, hint)
@@ -200,36 +173,14 @@ async def personalize_slots(
     except Exception as e:  # noqa: BLE001 — any failure degrades to safe slots
         events.emit("campaign.visibility_error", level="warn",
                     company=company, reason=str(e)[:120])
-        return _fallback(hint)
+        return _slots(hint, [])
 
     # Use the brand's specific niche when the model found one; fall back to the
-    # broad hint so every sentence stays grammatical.
+    # broad hint so every {{niche}} stays grammatical.
     niche = (ranking.niche or "").strip() or hint
     competitors = _clean_competitors(ranking.brands, company)
-    phrase = _competitors_phrase(competitors)
-
-    if not ranking.mentions_target and competitors:
-        line = _line_absent(company, niche, phrase)
-    elif ranking.mentions_target:
-        line = _line_present(company, niche)
-    else:
-        line = _line_generic(niche)
 
     events.emit("campaign.visibility_ok", level="info",
                 company=company, niche=niche, mentioned=ranking.mentions_target,
                 competitors=len(competitors))
-    return {"personal_line": line, "niche": niche, "competitors": phrase,
-            **_competitor_slots(competitors)}
-
-
-async def personalize(
-    company: str,
-    hint: str,
-    *,
-    domain: str = "",
-    sem: asyncio.Semaphore | None = None,
-) -> str:
-    """Back-compat: the ready-made opening line only. New code that wants the
-    individual {{niche}} / {{competitors}} slots should call personalize_slots."""
-    slots = await personalize_slots(company, hint, domain=domain, sem=sem)
-    return slots["personal_line"]
+    return _slots(niche, competitors)

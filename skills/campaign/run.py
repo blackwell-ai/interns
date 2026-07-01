@@ -1235,13 +1235,14 @@ async def _personalize_visibility(
     niche: str,
     concurrency: int,
 ) -> list[models.Contact]:
-    """Set each contact's {{personal_line}} from an AI-visibility check.
+    """Set each contact's modular GEO slots ({{niche}}, {{competitor_N}}) from an
+    AI-visibility check.
 
     Runs the checks concurrently (bounded), and reconstructs each Contact with
-    the extra `personal_line` field so it flows through model_dump() into
-    compose. visibility.personalize never returns empty, so no row can later
-    fail compose on an empty slot. A per-contact failure degrades to that
-    contact's safe generic line, never dropping the contact.
+    the extra slot fields so they flow through model_dump() into compose.
+    visibility.personalize_slots guarantees every slot is non-empty, so no row can
+    later fail compose on an empty slot. A per-contact failure degrades to safe
+    slot values, never dropping the contact.
     """
     sem = asyncio.Semaphore(max(1, concurrency))
 

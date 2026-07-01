@@ -3,7 +3,7 @@ subject: How {{company}} shows up in ChatGPT
 ---
 <p>Hi {{first_name}},</p>
 
-<p>{{personal_line}}</p>
+<p>I asked ChatGPT to recommend the best {{niche}} and it named {{competitor_1}} and {{competitor_2}}, but not {{company}}. With shoppers now asking AI what to buy, that gap is quietly sending your buyers elsewhere.</p>
 
 <p>I'm a student at {{school}} (working with a couple from {{other_schools}}) building tools that help brands like {{company}} get named when shoppers ask AI assistants for recommendations. We're backed by YC and have worked with teams at Public Goods and Good Molecules.</p>
 
