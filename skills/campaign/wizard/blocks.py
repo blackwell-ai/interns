@@ -188,6 +188,32 @@ def _respond_info_modal(title: str, text: str) -> dict:
     }
 
 
+def _message_sections(text: str, cap_chars: int = 18000) -> list[dict]:
+    """Split a (possibly long) message into quoted section blocks, each under
+    Slack's 3000-char-per-block limit, so the modal scrolls through the whole
+    thing instead of truncating. Only a pathologically huge blob is capped."""
+    text = (text or "").strip() or "(no message text)"
+    if len(text) > cap_chars:
+        text = text[:cap_chars].rstrip() + "\n… (truncated)"
+    # Quote each line, hard-splitting any single line that alone exceeds the limit.
+    pieces: list[str] = []
+    for ln in text.splitlines() or [""]:
+        s = "> " + ln
+        while len(s) > 2800:
+            pieces.append(s[:2800])
+            s = "> " + s[2800:]
+        pieces.append(s)
+    blocks, buf = [], ""
+    for p in pieces:
+        if buf and len(buf) + len(p) + 1 > 2800:
+            blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": buf}})
+            buf = ""
+        buf = (buf + "\n" + p) if buf else p
+    if buf:
+        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": buf}})
+    return blocks
+
+
 def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
                         skipped: int, ready: int, who: str, subject: str,
                         their_message: str, body: str, category: str,
@@ -210,10 +236,6 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         tallies.append(f":hourglass_flowing_sand: {ready}/{total} drafted")
     tail = ("  ·  " + "  ·  ".join(tallies)) if tallies else ""
 
-    msg = (their_message or "").strip() or "(no message text)"
-    if len(msg) > 2600:
-        msg = msg[:2600].rstrip() + "\n… (truncated)"
-    quoted = "\n".join("> " + ln for ln in msg.splitlines())
     hdr = f"*To:* {who or '(unknown)'}\n*Subject:* {subject or '(none)'}"
     if received:
         hdr += f"\n*Replied:* {received}"
@@ -221,7 +243,9 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         {"type": "context", "elements": [{"type": "mrkdwn",
          "text": f":mage: *{founder_name}*  ·  {counters}{tail}"}]},
         {"type": "section", "text": {"type": "mrkdwn", "text": hdr}},
-        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*\n" + quoted[:2900]}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*"}},
+        # The message is split across as many blocks as it needs; the modal scrolls.
+        *_message_sections(their_message),
         {"type": "divider"},
     ]
 
