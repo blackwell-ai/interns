@@ -126,6 +126,7 @@ def _render(session: dict) -> dict:
         received=d.get("received", ""),
         gmail_url=d.get("gmail_url", ""),
         their_message=d.get("incoming_clean", ""),
+        thread=d.get("thread"), thread_hidden=d.get("thread_hidden", 0),
         body=body, category=d.get("category", "other"),
         n_examples=d.get("n_examples", 0), mode=mode,
         can_prev=pos > 0, can_next=pos < len(deck) - 1,

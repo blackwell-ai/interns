@@ -214,11 +214,37 @@ def _message_sections(text: str, cap_chars: int = 18000) -> list[dict]:
     return blocks
 
 
+def _thread_blocks(thread: list[dict], founder_name: str, prospect: str,
+                   hidden: int = 0) -> list[dict]:
+    """Render the whole conversation as a clean chronological transcript: each
+    message labeled with who sent it and when, its body quoted (and scrolling if
+    long). The last inbound message — the one being answered — is marked so it is
+    obvious what the draft below is replying to."""
+    out: list = [{"type": "section", "text": {"type": "mrkdwn", "text": "*Conversation*"}}]
+    if hidden > 0:
+        out.append({"type": "context", "elements": [{"type": "mrkdwn",
+            "text": f"_{hidden} earlier message{'s' if hidden != 1 else ''} hidden — "
+                    "open the full thread in Gmail below._"}]})
+    last_them = max((i for i, m in enumerate(thread) if m.get("who") == "them"), default=-1)
+    for i, m in enumerate(thread):
+        if m.get("who") == "you":
+            label = f":mage: *{founder_name}*"
+        else:
+            label = f":speech_balloon: *{prospect or 'Them'}*"
+        when = f"  ·  {m['when']}" if m.get("when") else ""
+        marker = "  ·  _replying to this_" if i == last_them else ""
+        out.append({"type": "context", "elements": [{"type": "mrkdwn",
+                    "text": label + when + marker}]})
+        out += _message_sections(m.get("text", ""))
+    return out
+
+
 def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
                         skipped: int, ready: int, who: str, subject: str,
                         their_message: str, body: str, category: str,
                         n_examples: int, mode: str, can_prev: bool, can_next: bool,
                         private_metadata: str, received: str = "", gmail_url: str = "",
+                        thread: list | None = None, thread_hidden: int = 0,
                         body_block_id: str = "resp_body") -> dict:
     """One card in the reply-review deck. `mode` selects the state:
       review  - draft ready: editable reply + Accept & send (submit)
@@ -243,10 +269,14 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         {"type": "context", "elements": [{"type": "mrkdwn",
          "text": f":mage: *{founder_name}*  ·  {counters}{tail}"}]},
         {"type": "section", "text": {"type": "mrkdwn", "text": hdr}},
-        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*"}},
-        # The message is split across as many blocks as it needs; the modal scrolls.
-        *_message_sections(their_message),
     ]
+    if thread:
+        # The full conversation, cleanly formatted, newest last. The modal scrolls.
+        blocks += _thread_blocks(thread, founder_name, who, thread_hidden)
+    else:
+        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*"}})
+        # The message is split across as many blocks as it needs; the modal scrolls.
+        blocks += _message_sections(their_message)
     if gmail_url:
         blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
                        "text": f"<{gmail_url}|Open the full thread in Gmail ↗>"}]})

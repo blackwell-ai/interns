@@ -31,7 +31,7 @@ for k, v in _DUMMY.items():
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "toolbox" / "src"))
 
-from skills.campaign.wizard import respond, reply_examples, reply_drafter  # noqa: E402
+from skills.campaign.wizard import respond, reply_examples, reply_drafter, blocks  # noqa: E402
 from skills.campaign import harvest_reply_examples as harvest  # noqa: E402
 
 
@@ -189,6 +189,48 @@ async def test_regenerate_redrafts_current_and_clears_edit():
     assert s["deck"][0]["draft_status"] == "ready"
     assert s["deck"][0]["edited"] is None                # regen discards the old edit
     assert s["deck"][0]["draft"]["thread_id"] == "T1b"
+
+
+# ---- thread transcript rendering --------------------------------------------
+
+def _all_text(view_blocks):
+    out = []
+    for b in view_blocks:
+        if b.get("type") == "section":
+            out.append(b["text"]["text"])
+        elif b.get("type") == "context":
+            out += [e["text"] for e in b["elements"]]
+    return "\n".join(out)
+
+
+def test_deck_modal_renders_full_thread_when_present():
+    thread = [
+        {"who": "you", "when": "Jun 20, 2026 at 9:00 AM", "text": "Would you be open to a quick call?"},
+        {"who": "them", "when": "Jun 21, 2026 at 2:14 PM", "text": "Sure, what does it cost?"},
+    ]
+    view = blocks._respond_deck_modal(
+        founder_name="Armaan", pos=1, total=1, sent=0, skipped=0, ready=1,
+        who="p@acme.com", subject="Re: Q", their_message="Sure, what does it cost?",
+        body="Happy to help.", category="pricing", n_examples=2, mode="review",
+        can_prev=False, can_next=False, private_metadata="{}",
+        thread=thread, thread_hidden=3, gmail_url="https://mail.google.com/x")
+    text = _all_text(view["blocks"])
+    assert "Conversation" in text
+    assert "Would you be open to a quick call?" in text   # our earlier message shown
+    assert "Sure, what does it cost?" in text             # their reply shown
+    assert "Armaan" in text and "p@acme.com" in text      # both parties labeled
+    assert "replying to this" in text                     # the answered message is marked
+    assert "3 earlier messages hidden" in text            # older-thread note
+
+
+def test_deck_modal_falls_back_to_single_message_without_thread():
+    view = blocks._respond_deck_modal(
+        founder_name="Armaan", pos=1, total=1, sent=0, skipped=0, ready=1,
+        who="p@acme.com", subject="Re: Q", their_message="Just the one message.",
+        body="ok", category="other", n_examples=0, mode="review",
+        can_prev=False, can_next=False, private_metadata="{}")
+    text = _all_text(view["blocks"])
+    assert "Their reply" in text and "Just the one message." in text
 
 
 # ---- harvest pairing (harvest.extract_pairs) --------------------------------

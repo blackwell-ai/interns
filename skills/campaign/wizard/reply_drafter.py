@@ -141,8 +141,8 @@ def _extract_message(body: str) -> str:
 
 
 def _received_display(inbound: dict) -> str:
-    """A short human timestamp for when the prospect replied, from the message's
-    Date header (falling back to internalDate). Empty on failure."""
+    """A short human timestamp for when a message was sent, from its Date header
+    (falling back to internalDate). Empty on failure."""
     import datetime
     import email.utils
     raw = gmail_lib.header(inbound, "Date")
@@ -199,6 +199,29 @@ def _render_preview(messages: list[dict], team: set[str], cap: int = 2500) -> st
         blocks.append(f"[{who} · {date}]\n{body[:900]}")
     text = "\n\n".join(blocks)
     return text if len(text) <= cap else text[-cap:]
+
+
+# How many of the most recent messages to show in the card transcript. Older ones
+# are summarized as hidden (the Gmail link still opens the full thread).
+_MAX_TRANSCRIPT = 8
+
+
+async def _build_transcript(messages: list[dict], team: set[str]) -> tuple[list[dict], int]:
+    """A clean chronological US/THEM transcript of the thread for the card. Each
+    message's own newly written text is pulled with the fast model (all messages
+    extracted concurrently), so quoted history and client boilerplate never reach
+    the display. Returns (entries, hidden) where entries are the most recent
+    messages as {who: 'you'|'them', when, text} and hidden is how many older
+    messages were dropped to stay under Slack's block limit."""
+    recent = messages[-_MAX_TRANSCRIPT:]
+    hidden = len(messages) - len(recent)
+    bodies = [gmail_lib.extract_text_parts(m.get("payload") or {}).strip() for m in recent]
+    cleans = await asyncio.gather(
+        *[asyncio.to_thread(_extract_message, b) for b in bodies])
+    entries = [{"who": "you" if _addr(m) in team else "them",
+                "when": _received_display(m), "text": clean}
+               for m, clean in zip(recent, cleans)]
+    return entries, hidden
 
 
 def _latest_inbound(messages: list[dict], team: set[str]) -> dict | None:
@@ -284,13 +307,17 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         f"Subject: {incoming_subject}\n{incoming_body[:6000]}\n\n"
         f"Write {from_name}'s reply body now."
     )
-    # Draft (Opus) and the display-extraction (fast model) run concurrently, so the
-    # clean message costs no extra wall-clock beyond the draft.
-    draft, incoming_clean = await asyncio.gather(
+    # Draft (Opus) and the whole-thread extraction (fast model, one call per message,
+    # all concurrent) run together, so the clean transcript costs no extra wall-clock
+    # beyond the draft itself.
+    draft, (transcript, hidden) = await asyncio.gather(
         asyncio.to_thread(lambda: llm_mod.complete(prompt, system=_SYSTEM, model=_MODEL)),
-        asyncio.to_thread(_extract_message, incoming_body),
+        _build_transcript(messages, team),
     )
     draft = (draft or "").strip().replace("—", ", ").replace("–", ", ")
+    # The latest THEM message in the transcript is the one we are answering.
+    incoming_clean = next((e["text"] for e in reversed(transcript) if e["who"] == "them"),
+                          transcript[-1]["text"] if transcript else "")
 
     return {
         "draft": draft,
@@ -299,6 +326,8 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         "incoming_subject": incoming_subject,
         "incoming_body": incoming_body,
         "incoming_clean": incoming_clean,
+        "thread": transcript,
+        "thread_hidden": hidden,
         "received": received,
         "gmail_url": f"https://mail.google.com/mail/u/0/#all/{thread_id}",
         "reply_subject": _reply_subject(incoming_subject),
