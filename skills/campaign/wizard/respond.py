@@ -1,23 +1,22 @@
 """The /respond reply-review deck: a founder pulls up their reply-worthy emails as
-a deck they can page through. Each card shows who we are answering, their message,
+a deck they can page through. Each card shows who we are answering, their reply,
 and an editable Claude draft grounded in the founder's past replies. They edit,
 Accept & send (in-thread, as that founder), or move Prev/Next. Every reply they
 send is written back to the `reply_examples` corpus as a gold example.
 
-To make navigation instant, the whole deck is drafted in the background in
-parallel as soon as the queue is built, so by the time the founder pages forward
-the next card is usually ready. Cards still drafting show a loading state.
+Drafts are generated in the background in parallel as soon as the queue is built,
+and a card refreshes in place the moment its own draft lands, so navigation is
+instant and a fresh card never shows the previous one's text. Cards still drafting
+show a loading state.
 
 Handlers live in `slack_bot.py`; modal layout in `blocks.py`. Session state is in
-memory, per Slack user, so two founders can review at once. A restart mid-review
-just means re-running /respond. Nothing here is a source of truth: an unsent email
-stays in the triage queue, and a sent one drops out on its own (our reply lands
-in-thread, so the next triage sees us as last sender).
+memory, per Slack user. A restart mid-review just means re-running /respond.
 """
 import asyncio
 import html as html_mod
 import json
 import logging
+import re
 
 from skills.campaign import reply_followup
 
@@ -29,9 +28,11 @@ log = logging.getLogger(__name__)
 # Slack user id -> review session.
 _review_sessions: dict[str, dict] = {}
 
-# How many drafts to generate at once in the background. Gmail + Opus per draft,
-# so keep it modest to stay under rate limits while still filling the deck fast.
-_DRAFT_CONCURRENCY = 5
+# How many drafts to generate at once. Gmail + Opus per draft, so keep it modest
+# to stay under rate limits while still filling the deck quickly.
+_DRAFT_CONCURRENCY = 6
+
+_URL_RE = re.compile(r"(https?://[^\s<>]+)")
 
 
 def _founder_email(founder_key: str) -> str:
@@ -44,7 +45,15 @@ def _founder_name(founder_key: str) -> str:
 
 
 def _text_to_html(text: str) -> str:
-    return html_mod.escape(text).replace("\n", "<br>")
+    """Founder-edited plain text -> an HTML body, with any URLs (e.g. the scheduling
+    link) turned into real clickable hyperlinks."""
+    out = []
+    for i, part in enumerate(_URL_RE.split(text or "")):
+        if i % 2 == 1:  # a URL
+            out.append(f'<a href="{html_mod.escape(part, quote=True)}">{html_mod.escape(part)}</a>')
+        else:
+            out.append(html_mod.escape(part).replace("\n", "<br>"))
+    return "".join(out)
 
 
 async def _update(view_id: str, view: dict) -> None:
@@ -90,25 +99,23 @@ def _render(session: dict) -> dict:
 
     meta = json.dumps({"user_id": session["user_id"], "pos": pos,
                        "thread_id": row.get("thread_id", "")})
+    # A block id that changes with the card and each redraft, so Slack always shows
+    # the current draft as the input value instead of caching a prior one.
+    body_block_id = f"resp_body_{pos}_{it['render_nonce']}"
     return blocks._respond_deck_modal(
         founder_name=_founder_name(session["founder_key"]),
         pos=pos + 1, total=len(deck),
         sent=session["sent"], skipped=session["skipped"], ready=_ready_count(session),
         who=row.get("who", d.get("to", "")),
         subject=d.get("incoming_subject", ""),
-        thread_preview=d.get("thread_preview", ""),
+        their_message=d.get("incoming_clean", ""),
         body=body, category=d.get("category", "other"),
         n_examples=d.get("n_examples", 0), mode=mode,
         can_prev=pos > 0, can_next=pos < len(deck) - 1,
-        private_metadata=meta)
+        private_metadata=meta, body_block_id=body_block_id)
 
 
 async def _show(session: dict) -> None:
-    """Render the current card. Remember which card a loading screen is waiting on,
-    so the background drafter can refresh it in place when the draft lands."""
-    it = session["deck"][session["pos"]]
-    session["loading_pos"] = session["pos"] if (
-        it["draft_status"] == "pending" and not it["sent"]) else None
     await _update(session["view_id"], _render(session))
 
 
@@ -126,11 +133,11 @@ def _save_edit(session: dict, edited: str | None) -> None:
 
 async def build_first(user_id: str, founder_key: str, view_id: str) -> None:
     """Pull the founder's awaiting-reply queue, build the deck, show the first
-    card, and kick off drafting the whole deck in the background."""
+    card, and start drafting the whole deck in the background."""
     fe = _founder_email(founder_key)
     session = {"user_id": user_id, "founder_key": founder_key, "founder_email": fe,
                "deck": [], "pos": 0, "view_id": view_id, "sent": 0, "skipped": 0,
-               "loading_pos": None, "draft_task": None}
+               "sem": asyncio.Semaphore(_DRAFT_CONCURRENCY)}
     _review_sessions[user_id] = session
     await _update(view_id, loading_view(
         f":crystal_ball: Gathering {_founder_name(founder_key)}'s replies..."))
@@ -147,33 +154,37 @@ async def build_first(user_id: str, founder_key: str, view_id: str) -> None:
         _review_sessions.pop(user_id, None)
         return
     session["deck"] = [{"row": r, "draft": None, "edited": None,
-                        "draft_status": "pending", "sent": False} for r in needs]
+                        "draft_status": "pending", "sent": False, "render_nonce": 0}
+                       for r in needs]
     await _show(session)
-    session["draft_task"] = asyncio.create_task(_draft_all(session))
+    # Draft everything in the background. Card 0 is kicked first so it lands soonest.
+    for i in range(len(session["deck"])):
+        asyncio.create_task(_draft_card(session, i))
 
 
-async def _draft_all(session: dict) -> None:
-    """Draft every card in the background, in parallel. As each lands, refresh the
-    view only if the founder is currently sitting on that card's loading screen."""
-    sem = asyncio.Semaphore(_DRAFT_CONCURRENCY)
-    fk, fe = session["founder_key"], session["founder_email"]
-
-    async def one(i: int) -> None:
-        async with sem:
-            if _review_sessions.get(session["user_id"]) is not session:
-                return  # session ended or replaced; stop working
-            it = session["deck"][i]
-            try:
-                it["draft"] = await reply_drafter.generate_draft(
-                    fk, fe, it["row"]["thread_id"])
-                it["draft_status"] = "ready"
-            except Exception as e:  # noqa: BLE001 - one bad thread must not stall the deck
-                it["draft_status"] = "failed"
-                log.warning("draft generation failed for a thread: %s", str(e)[:120])
-        if session.get("loading_pos") == i and _review_sessions.get(session["user_id"]) is session:
-            await _show(session)
-
-    await asyncio.gather(*(one(i) for i in range(len(session["deck"]))))
+async def _draft_card(session: dict, i: int) -> None:
+    """Draft one card if it still needs it, then refresh the view if the founder is
+    sitting on that card. Deduped via the status flag so it is safe to call again
+    on navigation. Cards that fail are marked so the founder can Regenerate."""
+    if _review_sessions.get(session["user_id"]) is not session:
+        return
+    it = session["deck"][i]
+    if it["draft_status"] != "pending":
+        return  # already drafting, ready, or failed
+    it["draft_status"] = "drafting"
+    async with session["sem"]:
+        if _review_sessions.get(session["user_id"]) is not session:
+            return
+        try:
+            it["draft"] = await reply_drafter.generate_draft(
+                session["founder_key"], session["founder_email"], it["row"]["thread_id"])
+            it["draft_status"] = "ready"
+        except Exception as e:  # noqa: BLE001 - one bad thread must not stall the deck
+            it["draft_status"] = "failed"
+            log.warning("draft generation failed for a thread: %s", str(e)[:120])
+    it["render_nonce"] += 1
+    if _review_sessions.get(session["user_id"]) is session and session["pos"] == i:
+        await _show(session)
 
 
 # ---- navigation -------------------------------------------------------------
@@ -188,6 +199,9 @@ async def on_nav(user_id: str, view_id: str, delta: int, edited: str | None) -> 
     _save_edit(session, edited)
     session["pos"] = max(0, min(len(session["deck"]) - 1, session["pos"] + delta))
     await _show(session)
+    # If we landed on a card that has not been drafted yet, make sure it is (a
+    # no-op if it is already drafting/ready); it will refresh itself when ready.
+    asyncio.create_task(_draft_card(session, session["pos"]))
 
 
 async def on_regen(user_id: str, view_id: str, edited: str | None) -> None:
@@ -196,19 +210,11 @@ async def on_regen(user_id: str, view_id: str, edited: str | None) -> None:
         await _update(view_id, blocks._respond_info_modal("Session ended", "Run `/respond` again."))
         return
     session["view_id"] = view_id
-    _save_edit(session, edited)
     it = session["deck"][session["pos"]]
     it["draft_status"] = "pending"
     it["edited"] = None
-    await _show(session)
-    try:
-        it["draft"] = await reply_drafter.generate_draft(
-            session["founder_key"], session["founder_email"], it["row"]["thread_id"])
-        it["draft_status"] = "ready"
-    except Exception as e:  # noqa: BLE001
-        it["draft_status"] = "failed"
-        log.warning("regenerate failed: %s", str(e)[:120])
-    await _show(session)
+    await _show(session)  # shows the drafting state
+    await _draft_card(session, session["pos"])  # redraft + refresh when ready
 
 
 # ---- accept & send (with the feedback-loop write-back) ----------------------
@@ -269,7 +275,7 @@ async def on_send(user_id: str, view_id: str, body: str) -> None:
     session["view_id"] = view_id
     it = session["deck"][session["pos"]]
     if it["sent"] or it["draft_status"] != "ready":
-        await _show(session)  # stale submit (already sent, or not ready) — just redraw
+        await _show(session)  # stale submit (already sent, or not ready) — redraw
         return
     it["edited"] = body
     if not body.strip():
@@ -294,6 +300,7 @@ async def on_send(user_id: str, view_id: str, body: str) -> None:
         return
     session["pos"] = nxt
     await _show(session)
+    asyncio.create_task(_draft_card(session, session["pos"]))
 
 
 def _with_note(session: dict, note: str) -> dict:

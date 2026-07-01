@@ -10,6 +10,7 @@ Run:  toolbox/.venv/bin/python -m pytest skills/campaign/tests_respond -o asynci
 
 Per the repo rule, this folder is temporary and deleted after merge.
 """
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -50,12 +51,12 @@ def _draft(thread_id="T1"):
 def _seed(user="U1", cards=None):
     cards = cards or [("p@acme.com", "T1")]
     deck = [{"row": {"who": who, "thread_id": tid}, "draft": _draft(tid),
-             "edited": None, "draft_status": "ready", "sent": False}
+             "edited": None, "draft_status": "ready", "sent": False, "render_nonce": 0}
             for who, tid in cards]
     session = {"user_id": user, "founder_key": "armaan",
                "founder_email": "armaan.priyadarshan.29@dartmouth.edu",
                "deck": deck, "pos": 0, "view_id": "V1", "sent": 0, "skipped": 0,
-               "loading_pos": None, "draft_task": None}
+               "sem": asyncio.Semaphore(4)}
     respond._review_sessions[user] = session
     return session
 
@@ -131,7 +132,7 @@ async def test_build_deck_drafts_all_in_background():
          patch.object(respond.reply_drafter, "generate_draft",
                       AsyncMock(side_effect=lambda fk, fe, tid: _draft(tid))):
         await respond.build_first("U1", "armaan", "V1")
-        await respond._review_sessions["U1"]["draft_task"]   # drain background drafting
+        await asyncio.sleep(0.05)   # let the per-card background draft tasks finish
     deck = respond._review_sessions["U1"]["deck"]
     assert len(deck) == 2 and all(it["draft_status"] == "ready" for it in deck)
 
@@ -255,6 +256,25 @@ def test_reply_subject_does_not_double_prefix():
     assert reply_drafter._reply_subject("Re: hi") == "Re: hi"
     assert reply_drafter._reply_subject("hi") == "Re: hi"
     assert reply_drafter._reply_subject("") == "Re:"
+
+
+def test_text_to_html_linkifies_urls():
+    html = respond._text_to_html("Grab a time: https://cal.com/team/blackwell/30-min?overlayCalendar=true")
+    assert '<a href="https://cal.com/team/blackwell/30-min?overlayCalendar=true">' in html
+    # non-url text is still escaped and newline-converted
+    assert respond._text_to_html("a & b\nc") == "a &amp; b<br>c"
+
+
+def test_clean_reply_strips_quoted_thread_and_html():
+    raw = (
+        "Hey,\n\nHappy to discuss on a call.\n\n"
+        "On Sun, Jun 21, 2026 at 11:45 PM Armaan <a@x.edu> wrote:\n"
+        "> Hi Hassan,\n> Would you be open to a quick call?\n\n"
+        "--\nBest,\nHassan Arshad\n\n<div dir=\"ltr\">Hey,<div>ignore me</div></div>"
+    )
+    cleaned = reply_drafter._clean_reply(raw)
+    assert cleaned == "Hey,\n\nHappy to discuss on a call."
+    assert "wrote:" not in cleaned and ">" not in cleaned and "<div" not in cleaned
 
 
 if __name__ == "__main__":

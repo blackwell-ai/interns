@@ -335,11 +335,18 @@ async def on_respond_pick(ack, body, view, logger) -> None:
     asyncio.create_task(respond.build_first(user_id, founder_key, view_id))
 
 
+def _read_reply(values: dict) -> str | None:
+    """The founder's reply text from a modal's state. The block id is dynamic
+    (resp_body_<pos>_<nonce>) so Slack never caches a prior card's text, so we
+    match by prefix. None when the current card has no editable input."""
+    for bid, fields in (values or {}).items():
+        if bid.startswith("resp_body"):
+            return fields.get("v", {}).get("value")
+    return None
+
+
 def _current_edit(body) -> str | None:
-    """The founder's in-progress reply text from a modal interaction, or None when
-    the current card has no editable input (a pending/sent/failed card)."""
-    values = (body.get("view", {}).get("state", {}) or {}).get("values", {})
-    return values.get("resp_body", {}).get("v", {}).get("value")
+    return _read_reply((body.get("view", {}).get("state", {}) or {}).get("values", {}))
 
 
 @app.action("resp_prev")
@@ -367,7 +374,7 @@ async def on_respond_regen(ack, body, logger) -> None:
 async def on_respond_send(ack, body, view, logger) -> None:
     """Accept & send. Update the modal to a loading state, then send the edited
     reply in-thread and advance to the next card in the background."""
-    body_text = view["state"]["values"].get("resp_body", {}).get("v", {}).get("value") or ""
+    body_text = _read_reply(view["state"]["values"]) or ""
     await ack(response_action="update", view=respond.loading_view())
     user_id = body["user"]["id"]
     view_id = body["view"]["id"]

@@ -11,7 +11,9 @@ writes back after a send.
 Runs on the wizard server, so LLM calls go through `toolbox.core.llm` (routes to
 the Anthropic SDK when ANTHROPIC_API_KEY is set). Never log email bodies.
 """
+import html as html_mod
 import logging
+import re
 
 import httpx
 
@@ -27,19 +29,28 @@ log = logging.getLogger(__name__)
 _MODEL = "claude-opus-4-8"  # the reply must sound like the founder; use the best model.
 _MIN_CATEGORY_EXAMPLES = 2  # below this, backfill with any-category founder exemplars.
 
-_SYSTEM = """You draft a reply that a real founder will review and send to a
+# Our scheduling page. When a reply proposes a time or the prospect wants to book,
+# the draft points them here (rendered as a real hyperlink when the email is sent).
+SCHEDULING_LINK = "https://cal.com/team/blackwell/30-min?overlayCalendar=true"
+
+_SYSTEM = f"""You draft a reply that a real founder will review and send to a
 prospect who answered their cold outreach. You write in the founder's own voice.
 
 You are given: a voice guide for this founder, a few worked examples of how they
 have actually replied to similar emails (each an incoming message and the reply
-they sent), and the new thread to answer.
+they sent), and the prospect's latest message to answer.
 
 Write ONLY the reply body the founder would send. Hard rules:
 - Match the VOICE and the REASONING of the examples. Do not reuse their wording or
   copy sentences; this is a new email to a different person. Fit the actual
-  question in the new thread.
+  question they asked.
 - Sound like the founder: a real person, warm, concise, specific. Not corporate,
   not salesy. Answer what they asked; if a call makes sense, propose it plainly.
+- SCHEDULING: whenever it fits to get time on the calendar (they are open to a
+  call, asking for a time, or saying yes), point them to our scheduling page and
+  paste this exact URL on its own line so they can pick a slot:
+  {SCHEDULING_LINK}
+  Use it verbatim, do not shorten or alter it. Do not invent any other link.
 - Keep it short, a few sentences. One blank line between paragraphs.
 - No em dashes or en dashes. Use periods and commas. No AI or sales filler ("I
   hope this finds you well", "reaching out", "leverage", and the like).
@@ -48,6 +59,40 @@ Write ONLY the reply body the founder would send. Hard rules:
   are unsure of a specific, keep it general so the founder can fill it in.
 
 Output the reply body as plain text, nothing else."""
+
+
+# Markers that begin quoted reply history; everything from the earliest one is the
+# prior thread, not the prospect's new message.
+_QUOTE_MARKERS = [
+    re.compile(r"\nOn .{0,300}? wrote:", re.S),        # gmail "On <date>, <name> wrote:"
+    re.compile(r"\n_{5,}"),                             # outlook divider
+    re.compile(r"\n-----Original Message-----"),
+    re.compile(r"\nFrom:\s.*\nSent:\s", re.S),         # outlook header block
+    re.compile(r"<div[^>]*gmail_quote", re.I),          # gmail quote container
+]
+
+
+def _clean_reply(body: str) -> str:
+    """Extract just the prospect's newly written message from a reply body:
+    drop the quoted thread history, HTML markup, and a trailing signature, so the
+    review card shows their actual words instead of the whole ugly thread."""
+    text = body or ""
+    # Normalize the common HTML into text, then strip any remaining tags.
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
+    text = re.sub(r"</p\s*>", "\n\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html_mod.unescape(text)
+    # Cut at the earliest quote marker (the start of the prior thread).
+    cut = len(text)
+    for rx in _QUOTE_MARKERS:
+        m = rx.search(text)
+        if m:
+            cut = min(cut, m.start())
+    text = text[:cut]
+    # Drop any stray quoted lines and a trailing signature block.
+    text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith(">"))
+    text = re.split(r"\n--\s*\n", text)[0]
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 def _team_addrs() -> set[str]:
@@ -150,7 +195,8 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
     # pass the Gmail id (not the RFC header) as spec["reply_to_message_id"].
     reply_to_message_id = inbound.get("id", "")
     to = _addr(inbound)
-    thread_preview = _render_preview(messages, team)
+    # Just the prospect's newly written words, for both the prompt and the card.
+    incoming_clean = _clean_reply(incoming_body)
 
     category = await _to_thread(reply_examples.classify_category,
                                 incoming_subject, incoming_body)
@@ -165,8 +211,8 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         f"Voice guide:\n{voice or '(none on file — infer their voice from the examples)'}\n\n"
         f"Worked examples of how {from_name} has replied before:\n"
         f"{_format_examples(examples) or '(no examples on file yet — write a plain, honest, human reply)'}\n\n"
-        f"The new thread to answer (reply to the most recent Them message):\n"
-        f"{thread_preview}\n\n"
+        f"The prospect just replied. Answer this message:\n"
+        f"Subject: {incoming_subject}\n{incoming_clean or incoming_body[:1500]}\n\n"
         f"Write {from_name}'s reply body now."
     )
     draft = await _to_thread(
@@ -179,11 +225,11 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
         "sentiment": sentiment,
         "incoming_subject": incoming_subject,
         "incoming_body": incoming_body,
+        "incoming_clean": incoming_clean,
         "reply_subject": _reply_subject(incoming_subject),
         "to": to,
         "reply_to_message_id": reply_to_message_id,
         "thread_id": thread_id,
-        "thread_preview": thread_preview,
         "n_examples": len(examples),
     }
 

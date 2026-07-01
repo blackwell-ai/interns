@@ -190,9 +190,9 @@ def _respond_info_modal(title: str, text: str) -> dict:
 
 def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
                         skipped: int, ready: int, who: str, subject: str,
-                        thread_preview: str, body: str, category: str,
+                        their_message: str, body: str, category: str,
                         n_examples: int, mode: str, can_prev: bool, can_next: bool,
-                        private_metadata: str) -> dict:
+                        private_metadata: str, body_block_id: str = "resp_body") -> dict:
     """One card in the reply-review deck. `mode` selects the state:
       review  - draft ready: editable reply + Accept & send (submit)
       pending - still drafting this one (no submit)
@@ -209,14 +209,16 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         tallies.append(f":hourglass_flowing_sand: {ready}/{total} drafted")
     tail = ("  ·  " + "  ·  ".join(tallies)) if tallies else ""
 
-    quoted = "\n".join("> " + ln for ln in
-                       (thread_preview or "(could not load thread)").splitlines())[:2600]
+    msg = (their_message or "").strip() or "(no message text)"
+    if len(msg) > 1500:
+        msg = msg[:1500].rstrip() + "\n…"
+    quoted = "\n".join("> " + ln for ln in msg.splitlines())
     blocks: list = [
         {"type": "context", "elements": [{"type": "mrkdwn",
          "text": f":mage: *{founder_name}*  ·  {counters}{tail}"}]},
         {"type": "section", "text": {"type": "mrkdwn",
          "text": f"*To:* {who or '(unknown)'}\n*Subject:* {subject or '(none)'}"}},
-        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their message*\n" + quoted}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": "*Their reply*\n" + quoted}},
         {"type": "divider"},
     ]
 
@@ -225,7 +227,7 @@ def _respond_deck_modal(*, founder_name: str, pos: int, total: int, sent: int,
         src = (f"drafted from {n_examples} of your past repl"
                f"{'y' if n_examples == 1 else 'ies'} (category: {category})"
                if n_examples else "no past examples yet, so this is a plain first draft")
-        blocks.append({"type": "input", "block_id": "resp_body",
+        blocks.append({"type": "input", "block_id": body_block_id,
                        "label": {"type": "plain_text", "text": "Your reply"},
                        "element": {"type": "plain_text_input", "action_id": "v",
                                    "multiline": True, "initial_value": body[:2900]}})
