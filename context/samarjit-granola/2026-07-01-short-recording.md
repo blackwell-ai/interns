@@ -1,11 +1,11 @@
 # Short recording
 
 - Date: 2026-07-01
-- Granola document id: bab07de7-8181-4bef-96ca-a426e9e4c126
-- Created at: 2026-07-01T20:30:06.150Z
+- Granola document id: f582364e-8f07-4f79-b019-3064cbbb6582
+- Created at: 2026-07-01T19:58:27.133Z
 - Attendees: Samarjit Deshmukh (samarjit.deshmukh.29@dartmouth.edu)
 - Content source: enhanced notes (AI summary panel)
-- Transcript: verbatim from Granola, 152 segments
+- Transcript: verbatim from Granola, 205 segments
 
 ---
 
@@ -17,306 +17,412 @@
 
 ## Verbatim transcript
 
-**[00:00] Samarjit (mic):** Would you like it?
+**[00:00] Samarjit (mic):** We did sarba bhusan.
 
-**[00:00] Samarjit (mic):** Packed?
+**[00:03] Samarjit (mic):** Gopal.
 
-**[00:01] Samarjit (mic):** No.
+**[00:06] Samarjit (mic):** These, like, random Indian news is to connect with me.
 
-**[00:04] Samarjit (mic):** It's just like Megan Fox. No.
+**[00:18] Samarjit (mic):** Go pause. I got brilliancy.
 
-**[00:08] Samarjit (mic):** And she legally crack afterwards. No.
+**[00:24] Samarjit (mic):** Alan Gordon.
 
-**[00:13] Samarjit (mic):** What did your girl do?
+**[00:35] Samarjit (mic):** All these stores are built on Shopify.
 
-**[00:17] Samarjit (mic):** I like give her some like good analyt.
+**[00:38] Samarjit (mic):** We're not missing neville.
 
-**[00:19] Samarjit (mic):** Ics.
+**[00:43] Samarjit (mic):** I think I'm true brilliant, Steve.
 
-**[00:26] Samarjit (mic):** It was a great dirty though.
+**[00:46] Samarjit (mic):** Missy is like such a funny name.
 
-**[00:31] Samarjit (mic):** No, I'll just like tell her to like take a shower.
+**[00:49] Samarjit (mic):** Have you, like, watched young Sheldon? Yeah. Like this, bro.
 
-**[00:37] Samarjit (mic):** Like cleans it like thoroughly if you'd have to like do like a there's like a certain procedure you can do to like get it like actually properly cleaned what?
+**[00:56] Samarjit (mic):** Let me see Neville.
 
-**[00:45] Samarjit (mic):** I forget what it's called.
+**[00:58] Samarjit (mic):** And then her business partner is gwyn. Gwyn Prentice.
 
-**[00:52] Samarjit (mic):** Properly cleaners plug in enema.
+**[01:02] Samarjit (mic):** Is like a Dartmouth alum.
 
-**[00:56] Samarjit (mic):** What the hell is that?
+**[01:05] Samarjit (mic):** Dartmouth 96.
 
-**[01:04] Samarjit (mic):** Medical or at home procedure is prior purpose is to relieve severe constipation.
+**[01:07] Samarjit (mic):** Whatever happened with them with the Dartmouth Co-op?
 
-**[01:27] Samarjit (mic):** Usually.
+**[01:13] Samarjit (mic):** You should, like, contact them. Yeah, I agree.
 
-**[01:27] Samarjit (mic):** All the way to take.
+**[01:18] Samarjit (mic):** Like drain like on that name.
 
-**[01:28] Samarjit (mic):** Edema one day.
+**[01:22] Samarjit (mic):** What happened with them?
 
-**[01:29] Samarjit (mic):** I need it.
+**[01:23] Samarjit (mic):** That's good. They're like some GEO.
 
-**[01:30] Samarjit (mic):** And like fight over a toilet.
+**[01:30] Samarjit (mic):** This supposed to be our first customer. Yeah. Instead, it was like a public goods.
 
-**[01:33] Samarjit (mic):** It'd take like lots of days and like five over the toilet like lock ourselves in a room like take some laxatives and then fight.
+**[01:38] Samarjit (mic):** I will.
 
-**[01:41] Samarjit (mic):** Like.
+**[01:39] Samarjit (mic):** Be your.
 
-**[01:41] Samarjit (mic):** I usually win.
+**[01:42] Samarjit (mic):** Ass.
 
-**[01:42] Samarjit (mic):** And like the other would usually sneak up the room badly.
+**[01:46] Samarjit (mic):** Smell like.
 
-**[01:47] Samarjit (mic):** They'll be like see on the toilet and like I'll be like shitting on you.
+**[01:48] Samarjit (mic):** Chimney.
 
-**[01:53] Samarjit (mic):** At least you're in your lap why do you think how did the maximize me angle though? It's like his very first time you do want to be a dad so you did analyze like.
+**[01:55] Samarjit (mic):** I don't have time.
 
-**[02:05] Samarjit (mic):** Yeah I guess.
+**[02:00] Samarjit (mic):** No.
 
-**[02:08] Samarjit (mic):** Wow.
+**[02:01] Samarjit (mic):** You must have for anything but being.
 
-**[02:11] Samarjit (mic):** Can I tell like who is the worst for the guy or the girl wait why is it worse for the guy I feel like a lot of the guys like prefer it.
+**[02:05] Samarjit (mic):** I don't have time.
 
-**[02:18] Samarjit (mic):** So bad.
+**[02:09] Samarjit (mic):** I would make you stay.
 
-**[02:21] Samarjit (mic):** You like shit on your dick yeah not if like the not if it's clean.
+**[02:12] Samarjit (mic):** I would rape your.
 
-**[02:30] Samarjit (mic):** I don't want to sleep again.
+**[02:15] Samarjit (mic):** Ass.
 
-**[02:48] Samarjit (mic):** Like looking like so like.
+**[02:23] Samarjit (mic):** I'll be.
 
-**[02:51] Samarjit (mic):** Yeah let me see.
+**[02:24] Samarjit (mic):** Your nigg.
 
-**[02:55] Samarjit (mic):** He's like eating quite pristine.
+**[02:24] Samarjit (mic):** Ly.
 
-**[03:06] Samarjit (mic):** Let.
+**[02:26] Samarjit (mic):** And.
 
-**[03:06] Samarjit (mic):** Me show you.
+**[02:27] Samarjit (mic):** Staying with.
 
-**[03:07] Samarjit (mic):** Sir.
+**[02:34] Samarjit (mic):** Bastard negligent.
 
-**[03:12] Samarjit (mic):** Me shamit.
+**[02:39] Samarjit (mic):** Wow.
 
-**[03:15] Samarjit (mic):** He looks so joyous.
+**[02:41] Samarjit (mic):** Such beautiful and harmonious music. Alan Gordon.
 
-**[03:19] Samarjit (mic):** Like more like succulent camera like yona is like very succulent.
+**[02:47] Samarjit (mic):** You.
 
-**[03:28] Samarjit (mic):** Especially it's linked in profile picture yeah.
+**[02:47] Samarjit (mic):** Smell.
 
-**[03:35] Samarjit (mic):** Dumb.
+**[02:51] Samarjit (mic):** Uniquely.
 
-**[03:37] Samarjit (mic):** But these like Granola cordias like saying like bad like shit.
+**[02:53] Samarjit (mic):** Up.
 
-**[03:43] Samarjit (mic):** It was the entire time we were talking like I've been like running like Granola like badly.
+**[02:55] Samarjit (mic):** Sting like.
 
-**[03:52] Samarjit (mic):** The.
+**[02:57] Samarjit (mic):** You bad. You monkey negligent.
 
-**[03:53] Samarjit (mic):** Fuck is Lance doing.
+**[03:03] Samarjit (mic):** Stay quite.
 
-**[03:54] Samarjit (mic):** Now.
+**[03:06] Samarjit (mic):** You might have fitted me, though.
 
-**[03:55] Samarjit (mic):** Are you not doing the same thing.
+**[03:08] Samarjit (mic):** Do you mind if it me?
 
-**[03:57] Samarjit (mic):** Do they pivot like gotcha made.
+**[03:14] Samarjit (mic):** Wrapped in chesenian magma?
 
-**[04:02] Samarjit (mic):** Wait did they pivot.
+**[03:22] Samarjit (mic):** Magma makes it frictionless and legally safe to maximize monetization from your data assets by turning them into rights cleared previously inaccessible training data for AI buyers.
 
-**[04:07] Samarjit (mic):** Like.
+**[03:40] Samarjit (mic):** You bad me legit.
 
-**[04:08] Samarjit (mic):** Retard.
+**[03:42] Samarjit (mic):** Do what?
 
-**[04:10] Samarjit (mic):** Like.
+**[03:45] Samarjit (mic):** Bad legit? I don't know why.
 
-**[04:10] Samarjit (mic):** Using.
+**[03:48] Samarjit (mic):** Why?
 
-**[04:11] Samarjit (mic):** Like every edge case was another training.
+**[03:50] Samarjit (mic):** Go bad, bad new legit, you have a very naughty niggly if I could say so myself.
 
-**[04:12] Samarjit (mic):** You can upload like they're doing RL now.
+**[03:59] Samarjit (mic):** Welcome near side, though. What did he say?
 
-**[04:18] Samarjit (mic):** As they should.
+**[04:02] Samarjit (mic):** Descor did their discovery.
 
-**[04:29] Samarjit (mic):** Have.
+**[04:06] Samarjit (mic):** Do you want all my customer discovery interviews?
 
-**[04:30] Samarjit (mic):** Wasted.
+**[04:14] Samarjit (mic):** I don't understand. She's like a true. Isn't like a true, true Brilliancy.
 
-**[04:31] Samarjit (mic):** Sure.
+**[04:20] Samarjit (mic):** Nod pod.
 
-**[04:33] Samarjit (mic):** Don't.
+**[04:22] Samarjit (mic):** Sounds like send them over.
 
-**[04:33] Samarjit (mic):** Speak about.
+**[04:25] Samarjit (mic):** Tell them to send them over. Oh, you do it.
 
-**[04:36] Samarjit (mic):** What a beautiful song.
+**[04:29] Samarjit (mic):** Tell them to send them over. We need them.
 
-**[04:47] Samarjit (mic):** You guys want to come.
+**[04:32] Samarjit (mic):** Badly.
 
-**[04:48] Samarjit (mic):** Have dinner.
+**[04:38] Samarjit (mic):** I'll join the call, but I have to let us all get food.
 
-**[04:48] Samarjit (mic):** With me.
+**[04:44] Samarjit (mic):** I don't.
 
-**[04:51] Samarjit (mic):** Where are you going.
+**[04:44] Samarjit (mic):** Know.
 
-**[04:55] Samarjit (mic):** For.
+**[04:46] Samarjit (mic):** Who is robber? Is that like the arrow is this guy? He's like some beauty brand dude that we sent a grifty game a little too. We need him then. Then we need him.
 
-**[04:58] Samarjit (mic):** I feel like for them it's like you're like girls there yeah girls there's no there's gonna be like no grill seriously I cannot come also with Erica there's going to be a funk on Saturday you should like go with her yeah actually.
+**[04:55] Samarjit (mic):** We're partnered with open AI for the purposes of this. We don't like the. You don't just say it. Just like say that. Like Griswold, ask him questions about, like, what he's done for, like, marketing so far and what his problems are.
 
-**[05:15] Samarjit (mic):** Like I can get watch that for she's like a funk.
+**[05:07] Samarjit (mic):** If he's, like, explored, like, AI, like visibility.
 
-**[05:18] Samarjit (mic):** Wow.
+**[05:10] Samarjit (mic):** Then tell him that, like, we specialize. And if you ask us, like, what we do and then just ask me, like, once they see, like, an audit of, like, like an automated, like, audit that we read for his company.
 
-**[05:24] Samarjit (mic):** Like a fourth of July funk oh yeah that's why.
+**[05:20] Samarjit (mic):** Did your money audit? It doesn't matter. It's got to be a follow-up meeting in, like, yeah.
 
-**[05:30] Samarjit (mic):** You guys should get.
+**[05:27] Samarjit (mic):** We're gonna run the audit now.
 
-**[05:32] Samarjit (mic):** Things I can drink while I go with you guys if you want like can you guys yeah yeah.
+**[05:34] Samarjit (mic):** Wait, why are you laughing? Like, run the audit.
 
-**[05:42] Samarjit (mic):** That's very optimal.
+**[05:36] Samarjit (mic):** Wait, we have the automated pipeline for running the audio. Just, like, run it now.
 
-**[05:44] Samarjit (mic):** Actually why this is like an error code as a wing man like I feel like for growth it's like so easy to win like it's like if it's like a girl like maybe like a guy he doesn't like know me that well yeah I know I oh they are called the goo like for like a fun sake or the funny sake of it wait what'd you say what'd you say.
+**[05:44] Samarjit (mic):** When?
 
-**[06:05] Samarjit (mic):** I can't you're you're muted bro.
+**[05:45] Samarjit (mic):** Tomorrow at 12.
 
-**[06:08] Samarjit (mic):** It works my shaman not.
+**[05:50] Samarjit (mic):** The bad music.
 
-**[06:11] Samarjit (mic):** Bro please.
+**[05:51] Samarjit (mic):** Devil, like, very excited for this meeting.
 
-**[06:14] Samarjit (mic):** I think.
+**[05:54] Samarjit (mic):** Also, I didn't get, like, any invite on my black minnow.
 
-**[06:14] Samarjit (mic):** He's like having eats him more than you do I need it badly no he doesn't he's like a pretty preset on his own he's like.
+**[05:57] Samarjit (mic):** For what?
 
-**[06:25] Samarjit (mic):** I believe in him.
+**[05:58] Samarjit (mic):** I didn't get any invite on my black wall email for a missy for a meeting with Missy Neville.
 
-**[06:30] Samarjit (mic):** I'm hungrier than him.
+**[06:06] Samarjit (mic):** I don't check my calendar. I I'll only, like, go to it if I, like, see the invite.
 
-**[06:35] Samarjit (mic):** Obviously one person hunger than you both.
+**[06:13] Samarjit (mic):** Ulysses Nard.
 
-**[06:42] Samarjit (mic):** I can't really shop but like here's what we were saying or not.
+**[06:14] Samarjit (mic):** En.
 
-**[06:46] Samarjit (mic):** Can you hear what we were saying?
+**[06:28] Samarjit (mic):** No, we have a meeting with T3 micro.
 
-**[06:49] Samarjit (mic):** Yeah he can wow.
+**[06:38] Samarjit (mic):** I mean.
 
-**[06:53] Samarjit (mic):** They just like I know for a fact Mr. J would settle for anal.
+**[06:38] Samarjit (mic):** Follow up with them.
 
-**[06:57] Samarjit (mic):** I would do it no like happily.
+**[06:39] Samarjit (mic):** Actually.
 
-**[07:03] Samarjit (mic):** Huh.
+**[06:42] Samarjit (mic):** And.
 
-**[07:05] Samarjit (mic):** Well like your very first time.
+**[06:43] Samarjit (mic):** Now the.
 
-**[07:12] Samarjit (mic):** I feel like it's like a privilege.
+**[06:43] Samarjit (mic):** Rule of the.
 
-**[07:15] Samarjit (mic):** It is it might be I don't know.
+**[06:46] Samarjit (mic):** Eye will make you stay.
 
-**[07:20] Samarjit (mic):** If you like try and like record back.
+**[06:48] Samarjit (mic):** So.
 
-**[07:22] Samarjit (mic):** I will like the Saturday I'll try like easily.
+**[06:49] Samarjit (mic):** I don't have to say.
 
-**[07:27] Samarjit (mic):** Yeah.
+**[06:52] Samarjit (mic):** The one that God.
 
-**[07:29] Samarjit (mic):** But like last Saturday.
+**[06:59] Samarjit (mic):** Look who the hell is Primal Souls nominated older glow nominated.
 
-**[07:32] Samarjit (mic):** Bro last Saturday was a travesty.
+**[07:06] Samarjit (mic):** Then he's like, you're embarrassed to talk to?
 
-**[07:39] Samarjit (mic):** Dude my computer like.
+**[07:11] Samarjit (mic):** True Brilliancy.
 
-**[07:41] Samarjit (mic):** You stay.
+**[07:22] Samarjit (mic):** True.
 
-**[07:46] Samarjit (mic):** Have you got any of you guys in laundry yet?
+**[07:22] Samarjit (mic):** Or bad brill.
 
-**[07:48] Samarjit (mic):** Yeah remember I fixed up on your machine oh so you're a little more fluttered yeah.
+**[07:23] Samarjit (mic):** Iancy.
 
-**[07:56] Samarjit (mic):** Like you laundry tonight am I like flood again I haven't like tested it how you fix it bro I fix it like you can make it the place so it's starting and I left it there and then when I came back it's flooded because they put it up I actually weren't connected the pipes.
+**[07:24] Samarjit (mic):** A bad, bad sir.
 
-**[08:12] Samarjit (mic):** So I tried to fix like the IC but I don't know if it was a if it was working now you'll have to test for yourself.
+**[07:26] Samarjit (mic):** Also, this guy, like, rated me.
 
-**[08:26] Samarjit (mic):** Your sheets.
+**[07:27] Samarjit (mic):** I think.
 
-**[08:29] Samarjit (mic):** Finally have like veggies in a fill up.
+**[07:30] Samarjit (mic):** A bad, bad Gordon.
 
-**[08:42] Samarjit (mic):** What is coronet.com.
+**[07:34] Samarjit (mic):** You naughty big.
 
-**[08:56] Samarjit (mic):** Go on the end so I think guys it's really very interested in gented commerce.
+**[07:35] Samarjit (mic):** Leaf.
 
-**[09:00] Samarjit (mic):** Like John drew like that obviously doesn't care about it at all bro John Robinson that we're a contact with that dude and tell him we're releasing a beautiful Dench war.
+**[07:38] Samarjit (mic):** Also, did you hear that glass in the ass for some reason? Classic music in the room next to us.
 
-**[09:48] Samarjit (mic):** M like a.
+**[07:42] Samarjit (mic):** Wait, when?
 
-**[09:49] Samarjit (mic):** Dog.
+**[07:46] Samarjit (mic):** Yeah.
 
-**[10:36] Samarjit (mic):** Schedule.
+**[07:49] Samarjit (mic):** Oh, where are they? I know you're talking about.
 
-**[10:36] Samarjit (mic):** Is too.
+**[07:53] Samarjit (mic):** She, like, pissed me off, like, so much.
 
-**[10:37] Samarjit (mic):** Tight for.
+**[07:56] Samarjit (mic):** Bro, like, kill him.
 
-**[10:40] Samarjit (mic):** In punk.
+**[07:58] Samarjit (mic):** I thought they were, like, downstairs, though. Or like.
 
-**[10:40] Samarjit (mic):** Here.
+**[08:04] Samarjit (mic):** You have a nice formal discussion with.
 
-**[10:42] Samarjit (mic):** What we do like beg him for like three presumed no I already emailed him let me see let's just wait for his response.
+**[08:05] Samarjit (mic):** Him.
 
-**[10:51] Samarjit (mic):** Rob.
+**[08:13] Samarjit (mic):** I'll be your smelly ass good dog.
 
-**[10:53] Samarjit (mic):** The guy we're meeting right now every single person big yes today I don't know.
+**[08:19] Samarjit (mic):** Gy.
 
-**[10:59] Samarjit (mic):** Where you go in the wizard really quick on the desert.
+**[08:22] Samarjit (mic):** I need to, like, record your, like, in thoughts.
 
-**[11:04] Samarjit (mic):** And type slash respond.
+**[08:40] Samarjit (mic):** Where.
 
-**[11:09] Samarjit (mic):** This one yeah.
+**[08:40] Samarjit (mic):** Did I. Who said our email with T3 micro got canceled?
 
-**[11:16] Samarjit (mic):** Wow so yeah.
+**[08:45] Samarjit (mic):** He, like, goes on the, like, he denied that the calendar invites us dead. Like, he wasn't available.
 
-**[11:21] Samarjit (mic):** Why like I don't know.
+**[08:49] Samarjit (mic):** Like, he's like, yeah, that's what our availability next week.
 
-**[11:22] Samarjit (mic):** Like.
+**[08:52] Samarjit (mic):** Russ.
 
-**[11:24] Samarjit (mic):** Okay well it's just how good it is.
+**[08:53] Samarjit (mic):** Yeah.
 
-**[11:34] Samarjit (mic):** There perfume is so expensive like all their stuff on Amazon.
+**[08:55] Samarjit (mic):** He said, like, to, like, my Dartmouth. You're, like, into my platform.
 
-**[11:38] Samarjit (mic):** Angela caglia.
+**[09:04] Samarjit (mic):** Russ Hanneman.
 
-**[12:10] Samarjit (mic):** Did he close?
+**[09:15] Samarjit (mic):** There's so many, like, Dartmouth, like, founders in our badge.
 
-**[12:12] Samarjit (mic):** No.
+**[09:53] Samarjit (mic):** Primal Souls.
 
-**[12:15] Samarjit (mic):** No it's like a separate tab in sock.
+**[10:38] Samarjit (mic):** You're good molecule.
 
-**[12:54] Samarjit (mic):** We brought this one I'm pretty sure with Lucas lape.
+**[10:38] Samarjit (mic):** S working.
 
-**[12:58] Samarjit (mic):** Yeah.
+**[10:38] Samarjit (mic):** There you go. Yep.
 
-**[13:00] Samarjit (mic):** It's okay.
+**[10:40] Samarjit (mic):** Okay.
 
-**[13:20] Samarjit (mic):** Group office hours on that.
+**[10:48] Samarjit (mic):** Good molecules are bad atoms.
 
-**[13:22] Samarjit (mic):** Day.
+**[10:52] Samarjit (mic):** You naughty. They don't even say why you're so naughty when you're so deep. And when you, like, bad, like, Thai food today. Well, I feel sham it. Yeah.
 
-**[13:23] Samarjit (mic):** Actually oh I didn't 13.
+**[11:00] Samarjit (mic):** What was it? Thai food place called the. I don't know if it's Thai. It's cold. Wait, right here.
 
-**[13:25] Samarjit (mic):** What time is that goop office in the morning get time in like between like the 12 and like oh yeah.
+**[11:09] Samarjit (mic):** Just give me the thing.
 
-**[13:41] Samarjit (mic):** I booked him for 2 p.m.
+**[11:33] Samarjit (mic):** What the hell is this restaurant called?
 
-**[13:52] Samarjit (mic):** Okay who's the second guy bro.
+**[11:44] Samarjit (mic):** Chicken and rice?
 
-**[14:03] Samarjit (mic):** Okay.
+**[11:47] Samarjit (mic):** Guy? I guess so.
 
-**[14:03] Samarjit (mic):** This is useless.
+**[11:53] Samarjit (mic):** Okay.
 
-**[15:00] Samarjit (mic):** Logo.
+**[11:54] Samarjit (mic):** Bro, like, both of my meetings today, like, got faded badly.
 
-**[15:03] Samarjit (mic):** It was yick yak.
+**[11:58] Samarjit (mic):** You left the rock meeting.
 
-**[15:04] Samarjit (mic):** It's like fizz.
+**[12:01] Samarjit (mic):** What is. Who's Rob?
 
-**[15:10] Samarjit (mic):** Le like Gary tan's like belly on the tire his mother on it.
+**[12:05] Samarjit (mic):** No, you're doing that.
 
-**[15:15] Samarjit (mic):** The only post and then you'll have to launch BS.
+**[12:06] Samarjit (mic):** I'll join you, though.
 
-**[15:22] Samarjit (mic):** Yeah what does gear 10 wife look like?
+**[12:09] Samarjit (mic):** Okay, let's watch a guy.
 
-**[15:33] Samarjit (mic):** Was.
+**[12:12] Samarjit (mic):** Oh, guy. Chicken rice.
 
-**[15:34] Samarjit (mic):** She on was she on the scale?
+**[12:22] Samarjit (mic):** Why.
 
-**[15:36] Samarjit (mic):** Me.
+**[12:22] Samarjit (mic):** Isn't.
+
+**[12:23] Samarjit (mic):** So sal.
+
+**[12:23] Samarjit (mic):** Ty?
+
+**[12:24] Samarjit (mic):** I know.
+
+**[12:30] Samarjit (mic):** What did you get?
+
+**[12:30] Samarjit (mic):** You got an original die.
+
+**[12:35] Samarjit (mic):** In.
+
+**[12:36] Samarjit (mic):** The. I don't know.
+
+**[12:43] Samarjit (mic):** Where'd all.
+
+**[12:44] Samarjit (mic):** Her bungo?
+
+**[12:47] Samarjit (mic):** Was this Aussie got, like, spicy?
+
+**[12:51] Samarjit (mic):** You must get the spiciness one. Was it saucy got spicy or sweet?
+
+**[12:56] Samarjit (mic):** I I.
+
+**[12:57] Samarjit (mic):** Like. They gave, like, these soup in Sarah. They're.
+
+**[13:00] Samarjit (mic):** Like, condiment. I don't know what it was.
+
+**[13:02] Samarjit (mic):** Well, I have a question for you.
+
+**[13:04] Samarjit (mic):** Is it sweet or salty?
+
+**[13:06] Samarjit (mic):** What is it sweet or salty?
+
+**[13:11] Samarjit (mic):** I'll beat you badly.
+
+**[13:13] Samarjit (mic):** I'll beat your ass, like, black and blue. Is it, like, sweeter? Like a hint of red?
+
+**[13:18] Samarjit (mic):** Or salty?
+
+**[13:19] Samarjit (mic):** Maybe.
+
+**[13:20] Samarjit (mic):** My dick?
+
+**[13:21] Samarjit (mic):** Yeah.
+
+**[13:24] Samarjit (mic):** It tastes like very, very sweet.
+
+**[13:27] Samarjit (mic):** It's like the fountain of youth. It's, like, definitely very, very. It tastes like bad chicks. You do analyze all day with, like, the eyes. No.
+
+**[13:36] Samarjit (mic):** It tastes, like, very, very, like, sweet. Friends did, like, bad anal, like, all the.
+
+**[13:43] Samarjit (mic):** All day, bro. Isaac.
+
+**[13:48] Samarjit (mic):** Did all day.
+
+**[13:54] Samarjit (mic):** Pleaser.
+
+**[13:56] Samarjit (mic):** It was like every dickly fellow, actually.
+
+**[14:03] Samarjit (mic):** That's like all I'll describe about assembly.
+
+**[14:08] Samarjit (mic):** Okay, he painted me. I got dipped.
+
+**[14:10] Samarjit (mic):** Now.
+
+**[14:18] Samarjit (mic):** Bro. What the did I do?
+
+**[14:31] Samarjit (mic):** It is a vibrant, zesty condiment that Blends fiery red chilies with bold aromatics.
+
+**[14:39] Samarjit (mic):** You're the department sheriff each joint anthropic zipper.
+
+**[14:46] Samarjit (mic):** Hey, Ethan, do you know jelani Nelson?
+
+**[14:50] Samarjit (mic):** Is it department chair of ekes at Berkeley?
+
+**[14:53] Samarjit (mic):** Wow.
+
+**[14:55] Samarjit (mic):** Oh, I'm gonna get, like, habanero hot sauce.
+
+**[15:24] Samarjit (mic):** Replicated your order to. To the. To the T.
+
+**[15:30] Samarjit (mic):** We'll see how good it is.
+
+**[16:11] Samarjit (mic):** This is bro. This is literally cheaper than Chipotle.
+
+**[16:19] Samarjit (mic):** How much? It's like 25.
+
+**[16:23] Samarjit (mic):** Was not cheap at all. It's, like, cheaper than Chipotle.
+
+**[16:27] Samarjit (mic):** Chicken was twenty dollars.
+
+**[16:35] Samarjit (mic):** You damn. Retar, like, start using your calendar. Yeah, these, like, bro, there's, like, only been an issue, like, today.
+
+**[16:41] Samarjit (mic):** Like, usually before they always, like, figure it out.
+
+**[16:48] Samarjit (mic):** The thing is, I hate using Google calendar, like, so much. Why? It's like a very bad UI.
+
+**[16:54] Samarjit (mic):** How? I think it's, like, very simple. It's very simple, but I hate using it.
+
+**[16:58] Samarjit (mic):** I just use, like, Apple notes.
+
+**[17:00] Samarjit (mic):** It's much more convenient.
+
+**[17:16] Samarjit (mic):** How the.
