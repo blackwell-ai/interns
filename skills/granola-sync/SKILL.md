@@ -82,6 +82,14 @@ Four steps, all in `sync.sh`:
   first so the auto-commit stays scoped to the sync.
 - Pushes to the current branch's `origin` remote. Run it on the branch you
   actually want the notes on.
+- macOS only: `export.js` reads the "Granola Safe Storage" keychain item, so
+  `sync.sh` fails on Linux. On Armaan's Linux machine the working path is the
+  Granola MCP (`get_meetings` + `get_meeting_transcript`), writing files by hand
+  into `context/armaan-granola/` in the same format (done 2026-07-02 for 11
+  meetings). Two MCP limits: `list_meetings` only reaches back 30 days, and
+  transcripts are blocked on free Granola tiers ("Transcripts are only available
+  to paid Granola tiers"), so those exports are notes-only with "Transcript: not
+  available via MCP" in the metadata.
 
 ## Acceptance checks
 
