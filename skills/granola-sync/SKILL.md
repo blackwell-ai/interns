@@ -1,12 +1,12 @@
 ---
 name: granola-sync
-version: 1.0.0
+version: 1.1.0
 description: |
   One command to pull every Granola meeting not yet in the repo and publish it:
   export the new notes into context/samarjit-granola/, commit them, and push,
-  rebasing automatically when the shared repo has moved on. Idempotent — a no-op
+  rebasing automatically when the shared repo has moved on. Idempotent: a no-op
   when nothing is new. Wraps granola-export; does not touch Granola's store
-  itself.
+  itself. The /granola slash command is the front door to this skill.
 license: MIT
 compatibility: claude-code
 allowed-tools:
@@ -33,7 +33,8 @@ is the publish layer on top of it.
 
 ## Run it
 
-From anywhere in the repo:
+The everyday way is the `/granola` slash command, which just runs this skill and
+reports what it published. Under the hood, or from anywhere in the repo:
 
 ```bash
 skills/granola-sync/sync.sh            # export new notes, commit, push
@@ -57,8 +58,10 @@ Four steps, all in `sync.sh`:
    what makes reruns safe.
 3. Commit the staged notes with a message that counts how many were added.
 4. `git push`. If the push is rejected because the remote moved (this repo gets
-   frequent pushes), `git fetch` and `git rebase origin/<branch>`, then push
-   again. New notes never collide with other people's files, so the rebase is
+   frequent pushes), `git fetch` and `git rebase --autostash origin/<branch>`,
+   then push again. `--autostash` sets aside any unrelated uncommitted work in the
+   tree first and restores it after, so a dirty working tree no longer blocks the
+   retry. New notes never collide with other people's files, so the rebase is
    clean; if it somehow conflicts, the script aborts the rebase and tells you to
    finish by hand rather than guessing.
 
@@ -77,9 +80,13 @@ Four steps, all in `sync.sh`:
 - Inherits every limit of `granola-export`: stale token (open the Granola app
   to refresh, then rerun), share links only when the live cache has them,
   speaker attribution by audio source only. See that skill's SKILL.md.
-- Rebase safety net assumes the only staged changes are new note files. If you
-  have other staged edits in `context/samarjit-granola/`, commit or stash them
-  first so the auto-commit stays scoped to the sync.
+- Commit stays scoped to `context/samarjit-granola/`: the auto-commit only stages
+  that folder, so unrelated working-tree edits elsewhere are never swept into it.
+- Auto-rebase now uses `--autostash`, so unrelated uncommitted changes no longer
+  block the retry. The one case it cannot auto-resolve is a genuine overlap, where
+  your uncommitted edits touch a file that also moved on the remote (an
+  append-only log like `agents/geo/log.md` is the usual culprit). There the notes
+  commit still pushes, but you resolve that one file by hand, keeping both sides.
 - Pushes to the current branch's `origin` remote. Run it on the branch you
   actually want the notes on.
 - macOS only: `export.js` reads the "Granola Safe Storage" keychain item, so
@@ -101,6 +108,12 @@ Four steps, all in `sync.sh`:
 
 ## Changelog
 
+- 1.1.0 (2026-07-02): added the `/granola` slash command as the front door
+  (`.claude/commands/granola.md`) and switched the retry rebase to
+  `--autostash`. Prompted by a sync where the push was rejected and the plain
+  rebase then failed with "cannot rebase: You have unstaged changes" because the
+  tree held unrelated edits. Autostash handles that case; the 5 notes still
+  landed after a hand rebase.
 - 1.0.0 (2026-06-25): first version. Codified from the backfill of the
   2026-06-17/06-19 notes and the 2026-06-25 Public Goods note, where the push
   was rejected twice by remote moves and rebased through by hand.

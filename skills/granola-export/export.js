@@ -294,16 +294,36 @@ function findShareLink(cacheText, doc) {
   return tokens.length === 1 ? tokens[0] : null;
 }
 
+function docIdOfFile(p) {
+  try {
+    const m = fs.readFileSync(p, 'utf8').match(/Granola document id:\s*([\w-]+)/);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
+
 function existingDocIds(dir) {
   const ids = new Set();
   if (!fs.existsSync(dir)) return ids;
   for (const f of fs.readdirSync(dir)) {
     if (!f.endsWith('.md')) continue;
-    const m = fs.readFileSync(path.join(dir, f), 'utf8')
-      .match(/Granola document id:\s*([\w-]+)/);
-    if (m) ids.add(m[1]);
+    const id = docIdOfFile(path.join(dir, f));
+    if (id) ids.add(id);
   }
   return ids;
+}
+
+// Two meetings can share a title and a date (Granola's untitled clips all become
+// "Short recording"), so their base slug collides. Left alone, each export run
+// re-writes whichever of the pair is not currently on disk and clobbers the
+// other, so the folder never reaches a fixed point and `granola-sync` commits the
+// flip-flop every run. Give the colliding note its own stable name by appending a
+// short slice of its document id. The suffix is deterministic and only kicks in on
+// an actual clash, so notes already committed under a clean name keep it.
+function uniqueFilename(dir, baseName, docId, claimed) {
+  const onDisk = path.join(dir, baseName);
+  const clash = (fs.existsSync(onDisk) && docIdOfFile(onDisk) !== docId)
+    || claimed.has(baseName);
+  return clash ? baseName.replace(/\.md$/, `-${docId.slice(0, 8)}.md`) : baseName;
 }
 
 // ------------------------------------------------------------------ main ----
@@ -372,6 +392,7 @@ function buildNote(doc, panel, segs, shareLink) {
 
   const cacheText = readCacheText(dek);
   fs.mkdirSync(OUT_DIR, { recursive: true });
+  const claimed = new Set();
   for (const doc of targets) {
     let panel = null, segs = [];
     try {
@@ -389,7 +410,9 @@ function buildNote(doc, panel, segs, shareLink) {
     }
     const shareLink = findShareLink(cacheText, doc);
     const { text, filename } = buildNote(doc, panel, segs, shareLink);
-    fs.writeFileSync(path.join(OUT_DIR, filename), text);
-    console.log(`Wrote ${filename}  (${segs.length} segments${shareLink ? ', share link' : ''})`);
+    const finalName = uniqueFilename(OUT_DIR, filename, doc.id, claimed);
+    claimed.add(finalName);
+    fs.writeFileSync(path.join(OUT_DIR, finalName), text);
+    console.log(`Wrote ${finalName}  (${segs.length} segments${shareLink ? ', share link' : ''})`);
   }
 })().catch((e) => { console.error('ERROR:', e.message); process.exit(1); });

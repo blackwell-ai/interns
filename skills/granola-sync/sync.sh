@@ -68,9 +68,15 @@ if git push; then
   exit 0
 fi
 
+# --autostash sets aside any unrelated uncommitted work in the tree before the
+# rebase and restores it after, so a dirty working tree no longer blocks the
+# retry with "cannot rebase: You have unstaged changes". A genuine overlap (your
+# uncommitted edits touch a file that also moved on the remote) still surfaces as
+# a conflict for you to resolve by hand; the notes commit is independent, so it
+# rebases and pushes cleanly regardless.
 echo "granola-sync: push rejected (remote moved); rebasing onto origin/${BRANCH} and retrying."
 git fetch origin
-if ! git rebase "origin/${BRANCH}"; then
+if ! git rebase --autostash "origin/${BRANCH}"; then
   git rebase --abort || true
   echo "granola-sync: rebase hit a conflict. Resolve it by hand, then run 'git push'." >&2
   exit 1

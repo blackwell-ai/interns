@@ -1,6 +1,6 @@
 ---
 name: granola-export
-version: 1.0.0
+version: 1.1.0
 description: |
   Export Granola meeting notes into context/samarjit-granola/ in the repo's
   note format (metadata header, AI summary panel, verbatim transcript). Reads
@@ -83,6 +83,12 @@ then `## Verbatim transcript` with one line per segment as
 `**[MM:SS] Speaker (source):** text`. Microphone segments are labelled with the
 meeting creator's first name; everything else is "Other participant".
 
+The filename is `<date>-<title-slug>.md`. When two meetings share a title and
+date (Granola names every untitled clip "Short recording"), the second one gets
+a short slice of its document id appended, so the pair does not overwrite one
+file. The suffix only appears on an actual clash, so notes already written under
+a clean name keep it, and reruns stay idempotent.
+
 ## Known limits
 
 - Token freshness: the script uses the token Granola last cached. If it has
@@ -119,6 +125,11 @@ suffix (`.29`) on its own.
 
 ## Changelog
 
+- 1.1.0 (2026-07-02): fixed a filename collision. Two 2026-07-01 clips both
+  titled "Short recording" slugged to the same file, so each run overwrote one
+  with the other and `granola-sync` committed the flip-flop every time. Colliding
+  notes now get a document-id suffix; verified two consecutive runs settle to
+  "No new notes to export" with both clips on disk.
 - 1.0.0 (2026-06-16): first version. Built while exporting the Blackwell /
   Public Goods kickoff note. Verified it reproduces that note exactly apart from
   the cache-sourced share link.
