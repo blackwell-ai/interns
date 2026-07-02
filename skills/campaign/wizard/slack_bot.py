@@ -15,6 +15,7 @@ schedules). Run with:  python -m skills.campaign.wizard.launch
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -456,6 +457,16 @@ async def main() -> None:
         scheduler.start()
         log.info("Schedules on (%s): run-nudge 17:30 (5m pester OFF), morning 09:00 "
                  "(follow-ups + triage)", slack_config.SLACK_SCHEDULE_TZ)
+
+    # Optional: the Gmail add-on's HTTP endpoint, served in this same process. Off
+    # unless ADDON_API_ENABLED is set, so the Slack-only deploy is unchanged. It
+    # reuses the /respond draft/send/write-back code; see addon_api.py.
+    if os.environ.get("ADDON_API_ENABLED"):
+        try:
+            from . import addon_api
+            await addon_api.start()
+        except Exception as e:  # noqa: BLE001 - never let the add-on take down Slack
+            log.warning("Gmail add-on API failed to start: %s", str(e)[:200])
 
     handler = AsyncSocketModeHandler(app, slack_config.SLACK_APP_TOKEN)
     log.info("Slack wizard starting (Socket Mode), channel %s",

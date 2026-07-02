@@ -318,3 +318,13 @@ handlers are dead code. The modal stepping uses `views_update` /
 - Buttons, modal, scoreboard, routing -> `slack_bot.py`.
 - Schedules (times, which jobs run) -> `slack_bot.main()` + `slack_config`.
 - Follow-up drafting (OOO, referral, ask) -> `reply_followup.py`.
+- The Gmail add-on (a second front door to the same draft engine as /respond, for
+  replying to one open email) -> `addon_api.py` (the authed HTTP endpoint) plus the
+  Apps Script in `../gmail_addon/`. Off unless `ADDON_API_ENABLED` is set; when on,
+  `slack_bot.main()` serves it on `PORT` (Railway) / `ADDON_PORT` / 8080 alongside
+  Socket Mode. It reuses `reply_drafter.generate_draft` / `reply_drafter.read_target`
+  (send anchors), `reply_followup.create_draft_api` + `send_draft_api` (in-thread send),
+  and `reply_examples.add_gold_example` (feedback loop). Auth is a shared secret
+  (`ADDON_SHARED_SECRET`, must be set on the `slack_wiz` service in `production`) plus an
+  `X-Addon-User` email header that must be a founder (`agent.SENDERS`); no GCP-linked
+  identity token. Setup/install: `../gmail_addon/README.md` + `INSTALL.md`.

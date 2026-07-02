@@ -370,6 +370,36 @@ async def generate_draft(founder_key: str, founder_email: str, thread_id: str) -
     }
 
 
+async def read_target(founder_email: str, thread_id: str) -> dict:
+    """The send anchors and the inbound message we are answering, derived from the
+    live thread with no LLM call. The Gmail add-on send path uses this so the client
+    only has to pass a thread id plus the edited body; the server re-reads the thread
+    and derives who/what to reply to (rather than trusting the client for it).
+    Returns: to, reply_subject, reply_to_message_id, incoming_subject, incoming_body,
+    thread_id. Raises if the thread cannot be read or has no inbound to answer."""
+    team = _team_addrs()
+    token = await _to_thread(gmail_auth.get_access_token, founder_email)
+    async with httpx.AsyncClient(
+            headers={"Authorization": f"Bearer {token}"}, timeout=60) as gmail:
+        thread = await _get_thread(gmail, thread_id)
+    messages = thread.get("messages") or []
+    if not messages:
+        raise ValueError(f"thread {thread_id} has no messages")
+    inbound = _latest_inbound(messages, team)
+    if inbound is None:
+        raise ValueError(f"thread {thread_id} has no inbound message to reply to")
+    incoming_subject = gmail_lib.header(inbound, "Subject") or gmail_lib.header(messages[0], "Subject")
+    incoming_body = gmail_lib.extract_text_parts(inbound.get("payload") or {}).strip()
+    return {
+        "to": _addr(inbound),
+        "reply_subject": _reply_subject(incoming_subject),
+        "reply_to_message_id": inbound.get("id", ""),
+        "incoming_subject": incoming_subject,
+        "incoming_body": incoming_body,
+        "thread_id": thread_id,
+    }
+
+
 async def _to_thread(fn, *args):
     """Run a blocking call off the event loop (mirrors how the wizard offloads
     the synchronous Anthropic/httpx-sync helpers)."""
