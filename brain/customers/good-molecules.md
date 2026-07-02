@@ -115,3 +115,44 @@ confirmed by Armaan:
   benchmarks are not met, including a no-cost AI assistant pilot where the team
   texts an assistant to manage products, prices, stock, and orders on the live
   site
+
+## Re-audit, June 30, 2026
+
+The live after-benchmark against the June 1 audit (D/61). Full evidence in
+`agents/geo/good-molecules-reaudit/` (battery-log.md, reputation-2026-06-30.md,
+recon-2026-06-30.md, competitors-2026-06-30.md, assets/). Deck:
+`brain/customers/documents/good-molecules-reaudit.pdf`. Evidence gate PASS.
+
+- **Composite moved D (61) to C (67).** Both June 1 Critical findings are closed,
+  verified live.
+- **Recommendability recovered.** Six-engine two-pass browser battery on "best
+  affordable dark spot serum for 2026": named in 6 of 9 passes. ChatGPT names it #1
+  from memory and in live retrieval; Google AI Overview calls it the top overall pick;
+  Gemini (#2) and Copilot (#2) name it in retrieval. The from-memory reads (ChatGPT,
+  Claude) are the notable part: the brand now sits in the models' priors, not just
+  their search results. At the June 1 audit no standalone assistant named it.
+- **Quotability fixed.** Hero PDP serves Product + Offer (price $12, USD, InStock) +
+  AggregateRating (4.3 / 7,631), confirmed in the headed browser (the storefront
+  serves a 202 WAF challenge to curl, so this needs an in-browser read). The June 1
+  "Claude could not read the price, fell back to Amazon" centerpiece no longer
+  reproduces.
+- **Open gap 1, retrieval holdouts.** Claude and Perplexity still do not surface the
+  brand in live retrieval; they answer from affiliate and derm roundups (Forbes, Yahoo,
+  e.l.f., Goodal, Curology) that do not list it. This is off-site presence, not crawler
+  access. The brand it loses to, The Ordinary, has thinner product schema than Good
+  Molecules and wins purely on being in every roundup.
+- **Open gap 2, reputation stranded.** Amazon hero serum 4.4 / ~15.2K ratings, Amazon
+  "Overall Pick," active Reddit and YouTube. But no sameAs from the entity, and weak
+  aggregators (Trustpilot 2.8 on 4 unclaimed reviews, no BBB or ConsumerAffairs
+  profile). Strong sentiment, no machine linkage.
+- **Open gap 3, agent layer half open.** agents.md now serves 200 (was 404 at audit),
+  but /.well-known/ucp, /api/ucp/mcp, llms-full.txt, and the agentic sitemap return a
+  202 WAF challenge, not a confirmed handler. AXIS-Y serves all of these with clean
+  200s.
+- **Crawler state (WAF fix holds):** GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot
+  all 200. Google-Extended 202, Amazonbot and Bingbot 405 (confirm the verified search
+  crawlers still pass, since search-index surfaces were the one working channel at
+  audit).
+- **The Phase 2 lever is off-site.** On-site work has done what it can; the remaining
+  points are getting into the lists Claude and Perplexity cite and linking the
+  reputation to the entity. This is where the reviewer/UGC panel fits.

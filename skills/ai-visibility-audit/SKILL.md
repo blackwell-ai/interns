@@ -107,6 +107,19 @@ an engine refuses a pass (for example a logged-out engine that will not disable
 browsing), write the limitation in `battery-log.md`; the gate accepts a documented
 limitation but not a missing row.
 
+Saving the captures (learned 2026-06-30). The browser tool's in-app screenshot
+`save_to_disk` does not reliably persist a file you can reach from the shell, so drive
+the engine through `/browse` to read and verify the answer, then save the PNG with
+macOS `screencapture`. The working recipe: an AppleScript that makes the driven tab
+active in its Chrome window and raises that window (`set active tab index`, then `set
+index ... to 1`), read the window bounds, and `screencapture -x -R x,y,w,h out.png`.
+Two gotchas: coercing bounds with `as string` concatenates the numbers with no
+separators (build the comma list by item instead), and if the Chrome window is on a
+different macOS Space than the one on screen, `screencapture` returns "could not create
+image from rect" (bring that window to the front first). A guest engine can throw a
+"verify you are human" check; completing bot-detection is off limits, so have the
+operator clear it, then capture.
+
 What each engine actually supports (learned, keep current):
 
 - **ChatGPT**: Temporary Chat (`chatgpt.com/?temporary-chat=true`) is a true clean

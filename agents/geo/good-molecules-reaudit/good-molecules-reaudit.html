@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Good Molecules: AI Visibility Re-Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .eyebrow.green{ color:var(--green); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  .pagefoot{ position:fixed; bottom:0.34in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:80%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:82pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--green); background:#e7f0e9; border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--green); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:9%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--green); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai.win{ border-left:3pt solid var(--green); }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; } pre.code .g{ color:#8fbf9a; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+  .fixline.win b{ color:var(--green); }
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:30%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>Good Molecules · AI Visibility Re-Audit · June 30, 2026</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Good Molecules<span class="l2">AI Visibility Re-Audit</span></h1>
+  <p class="sub">A follow-up read on how AI engines and search see Good Molecules today, after the crawler and structured-data fixes went live. What moved, what held, and the off-site work still on the table.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> Good Molecules and Beautylish leadership</div>
+    <div><span class="k">Date</span> June 30, 2026</div>
+    <div><span class="k">Baseline</span> June 1, 2026 audit, composite D (61 of 100)</div>
+    <div><span class="k">Scope</span> Public site, AI answer engines, reputation, agent-commerce surface</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS · Dartmouth CS · UC Berkeley MET (EECS &amp; Business) · Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We re-graded Good Molecules on the same five dimensions as the June 1 audit, scored 0 to 100 against observed behavior across the six AI answer engines, Amazon and other retailer listings, the brand's own indexed pages and schema, and the agent-commerce surface. Competitor scores are our estimates from the same public signals, checked the same day. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">C</div>
+      <div class="score">67 / 100</div>
+      <div class="cap">Good Molecules today</div>
+    </div>
+    <p class="grade-note"><strong>The composite moved from D (61) to C (67) since June 1, and the two June 1 Critical findings are closed.</strong> The WAF now lets the major AI assistants crawl the site, and every product page serves full price and rating schema, so the "Claude could not read the price and fell back to Amazon" finding no longer reproduces. The payoff shows up in recommendability: Good Molecules is now named by four of the six engines in live retrieval, including the top pick on ChatGPT and Google. The remaining drag is off-site. Two engines still do not surface the brand, the reputation is strong but not linked to the entity, and the agentic-commerce endpoints answer a challenge instead of serving.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">Good Molecules</th><th class="cmp">The Ordinary</th><th class="cmp">AXIS-Y</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:72%"></div></div></div><div class="n">72</div></td>
+      <td class="cmp">55</td><td class="cmp">75</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:80%"></div></div></div><div class="n">80</div></td>
+      <td class="cmp">40</td><td class="cmp">75</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:66%"></div></div></div><div class="n">66</div></td>
+      <td class="cmp">85</td><td class="cmp">55</td>
+      <td class="what">Inclusion in AI category answers and the listicles engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:55%"></div></div></div><div class="n">55</div></td>
+      <td class="cmp">35</td><td class="cmp">70</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:60%"></div></div></div><div class="n">60</div></td>
+      <td class="cmp">80</td><td class="cmp">55</td>
+      <td class="what">Review aggregator presence and rating, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">67 (C)</span></td>
+      <td class="cmp">59 (F)</td><td class="cmp">66 (C)</td>
+      <td class="what">Up from 61 (D) on June 1. The gains are on the machine-readable layer; the gap left is off-site recommendability and reputation linkage.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals checked June 30, 2026, not full audits of those brands. The Ordinary scores low on the machine-readable layer yet high on recommendability, because sheer category authority carries it into answers that its own site does little to earn. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>At the June 1 audit, Good Molecules had one working AI channel and four blocked ones. The dividing line was crawler access, not model quality: search-fed surfaces (Gemini, Google AI Mode, AI Overview, Bing) let Googlebot and Bingbot through and named the brand, while the standalone assistants (ChatGPT, Claude, Perplexity, Copilot) were stopped at the WAF and answered from Amazon, Ulta, and Reddit instead. The brand then shipped two fixes: it opened the WAF for the major assistants and added full product schema, and it published a rich llms.txt. This re-audit is the live measurement of what those fixes bought.</p>
+  <p style="color:var(--muted);font-size:9pt">Five findings: two wins that closed the June 1 Criticals, three gaps that are the next work.</p>
+  <ol class="short">
+    <li><strong>Win. AI engines now recommend Good Molecules, where none of the standalone assistants did before.</strong> On the query "best affordable dark spot serum for 2026," the brand is named in six of nine engine passes, including the number-one pick on ChatGPT and the "top overall pick" in Google's AI Overview, plus a top-three slot on Gemini and Copilot.</li>
+    <li><strong>Win. Every product page now serves the price and rating an engine needs to quote.</strong> The hero serum returns <code>Product</code>, <code>Offer</code> (price $12, USD, in stock), and <code>AggregateRating</code> (4.3 across 7,631 reviews) in machine-readable form. The June 1 centerpiece finding, Claude admitting it could not read the price and falling back to Amazon, no longer reproduces.</li>
+    <li><strong>Gap. Two engines still do not surface the brand in live retrieval.</strong> Claude and Perplexity answer from affiliate and dermatologist roundups (Forbes, Yahoo, e.l.f., Goodal, Curology) that do not list Good Molecules. This is no longer a crawler problem; it is an off-site presence problem.</li>
+    <li><strong>Gap. A strong reputation that is not linked to the entity.</strong> The hero serum holds 4.4 stars across roughly 15,200 Amazon ratings and carries an active Reddit and YouTube presence, but there is no <code>sameAs</code> connecting the site's entity to any of it, and the formal aggregators are thin (Trustpilot 2.8 on four unclaimed reviews, no BBB or ConsumerAffairs profile).</li>
+    <li><strong>Gap. The agent-commerce layer is half open.</strong> The <code>agents.md</code> file now serves, but the UCP and MCP endpoints and <code>llms-full.txt</code> return a WAF challenge rather than a confirmed live response, so an agent that tries to read or transact is met with a wall.</li>
+  </ol>
+  <div class="darkbox">The June 1 audit found a brand that machines could not read. The re-audit finds a brand that machines can now read and increasingly recommend. The score moved from D to C on the strength of on-site work already done. The remaining points are off-site: getting into the specific lists Claude and Perplexity cite, and connecting the real reputation to the entity so every engine can attribute it.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow green">Finding 1 of 5 · Win, closes June 1 Critical</p>
+  <h2 class="ruled">AI engines now recommend Good Molecules</h2>
+  <p>AI answer engines are where many skincare shoppers now start. They do not browse; they ask "what is the best affordable dark spot serum" and return a short, synthesized list. We ran the full six-engine battery, each in two passes where a browsing toggle exists: from the model's own memory with search off, then with live web retrieval on. The frozen query was the brand's core category, "best affordable dark spot serum for 2026." Good Molecules was named in six of nine passes.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT (Temporary Chat)</td><td><span class="pill yes">named, #1</span></td><td><span class="pill yes">named, #1</span></td></tr>
+    <tr><td class="k1">Claude (fresh chat)</td><td><span class="pill yes">named, first</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Gemini</td><td><span class="pill no">not named</span></td><td><span class="pill yes">named, #2</span></td></tr>
+    <tr><td class="k1">Perplexity</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill yes">top pick</span></td></tr>
+    <tr><td class="k1">Copilot (guest)</td><td>retrieval only</td><td><span class="pill yes">named, #2</span></td></tr>
+  </table>
+  <p>At the June 1 audit, none of the standalone assistants named the brand in a category answer. Today ChatGPT ranks it first from memory and in live retrieval, Google's AI Overview calls it the top overall pick, and Gemini and Copilot place it in the top three. The from-memory reads are the striking part: the serum now sits in the model's priors, not just its search results.</p>
+  <div class="ai win avoid">
+    <p class="plabel">Google AI Overview, live retrieval: "best affordable dark spot serum for 2026"</p>
+    <p class="resp">"The top overall pick is Good Molecules Discoloration Correcting Serum, which delivers fast, gentle fading for under $15."</p>
+  </div>
+  <img class="eviv" src="assets/googleaio-dark-spot-serum-on-2026-06-30.png" alt="Google AI Overview names Good Molecules as the top pick">
+  <p class="cap-img">Google AI Overview for the category. Good Molecules is the named top pick, with the brand's own product card and cited roundups. Captured June 30, 2026. Google AI Overview is non-deterministic, so treat this as one representative render.</p>
+  <div class="ai win avoid">
+    <p class="plabel">ChatGPT, Temporary Chat, from memory: same query</p>
+    <p class="resp">"1. Good Molecules Discoloration Correcting Serum. Best overall. Tranexamic acid, niacinamide. Best for post-acne marks, sun spots, uneven skin tone."</p>
+  </div>
+  <img class="eviv" src="assets/chatgpt-dark-spot-serum-off-2026-06-30.png" alt="ChatGPT names Good Molecules number one from memory">
+  <p class="cap-img">ChatGPT Temporary Chat, browsing off. The brand is the number-one pick from the model's own knowledge. Captured June 30, 2026.</p>
+  <p class="fixline win"><b>What earned it.</b> Opening the WAF for GPTBot, ClaudeBot, and PerplexityBot, and serving product schema, put readable content where these engines look. Recommendability is downstream of exactly the on-site work already done. The remaining passes are addressed in finding 3.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow green">Finding 2 of 5 · Win, closes June 1 Critical</p>
+  <h2 class="ruled">Every product page now serves a price and rating an engine can quote</h2>
+  <p>Quotability was the finding behind the June 1 centerpiece: asked for the price of the hero serum, Claude said it could not read it from the site and fell back to Amazon and other retailers. That was because product pages exposed no structured data. They do now. We confirmed it in the headed browser, reading the raw page after the storefront's challenge resolves.</p>
+  <pre class="code"><span class="c">// goodmolecules.com hero PDP, JSON-LD read in-browser, June 30, 2026</span>
+"@type": <span class="g">"Product"</span>,   name: "Good Molecules Discoloration Correcting Serum 30 ml",
+brand:  <span class="g">"Good Molecules"</span>,
+offers: { price: <span class="g">12</span>, priceCurrency: <span class="g">"USD"</span>, availability: <span class="g">"InStock"</span> },
+aggregateRating: { ratingValue: <span class="g">4.3</span>, reviewCount: <span class="g">7631</span> }</pre>
+  <p class="sub-h">Why it matters</p>
+  <p>When a shopper asks an engine "how much is the Good Molecules discoloration serum" or "compare it to The Ordinary," the engine can now quote the price, the in-stock status, and the 4.3-star rating directly from the brand's own page instead of guessing from a third-party listing. The canonical page resolves to a size-specific URL (the 30 ml at $12), which also removes the size and price confusion the June 1 audit flagged. On this dimension Good Molecules now sits ahead of The Ordinary, whose product pages expose no confirmed schema at all.</p>
+  <p class="fixline win"><b>Status.</b> Closed. This finding is included as verification that the June 1 remediation holds live, not as open work. Keep the schema on the PDP template as the catalog changes, and extend <code>AggregateRating</code> anywhere it is still missing.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 5 · High severity, open</p>
+  <h2 class="ruled">Two engines still do not surface the brand, and it is not a crawler problem</h2>
+  <p>The recommendability win is real but not universal. In live retrieval, Claude and Perplexity did not name Good Molecules. The reason is instructive: both answered from affiliate and dermatologist roundups whose own lists do not include the brand. This is the off-site gap, and it is the single clearest lever left.</p>
+  <div class="ai avoid">
+    <p class="plabel">Claude, live web retrieval: "best affordable dark spot serum for 2026"</p>
+    <p class="resp">"I didn't find a strong signal that the specific budget champion I mentioned from memory (Good Molecules Discoloration Correcting Serum) has been dethroned; it just wasn't named in these particular results."</p>
+  </div>
+  <img class="eviv" src="assets/claude-dark-spot-serum-on-2026-06-30.png" alt="Claude notes Good Molecules was not in the retrieved sources">
+  <p class="cap-img">Claude in live retrieval names La Roche-Posay, Naturium, and Goodal from Forbes and Yahoo roundups, and states plainly that Good Molecules was not in the results it retrieved. Captured June 30, 2026.</p>
+  <img class="eviv" src="assets/perplexity-dark-spot-serum-on-2026-06-30.png" alt="Perplexity ranked list omits Good Molecules">
+  <p class="cap-img">Perplexity's ranked answer leads with e.l.f., Goodal, Truskin, and Curology, sourced from dermapproved, sanemd, and welzo. Good Molecules is absent. Captured June 30, 2026.</p>
+  <p class="sub-h">Why the two holdouts differ from the four wins</p>
+  <p>The engines that name the brand either read the site directly (ChatGPT, Gemini) or lean on Google's index (AI Overview). The two that miss it lean hardest on a specific set of third-party "best of 2026" lists, and Good Molecules is not on those lists. The brand it most often loses to in these answers, The Ordinary, does not win on schema; its product pages are thinner than Good Molecules'. It wins on being in every roundup. That is an off-site position, earned through mentions, not markup.</p>
+  <p class="fixline"><b>The fix.</b> Get Good Molecules into the specific category sources these engines cite, and seed authentic third-party mentions across YouTube, Reddit, and short-form video. Off-site mentions are the strongest correlate of AI visibility and the part of recommendability that on-site schema cannot move. This is Phase 2 work, described at the end of the deck.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 5 · High severity, open</p>
+  <h2 class="ruled">A strong reputation that is not linked to the entity</h2>
+  <p>Reputation is bimodal. Where real customers gather, it is strong. Where machines look for a structured rating, it is thin or disconnected. The sentiment is not the problem; the linkage is.</p>
+  <div class="quote">The hero serum holds <strong>4.4 stars across roughly 15,200 Amazon ratings</strong>, carries an Amazon "Overall Pick" badge, and shows 20,000-plus bought in the past month at $11.94. It has an active Reddit presence across r/SkincareAddiction, r/30PlusSkinCare, and r/Melasmaskincare, and a deep YouTube review corpus. The brand's own page reports 4.3 across 7,631 reviews. <span class="src">(Amazon, Reddit, YouTube, goodmolecules.com PDP, captured June 30, 2026)</span></div>
+  <img class="eviv" src="assets/reputation-retailer-amazon-2026-06-30.png" alt="Good Molecules serum is an Amazon Overall Pick at 4.4 stars">
+  <p class="cap-img">The hero serum on Amazon: 4.4 stars, roughly 15,200 ratings, an "Overall Pick" badge. This is the retailer engines fall back to for a Beautylish-exclusive direct-to-consumer brand. Captured June 30, 2026.</p>
+  <p class="sub-h">The disconnect</p>
+  <p>The homepage entity declares <code>OnlineStore</code>, <code>WebSite</code>, and <code>ContactPoint</code> types but no <code>sameAs</code> array pointing at any of this reputation. So the excellent 4.4-star product on Amazon and the anonymous rating on the brand's own entity are, to a machine, two unlinked records. The formal aggregators do not help: Trustpilot shows 2.8 across four reviews on an unclaimed profile, and neither BBB nor ConsumerAffairs has a profile at all. The strong reputation lives on Amazon and in UGC, exactly where it is hardest for an entity to claim it.</p>
+  <p class="fixline"><b>The fix.</b> Add <code>sameAs</code> links from the entity to the retailer and social profiles, claim and populate the aggregator profiles where it helps, and, through Phase 2, grow the off-site review base that Claude and Perplexity read. Connecting the reputation to the entity is what lets every engine attribute the 4.4 stars the brand already has.</p>
+</section>
+
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 5 · Medium severity, open</p>
+  <h2 class="ruled">The agent-commerce layer is half open</h2>
+  <p>This dimension improved since June 1, when the agent endpoints all returned 404, but it is not finished. The <code>agents.md</code> file now serves a real 200 response. The rest of the agentic surface answers a WAF challenge instead of a confirmed response.</p>
+  <pre class="code"><span class="c">// goodmolecules.com agent surface, June 30, 2026</span>
+/agents.md                       <span class="g">200</span>  served
+/llms-full.txt                   <span class="r">202</span>  challenge, not a confirmed handler
+/.well-known/ucp                 <span class="r">202</span>  challenge
+/api/ucp/mcp                     <span class="r">202</span>  challenge
+/sitemap_agentic_discovery.xml   <span class="r">202</span>  challenge
+agent-readable pricing           <span class="g">present</span>  (Offer schema on the PDP)</pre>
+  <p class="sub-h">Why it matters</p>
+  <p>A 202 is the storefront's interstitial for a non-JavaScript client. An AI shopping agent reading these endpoints gets the challenge, not the content, so the UCP and MCP rails cannot be relied on to serve or transact even though they appear provisioned. Agent-readable pricing is the bright spot: because the <code>Offer</code> schema is on the product page, an agent can already read the price. The gap is the discovery and transaction endpoints around it. For comparison, AXIS-Y serves <code>agents.md</code>, <code>/.well-known/ucp</code>, and its agentic sitemap with clean 200s.</p>
+  <p class="fixline"><b>The fix.</b> Allowlist the agentic endpoints and <code>llms-full.txt</code> so verified agents receive a 200 rather than a challenge, and confirm each returns real content. This is a WAF and routing change, mechanical, and it completes the layer the June 1 remediation started.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The same machine-readable signals across three brands, checked the same day. Good Molecules now leads on the on-site layer it controls. The contrast is with the two ends of the market: The Ordinary, which wins recommendability on authority despite a bare site, and AXIS-Y, which has built out the full agentic layer.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>Good Molecules</th><th>The Ordinary</th><th>AXIS-Y</th></tr>
+    <tr><td class="k1">Homepage title</td><td class="good">descriptive</td><td class="bad">none server-rendered</td><td class="bad">none server-rendered</td></tr>
+    <tr><td class="k1">Homepage entity schema</td><td class="good">OnlineStore · WebSite · SearchAction · ContactPoint</td><td class="bad">none</td><td class="good">Organization · WebSite · SearchAction</td></tr>
+    <tr><td class="k1">Product structured data</td><td class="good">Product + Offer + AggregateRating</td><td class="bad">none confirmed</td><td class="good">Product + Offer</td></tr>
+    <tr><td class="k1">Assistant crawler access</td><td class="good">GPTBot, ClaudeBot, PerplexityBot 200</td><td class="good">200</td><td class="good">200</td></tr>
+    <tr><td class="k1">Agent endpoints (ucp, agents.md)</td><td>agents.md 200; ucp 202</td><td class="bad">404</td><td class="good">200</td></tr>
+    <tr><td class="k1">Named in AI category answers</td><td>four of six engines</td><td class="good">nearly all</td><td>occasionally</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">The Ordinary is the sharpest lesson. Its site is the weakest of the three on every machine-readable signal, yet it is named in almost every engine answer, because years of reviews, roundups, and mentions have made it the default. Good Molecules has now built the on-site foundation The Ordinary lacks. The remaining gap between them is the off-site authority that schema cannot buy, which is precisely the Phase 2 lever.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work from here</h2>
+  <p>The June 1 audit's two Critical findings are closed, verified live in this re-audit. The remaining three findings are off-site and endpoint work, and they cluster into one phase of ongoing AI visibility work rather than a one-time fix.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow" style="margin-bottom:4pt">Phase 2 · ongoing AI visibility</p>
+    <h3 style="margin:0 0 6pt">Off-site recommendability and reputation linkage</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Three workstreams, each closing an open finding above.</p>
+    <ul class="rem">
+      <li>Get Good Molecules into the specific category sources Claude and Perplexity cite, and monitor the "best affordable dark spot serum" answers per engine with drift alerts (finding 3)</li>
+      <li>Add <code>sameAs</code> links from the entity to the Amazon and social profiles, claim the aggregator listings, and connect the 4.4-star reputation to the machine-readable identity (finding 4)</li>
+      <li>Allowlist the agentic endpoints (<code>/.well-known/ucp</code>, <code>/api/ucp/mcp</code>, <code>llms-full.txt</code>) so verified agents receive real content, completing the agent-commerce layer (finding 5)</li>
+    </ul>
+    <div class="bench"><b>Phase 2 benchmarks, finalized at kickoff.</b> Named in five or six of six engines on the core category query; the two holdout engines (Claude, Perplexity) surfacing the brand in live retrieval; <code>sameAs</code> linkage live and validated; agentic endpoints returning 200 to verified agents. Measured against this re-audit as the frozen before state.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">The off-site lever, in detail</p>
+  <p>The clearest finding in this re-audit is that on-site work has done what it can. Good Molecules is now readable and, on four engines, recommended. The two holdout engines and the reputation gap are both off-site: they are decided by where the brand is mentioned, not by what its own pages say. For Phase 2 design partners we are standing up a vetted panel of independent reviewers and UGC creators, scored for neutrality, that can seed genuine third-party reviews across YouTube, Reddit, and short-form video, the exact surfaces where Good Molecules already has organic traction. Mentions of that kind are the single strongest correlate of AI visibility, well ahead of backlinks, and they are the part of reputation that on-site schema cannot reach. This is a capability we are building for Phase 2, not a finished network, and it is the lever that turns a readable brand into a recommended one across all six engines.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this re-audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in the same nine-phase program as the June 1 audit, so the two are directly comparable. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled the brand's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, the AI bot user-agent crawlability matrix (GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, Amazonbot, Bingbot), and the agentic-layer probe over <code>/agents.md</code>, <code>/.well-known/ucp</code>, <code>/api/ucp/mcp</code>, and the agentic sitemap. The product schema in finding 2 was confirmed in the headed browser after the storefront's challenge resolves, since the site serves a 202 to a plain client. Pulled June 30, 2026.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each where a browsing toggle exists: from the model's memory with search off, then with live retrieval on. Logged-in engines ran in a clean session where one is available (ChatGPT Temporary Chat, fresh Claude chat); Copilot ran as a guest. Gemini has no clean private mode, so its logged-in read is disclosed as contaminated and used conservatively. Each engine and pass was captured to a screenshot, logged per row in the battery log. The same query ran on every engine: "best affordable dark spot serum for 2026." Absence is robust to a logged-in profile; a "named" read on a clean or web-grounded surface is the one we rely on.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled the brand's third-party reputation from Trustpilot, BBB, ConsumerAffairs, Reddit, YouTube, and its main retailer (Amazon), captured each, and checked whether any of it is linked to the site's entity through <code>sameAs</code>. The 4.4-star Amazon rating and the active Reddit and YouTube presence are real; the missing entity link is finding 4.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>The Ordinary and AXIS-Y were checked the same day on the same signals (title, entity schema, product schema, crawler access, agent endpoints, AI category presence). Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>llms.txt</code>, and product pages. Reputation and recommendability findings are reproducible by running the same public queries and the six-engine battery. All signals pulled June 30, 2026, against the June 1, 2026 audit baseline of composite D (61).
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises · Armaan Priyadarshan · Samarjit Deshmukh · Ethan Zhou · Shamit D'Souza</div></div>
+</section>
+
+</body>
+</html>
