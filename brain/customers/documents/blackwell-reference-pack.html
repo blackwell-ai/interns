@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Blackwell: reference work</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --green:#3f7d4f; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif; --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.55in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.9pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 16pt; }
+  h1{ font-size:24pt; line-height:1.1; letter-spacing:-.4pt; margin:0; }
+  .sub{ font-size:11pt; line-height:1.45; color:var(--soft); margin:12pt 0 0; max-width:94%; }
+  h2{ font-size:15pt; letter-spacing:-.2pt; margin:18pt 0 2pt; }
+  h3{ font-size:10.5pt; margin:11pt 0 4pt; }
+  .who{ font-size:9pt; color:var(--muted); margin:0 0 9pt; }
+  ul{ margin:2pt 0 8pt; padding-left:18pt; }
+  ul li{ margin:0 0 4pt; }
+  table.ba{ border-collapse:collapse; margin:5pt 0 10pt; }
+  table.ba th,table.ba td{ text-align:left; padding:3pt 26pt 3pt 0; font-size:9.3pt; vertical-align:baseline; }
+  table.ba th{ font-size:7.2pt; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; padding-bottom:5pt; }
+  table.ba td.was{ color:var(--muted); }
+  table.ba td.now{ color:var(--green); font-weight:700; }
+  .foot{ font-size:8.4pt; color:var(--muted); line-height:1.5; margin-top:14pt; }
+</style>
+</head>
+<body>
+
+<p class="brand">Blackwell Enterprises</p>
+<h1>Reference work: two engagements in detail</h1>
+<p class="sub">Two of our signed engagements, with the specific findings, the work delivered, and the verified before and after. Both are Shopify direct-to-consumer brands. The full audit decks and engagement letters are available on request.</p>
+
+<h2>Good Molecules</h2>
+<p class="who">Skincare, about a $100M brand. goodmolecules.com, Shopify. Audit June 1, working sessions through June.</p>
+
+<h3>What the audit found</h3>
+<p>The site scored 61 out of 100 (a D), with eight findings, two of them critical.</p>
+<ul>
+  <li>The AI assistants were locked out. ChatGPT, Claude, Perplexity, and Copilot were blocked at the site's firewall, so they answered about Good Molecules using Amazon, Ulta, Target, and Reddit instead of the brand's own pages.</li>
+  <li>The prices were unreadable. There was no product data in the page source, so the engines could not read prices from the site. Claude said in its own words that it could not pull prices and fell back to Amazon. The 12ml and 30ml sizes of the same serum showed conflicting prices.</li>
+  <li>Supporting findings: thin homepage identity, no sitemap, and no presence in the skincare guides or in comparisons against The Ordinary.</li>
+</ul>
+
+<h3>The before and after we verified (June 17)</h3>
+<p>Acting on the audit, the team opened the firewall and shipped server-side product data. We re-ran each crawler against the live site and confirmed it landed:</p>
+<table class="ba">
+  <tr><th>Crawler</th><th>At audit</th><th>June 17</th></tr>
+  <tr><td>GPTBot</td><td class="was">blocked</td><td class="now">HTTP 200</td></tr>
+  <tr><td>OAI-SearchBot</td><td class="was">blocked</td><td class="now">HTTP 200</td></tr>
+  <tr><td>ChatGPT-User</td><td class="was">blocked</td><td class="now">HTTP 200</td></tr>
+  <tr><td>ClaudeBot</td><td class="was">blocked</td><td class="now">HTTP 200</td></tr>
+  <tr><td>Claude-User</td><td class="was">blocked</td><td class="now">HTTP 200</td></tr>
+  <tr><td>PerplexityBot</td><td class="was">blocked</td><td class="now">HTTP 200</td></tr>
+</table>
+<p>Product pages now serve full data in the page source, no JavaScript needed: product, brand, price, currency, availability, and rating. The page also resolves to the right size (the niacinamide serum lands on the 30ml page at $6.00), which fixes the price-confusion finding. A detailed llms.txt is live too, with a brand overview, best sellers, shipping terms, a category map, and the full product list with prices.</p>
+
+<h3>Week one: what we delivered (June 17)</h3>
+<p>Good Molecules kept their deploys in-house, so we delivered a complete, paste-ready pack, with each item mapped to a Google Search Central or schema.org reference so they can check it themselves:</p>
+<ul>
+  <li>Enriched product and offer data, with a worked example on the niacinamide serum and size-variant grouping</li>
+  <li>Homepage identity schema: profile links, contact point, and site search</li>
+  <li>Shipping and return-policy data on the offer</li>
+  <li>Breadcrumbs on products and item lists on category pages</li>
+  <li>OpenGraph and product meta tags, plus a sitemap</li>
+  <li>llms-full.txt and agents.md drafts</li>
+  <li>A first FAQ set with FAQ markup</li>
+  <li>A sources file citing the authority behind each recommendation</li>
+</ul>
+
+<h3>Week two (June 25)</h3>
+<p>We verified that Perplexity's live-fetch agent now passes the firewall too, the one follow-up from week one. We walked the pack schema by schema, and set the highest-value remaining fix: adding GTIN and SKU codes per size. That is the field that lets an engine match the brand's page to its Amazon, Ulta, and Target listings, which is the root cause of the price-substitution problem they hired us for.</p>
+
+<h3>What comes next</h3>
+<p>The final proof is the live engine test. Once the remaining data is deployed, we re-run ChatGPT, Claude, Perplexity, Gemini, and Google against the same questions from the audit and measure the change.</p>
+
+<h2>Public Goods</h2>
+<p class="who">Sustainable household goods. publicgoods.com, Shopify. Engagement signed June 2, run by Samarjit Deshmukh.</p>
+
+<h3>What the audit found</h3>
+<p>A 22-page audit, grade D, with six findings: member versus non-member pricing that the AI answers got wrong, shipping thresholds that conflicted from one page to the next, a 40% discount that was leaking into AI answers, and reputation evidence from the BBB with 13 complaints sorted by category. We also checked every quote in the deck against the live engines and caught four that were wrong or inflated before we sent it.</p>
+
+<h3>Week one: what Samarjit built (June 16)</h3>
+<p>Public Goods gave us repo access, so here we wrote the code and shipped it as a GitHub pull request for their team to review:</p>
+<ul>
+  <li>A machine-readable fact card on every product page, not just a sample: variants, member price, shipping policy, the Q&amp;A, and the reviews, with the Okendo rating fields wired in so the engines can compare products across the store and against competitors.</li>
+  <li>A script that writes the fact card for every product automatically, so each new SKU gets its metadata with no manual work. We set it up to cover their new SPF moisturizer launch.</li>
+  <li>An invisible brand-identity card on the homepage, a workaround that tells the engines who Public Goods is without changing anything shoppers see.</li>
+  <li>Fixed the confusing shipping policy and killed a dead 40% off page that was still feeding AI answers.</li>
+  <li>Built the llms.txt, agents.md, and robots.txt files for the store.</li>
+</ul>
+
+<h3>Week two: Wikidata, an audit script, and an early lift (June 25)</h3>
+<p>Once the week-one work was live, Samarjit shipped two more pieces and started measuring the result:</p>
+<ul>
+  <li>A Wikidata entity for Public Goods, with the label, the statements, and sourced references, which feeds Google's knowledge panel and how the assistants understand the brand.</li>
+  <li>An automated visibility audit that queries ChatGPT and Claude on a fixed set of prompts and writes up the results, so the engagement is measured, not asserted.</li>
+</ul>
+<p>The early result: within a week of the work going live, Public Goods was being recommended favorably across the automated ChatGPT and Claude queries, a clear lift from where it started. Samarjit also caught stale data in Google's AI Overview, discontinued pet food and pantry categories surfacing from 2021 links, and started replying to the Trustpilot reviews.</p>
+
+<h3>The engagement</h3>
+<p>Signed June 2, a 30-day sprint at $1,000 up front, refunded if the targets are not met, on weekly Tuesday check-ins with the founder's team. Next is the formal before and after: re-running the exact prompts from the audit a month earlier against the current answers to put a number on the lift.</p>
+
+<div class="foot">
+Both engagements began in June 2026 and are still inside their windows, so these are the results to date, not a finished 30-day report. Good Molecules is the further along, with a verified before and after on crawler access and product data. Every finding and every recommendation traces to a public tool or a named authority, so any of it can be checked. Blackwell Enterprises. armaan@tryblackwell.com. cal.com/armaanp/30min
+</div>
+
+</body>
+</html>

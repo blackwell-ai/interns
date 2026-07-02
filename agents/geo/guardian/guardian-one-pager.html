@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guardian Water Sports: AI visibility</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif; --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.62in 0.62in 0.72in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.9pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2{ color:var(--ink); font-weight:700; }
+  .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 16pt; }
+  h1{ font-size:29pt; line-height:1.06; letter-spacing:-.5pt; margin:0; }
+  h1 .l2{ display:block; }
+  .sub{ font-size:11pt; line-height:1.45; color:var(--soft); margin:12pt 0 0; max-width:90%; }
+  hr.divide{ border:0; border-top:1.5px solid var(--rule-hard); margin:16pt 0 0; }
+  h2{ font-size:14pt; line-height:1.15; letter-spacing:-.2pt; margin:22pt 0 6pt; }
+  ol{ margin:0; padding-left:20pt; }
+  ol li{ margin:0 0 7pt; padding-left:3pt; }
+  ul{ margin:2pt 0 8pt; padding-left:18pt; }
+  ul li{ margin:0 0 4pt; }
+  .pagefoot{ position:fixed; bottom:0.34in; left:0.62in; right:0.62in; display:flex; justify-content:space-between; font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+  .foot{ font-size:8.4pt; color:var(--muted); line-height:1.5; margin-top:24pt; }
+</style>
+</head>
+<body>
+
+<p class="brand">Blackwell Enterprises</p>
+<h1>Guardian Water Sports<span class="l2">AI visibility</span></h1>
+<p class="sub">How Guardian shows up when people ask AI assistants about snorkel gear, and what we would do about it in 30 days.</p>
+
+<h2>What we found</h2>
+<p>Guardian's site is well built for AI. It is on Shopify, AI crawlers can read it, the checkout works for shopping agents, and the product pages already carry ratings, brand, and product IDs. The gap is recommendations. On July 1 we asked all six main AI engines for the best snorkel masks. Every one recommended Ocean Reef, Cressi, Seaview, SEAC, and Decathlon Subea. None of them mentioned Guardian. ChatGPT also warned people to avoid no-name masks on safety grounds, which is the group Guardian gets lumped into without a visible safety certification.</p>
+
+<h2>What we would do</h2>
+<ol>
+  <li>Get Guardian into the snorkel-gear guides the engines quote (DiveIn, Snorkel Pursuits, Tropical Snorkeling).</li>
+  <li>Get the full-face masks safety-tested and certified (TUV, DEKRA, or SGS) and show it on the site. Every full-face guide now filters out masks without it.</li>
+  <li>Fix the homepage title so it loads in the page source, not only after JavaScript runs.</li>
+  <li>Build reviews outside the big retailers: claim a Trustpilot profile, get mentions on Reddit and YouTube, and link them from the site.</li>
+  <li>Rewrite the llms.txt file, a generic Shopify default today, with the real catalog and the design and testing story.</li>
+  <li>Back up the "No.1 snorkel brand" claim with real numbers, like units sold, review counts, and test results. Unsupported claims get ignored.</li>
+</ol>
+
+<h2>How we would measure it (30 days, money back)</h2>
+<p>We set the baseline on July 1 by asking the six engines the snorkel questions. Guardian showed up in none of them. We check again at day 30. The targets we agree on:</p>
+<ul>
+  <li>Guardian named in the live answers on the engines we agree on.</li>
+  <li>The safety certification live on the full-face pages.</li>
+  <li>A Trustpilot profile live and linked from the site.</li>
+</ul>
+<p>If we miss the targets, you get the $1,000 back. One note: the certification is something the manufacturer has to complete, so we would guide and time it, not claim it for you.</p>
+
+<h2>Price</h2>
+<p>Phase 1 is $1,000 for the 30-day sprint, refunded in full if we miss the targets.</p>
+<p>Phase 2 is a monthly retainer for the ongoing work: getting into more guides, generating reviews, and running our reviewer panel. We set that price after the pilot.</p>
+
+<div class="foot">
+Everything here is checkable with public tools: view source, the Schema.org checker, and the site's own robots.txt and llms.txt. The recommendation results come from a live test across ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, and Copilot on July 1, 2026. Blackwell Enterprises. armaan@tryblackwell.com. cal.com/armaanp/30min
+</div>
+
+</body>
+</html>

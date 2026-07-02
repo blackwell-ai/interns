@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mozi Wash: AI Visibility Audit</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --red-soft:#f6e6e2; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --track:#e6ddd0; --bar:#1c1a15; --bar-red:#9e2a22; --green:#3f7d4f;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.6in 0.62in 0.78in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.7pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2,h3{ color:var(--ink); font-weight:700; }
+  h2{ font-size:18pt; line-height:1.12; margin:0 0 4pt; letter-spacing:-.3pt; }
+  h2.ruled{ border-bottom:1.5px solid var(--rule-hard); padding-bottom:7pt; margin-bottom:13pt; }
+  h3{ font-size:13.5pt; line-height:1.16; margin:1pt 0 9pt; letter-spacing:-.2pt; }
+  .eyebrow{ font-size:7.6pt; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 9pt; }
+  .eyebrow.red{ color:var(--red); }
+  .lead{ font-size:10.4pt; color:var(--soft); }
+  .sec{ break-before:page; }
+  .avoid{ break-inside:avoid; }
+  .sub-h{ font-weight:700; color:var(--ink); font-size:10pt; margin:13pt 0 5pt; }
+
+  /* page footer, repeated by Chrome on every page */
+  .pagefoot{ position:fixed; bottom:0.0in; left:0; right:0; display:flex; justify-content:space-between;
+    font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+
+  /* COVER */
+  .cover{ height:9.0in; display:flex; flex-direction:column; break-after:page; }
+  .cover .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:18pt 0 30pt; }
+  .cover h1{ font-size:33pt; line-height:1.08; letter-spacing:-.6pt; margin:0; }
+  .cover h1 .l2{ display:block; }
+  .cover .sub{ font-size:11.5pt; line-height:1.45; color:var(--soft); margin:14pt 0 0; max-width:78%; }
+  .cover .spacer{ flex:1; }
+  .cover .cmeta div{ font-size:9pt; color:var(--soft); margin:0 0 3pt; }
+  .cover .cmeta .k{ display:inline-block; width:74pt; color:var(--muted); }
+  .cover .cred{ font-size:8.4pt; color:var(--muted); margin-top:7pt; }
+
+  /* SCORECARD */
+  .grade-row{ display:flex; gap:20pt; align-items:flex-start; margin:6pt 0 4pt; }
+  .grade{ border:2pt solid var(--red); background:var(--red-soft); border-radius:3px; width:118pt; flex:none; text-align:center; padding:13pt 0 10pt; }
+  .grade .lg{ font-size:50pt; font-weight:800; color:var(--red); line-height:.85; }
+  .grade .score{ font-size:10pt; color:var(--ink); margin-top:9pt; font-weight:600; }
+  .grade .cap{ font-size:7pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:3pt; }
+  .grade-note{ font-size:9.6pt; color:var(--soft); line-height:1.5; }
+  table.score{ width:100%; border-collapse:collapse; margin-top:14pt; }
+  table.score th,table.score td{ text-align:left; padding:7pt 7pt; font-size:9pt; vertical-align:top; border-bottom:1px solid var(--rule); }
+  table.score th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.score .dim{ font-weight:600; color:var(--ink); width:20%; }
+  table.score .self{ width:16%; }
+  table.score .self .n{ font-size:9pt; color:var(--ink); font-weight:600; margin-top:3pt; }
+  table.score .cmp{ width:7%; color:var(--soft); }
+  table.score .what{ color:var(--soft); font-size:8.4pt; line-height:1.36; }
+  .bar{ width:90pt; }
+  .bar .track{ background:var(--track); border-radius:2px; height:8pt; overflow:hidden; }
+  .bar .fill{ background:var(--bar); height:8pt; }
+  .bar .fill.low{ background:var(--bar-red); }
+  tr.composite td{ border-bottom:none; border-top:1.5px solid var(--rule-hard); padding-top:9pt; font-weight:700; color:var(--ink); }
+  tr.composite .self,tr.composite .cmp{ color:var(--ink); white-space:nowrap; }
+  tr.composite .self .g{ color:var(--red); }
+  .scale{ font-size:8pt; color:var(--muted); margin-top:10pt; }
+
+  /* numbered short list */
+  ol.short{ margin:6pt 0 0; padding-left:18pt; }
+  ol.short li{ margin:0 0 9pt; padding-left:4pt; line-height:1.46; }
+  .darkbox{ background:var(--ink); color:#ede7dd; border-radius:3px; padding:13pt 15pt; margin:14pt 0 0; font-size:9.6pt; line-height:1.5; }
+
+  /* evidence */
+  .quote{ border-left:2.5pt solid var(--rule-hard); padding:1pt 0 1pt 13pt; margin:8pt 0; font-style:italic; color:var(--soft); font-size:9.4pt; line-height:1.5; }
+  .quote .src{ font-style:normal; color:var(--muted); font-size:8.4pt; }
+  .ai{ border:1px solid var(--rule); border-left:3pt solid var(--red); border-radius:0 3px 3px 0; padding:10pt 13pt; margin:8pt 0; }
+  .ai .plabel{ font-size:8pt; color:var(--muted); margin:0 0 5pt; }
+  .ai .resp{ font-style:italic; color:var(--ink); font-size:9.4pt; line-height:1.5; margin:0; }
+  pre.code{ background:var(--ink); color:#e9e2d8; font-family:var(--mono); font-size:8.2pt; line-height:1.6;
+    padding:11pt 13pt; border-radius:3px; margin:8pt 0; white-space:pre-wrap; }
+  pre.code .c{ color:#9b8f82; } pre.code .r{ color:#e08a76; }
+  .fixline{ font-size:9.6pt; color:var(--soft); margin-top:9pt; }
+  .fixline b{ color:var(--red); }
+  /* embedded engine / reputation capture from phases 3 and 5 */
+  img.eviv{ width:100%; border:1px solid var(--rule); border-radius:3px; margin:6pt 0 2pt; display:block; }
+  .cap-img{ font-size:7.8pt; color:var(--muted); margin:2pt 0 9pt; line-height:1.4; }
+
+  /* readiness + compare tables */
+  table.grid{ width:100%; border-collapse:collapse; margin-top:9pt; }
+  table.grid th,table.grid td{ text-align:left; padding:6pt 8pt; font-size:8.7pt; vertical-align:top; border-bottom:1px solid var(--rule); line-height:1.38; }
+  table.grid th{ font-size:7.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; border-bottom:1.5px solid var(--rule-hard); }
+  table.grid .k1{ font-weight:600; color:var(--ink); width:30%; }
+  td.bad{ color:var(--red); font-weight:600; }
+  td.good{ color:var(--green); }
+  .pill{ font-size:7pt; font-weight:700; padding:1.5pt 6pt; border-radius:8pt; white-space:nowrap; }
+  .pill.no{ background:var(--red-soft); color:var(--red); }
+  .pill.part{ background:#f4ecd8; color:#8a6d1f; }
+  .pill.yes{ background:#dcebdf; color:var(--green); }
+
+  /* phases */
+  .phase{ border:1px solid var(--rule); border-radius:3px; padding:15pt 17pt; margin-top:11pt; }
+  .phase .price{ font-size:22pt; font-weight:800; color:var(--ink); margin:3pt 0; }
+  ul.rem{ list-style:none; margin:6pt 0 0; padding:0; }
+  ul.rem li{ position:relative; padding:4pt 0 4pt 18pt; font-size:9.2pt; color:var(--soft); border-bottom:1px solid var(--rule); line-height:1.4; }
+  ul.rem li:last-child{ border-bottom:none; }
+  ul.rem li:before{ content:"\2192"; position:absolute; left:0; color:var(--red); font-weight:700; }
+  .bench{ background:#f7f4ef; border-radius:3px; padding:11pt 13pt; margin-top:11pt; font-size:9pt; color:var(--soft); }
+  .bench b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagefoot"><span>Blackwell Enterprises</span><span>Mozi Wash &middot; AI Visibility Audit</span></div>
+
+<!-- COVER -->
+<section class="cover">
+  <p class="brand">Blackwell Enterprises</p>
+  <h1>Mozi Wash<span class="l2">AI Visibility Audit</span></h1>
+  <p class="sub">An external audit of how AI answer engines and search see Mozi Wash today. And what we would do about it.</p>
+  <div class="spacer"></div>
+  <div class="cmeta">
+    <div><span class="k">Prepared for</span> Mozi Wash leadership</div>
+    <div><span class="k">Date</span> July 1, 2026</div>
+    <div><span class="k">Scope</span> Public site, AI and search surface, reputation, agent commerce</div>
+    <div><span class="k">Contact</span> ethanpzhou@berkeley.edu</div>
+    <div style="margin-top:9pt"><span class="k">Prepared by</span> Armaan Priyadarshan, Samarjit Deshmukh, Ethan Zhou, Shamit D'Souza</div>
+    <div class="cred">Dartmouth Math &amp; CS &middot; Dartmouth CS &middot; UC Berkeley MET (EECS &amp; Business) &middot; Stanford CS &amp; Biology</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section>
+  <h2 class="ruled">AI visibility scorecard</h2>
+  <p>We graded Mozi Wash on five dimensions of how AI engines and search treat the brand. Each dimension is scored 0 to 100 against observed behavior across six AI answer engines, the open review surfaces (Amazon, Reddit, YouTube, Trustpilot, BBB, ConsumerAffairs), the brand's own indexed pages, and the agent-commerce surface. Competitor scores are our estimates from the same public signals, pulled the same day. Composite is the simple average.</p>
+  <div class="grade-row">
+    <div class="grade avoid">
+      <div class="lg">C</div>
+      <div class="score">60 / 100</div>
+      <div class="cap">Mozi Wash today</div>
+    </div>
+    <p class="grade-note"><strong>Mozi Wash sits one point above a D, and the composite hides how lopsided the picture is.</strong> The plumbing is strong: every AI crawler gets in, the Shopify agent-commerce rails are live, and the <code>llms.txt</code> is the deepest we have audited in this category. But Recommendability, the dimension that decides whether an engine ever suggests the brand to a shopper, is a 30. Across our six-engine battery, Mozi Wash was named in one pass out of eight, and when we re-ran that one engine the same day, the mention did not repeat. Laundry Sauce was named in every live answer, on every engine, every time. The brand is paying to reach humans while the AI channel recommends its competitor by name, for free.</p>
+  </div>
+  <table class="score">
+    <tr><th class="dim">Dimension</th><th class="self">Mozi Wash</th><th class="cmp">Laundry Sauce</th><th class="cmp">The Laundress</th><th class="cmp">DedCool</th><th class="what">What it measures</th></tr>
+    <tr>
+      <td class="dim">Discoverability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:66%"></div></div></div><div class="n">66</div></td>
+      <td class="cmp">78</td><td class="cmp">76</td><td class="cmp">70</td>
+      <td class="what">Entity presence, agent discovery files, crawler access, third-party listings</td>
+    </tr>
+    <tr>
+      <td class="dim">Quotability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:66%"></div></div></div><div class="n">66</div></td>
+      <td class="cmp">76</td><td class="cmp">62</td><td class="cmp">45</td>
+      <td class="what">Schema depth, structured product and policy data, accuracy in machine-readable form</td>
+    </tr>
+    <tr>
+      <td class="dim">Recommendability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:30%"></div></div></div><div class="n">30</div></td>
+      <td class="cmp">92</td><td class="cmp">82</td><td class="cmp">68</td>
+      <td class="what">Inclusion in AI category recommendations and the sources engines cite</td>
+    </tr>
+    <tr>
+      <td class="dim">Transactability</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill" style="width:86%"></div></div></div><div class="n">86</div></td>
+      <td class="cmp">88</td><td class="cmp">84</td><td class="cmp">80</td>
+      <td class="what">UCP and MCP endpoints, payment handlers, agent-readable pricing</td>
+    </tr>
+    <tr>
+      <td class="dim">Reputation</td>
+      <td class="self"><div class="bar"><div class="track"><div class="fill low" style="width:50%"></div></div></div><div class="n">50</div></td>
+      <td class="cmp">68</td><td class="cmp">58</td><td class="cmp">62</td>
+      <td class="what">Review presence and rating on the surfaces engines read, sentiment, links from the entity to that reputation</td>
+    </tr>
+    <tr class="composite">
+      <td class="dim">Composite</td>
+      <td class="self"><span class="g">60 (C)</span></td>
+      <td class="cmp">80 (B)</td><td class="cmp">72 (C)</td><td class="cmp">65 (C)</td>
+      <td class="what">Mozi Wash trails the set average of 72 by 12 points, nearly all of it on Recommendability and Reputation.</td>
+    </tr>
+  </table>
+  <p class="scale">Grading scale: A 90+, B 75 to 89, C 60 to 74, D 50 to 59, F below 50. Competitor scores are estimates from observed public signals, not a full audit of those brands. Method and queries in the methodology section.</p>
+</section>
+
+<!-- SHORT VERSION -->
+<section class="sec">
+  <h2 class="ruled">The short version</h2>
+  <p>Mozi Wash has built a real brand: perfume-inspired detergents people genuinely love the smell of, an Amazon storefront moving 5K+ units a month, 100,000+ customers by its own count, and the most complete agent-commerce surface in its competitive set. Almost none of that survives contact with an AI engine. Ask the six major engines for the best smelling laundry detergent of 2026, the exact phrase Mozi named a collection after, and the brand appears once in eight passes. Ask ChatGPT to compare Mozi Wash with Laundry Sauce head to head and it picks Laundry Sauce. The reputation that should defend the brand lives inside its own walls, on a review widget machines never read, while the surfaces machines do read tell a thinner and rougher story.</p>
+  <p style="color:var(--muted);font-size:9pt">Six findings, ordered worst first.</p>
+  <ol class="short">
+    <li><strong>AI engines do not know Mozi Wash exists.</strong> One mention in eight battery passes across six engines, and a same-day re-run of that one engine did not repeat it. ChatGPT and Claude have no memory of the brand, and every live answer is built from editorial roundups (PureWow, Allure, The Quality Edit, Who What Wear, Yahoo) that feature Laundry Sauce and never Mozi.</li>
+    <li><strong>The brand loses its own head-to-head.</strong> Asked "Mozi Wash vs Laundry Sauce," ChatGPT from memory invents a Mozi that is the opposite of the real one ("less of a perfume-forward detergent experience"), and with live retrieval it picks Laundry Sauce, citing reviews and a third-party comparison.</li>
+    <li><strong>The claimed 4.8-star, 40,000-review reputation is invisible where machines look.</strong> No Trustpilot, BBB, or ConsumerAffairs profile exists. Amazon shows roughly 1,500 ratings at 3.8 to 4.2 stars. The r/laundry threads engines retrieve lead with rusting-tin and leak complaints and a "worst detergents of 2025" citation.</li>
+    <li><strong>None of the review corpus is machine-readable.</strong> Okendo runs on-site with the brand's full review history, and not one product page emits <code>AggregateRating</code> or <code>Review</code> schema. The <code>sameAs</code> entity array is six empty strings plus three social links. Product pages ship two overlapping JSON-LD blocks, one typing the brand as <code>Thing</code>.</li>
+    <li><strong>The content is one hop from the answer and never makes it in.</strong> Mozi's own blog post ranks on page 1 of Google for the money query, with valid <code>Article</code> schema, and the AI Overview above it skips the brand while a comparably small competitor (Topanga Scents) rides its own blog into that same Overview.</li>
+    <li><strong>The bright spot: the agent rails are the best in the set.</strong> Full Shopify UCP/MCP stack live, and a custom 19.5KB <code>llms.txt</code> with the founder story, scent portfolio, pricing, and policies. Competitors ship 4 to 6KB of boilerplate. The one battery pass that reached this content (a Gemini render) is the one pass that recommended the brand.</li>
+  </ol>
+  <div class="darkbox">Every major engine now defaults to live web retrieval. For this category the live answer is assembled from a small set of editorial roundups, retailer data, and Reddit. Mozi Wash appears in none of them, so every engine reaches the same conclusion independently: recommend Laundry Sauce. Ad spend does not transfer to this channel. Citations do.</div>
+</section>
+
+<!-- FINDING 1 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 1 of 6 &middot; Critical</p>
+  <h2 class="ruled">AI engines do not know Mozi Wash exists</h2>
+  <p>AI answer engines are now where a growing share of shoppers start. They do not browse; they ask "what is the best smelling laundry detergent" and return a short, synthesized list. We ran the full six-engine battery, each engine in two passes: from the model's own memory with web search off, then with live web retrieval on. The query was the brand's core category phrase, "best smelling laundry detergent 2026," the same phrase Mozi's own flagship collection targets. Mozi Wash was named in one of eight passes.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Engine</th><th>From memory (search off)</th><th>Live web retrieval (search on)</th></tr>
+    <tr><td class="k1">ChatGPT (Temporary Chat)</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Claude (fresh chat)</td><td><span class="pill no">not named</span></td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Gemini (logged out)</td><td>retrieval only</td><td><span class="pill yes">named, 1 of 2 renders</span></td></tr>
+    <tr><td class="k1">Perplexity</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Copilot (guest)</td><td>retrieval only</td><td><span class="pill no">not named</span></td></tr>
+    <tr><td class="k1">Google AI Overview</td><td>retrieval only</td><td><span class="pill no">not named, this render</span></td></tr>
+  </table>
+  <p>The pattern behind the table is consistent. From memory, ChatGPT and Claude each map the category confidently, mass-market to luxury, and Mozi is simply not in the map. With retrieval on, every engine assembles its answer from the same editorial layer, and that layer belongs to the competition: Laundry Sauce was named in every live pass on every engine, usually first and usually framed as the luxury standout.</p>
+  <div class="ai avoid">
+    <p class="plabel">Claude, live retrieval: "best smelling laundry detergent 2026"</p>
+    <p class="resp">"Boutique / luxury scent (the strongest recommendations for pure fragrance): Laundry Sauce is the standout here... Other luxury names worth knowing: The Laundress... DedCool (Xtra Milk, essential-oil based), and Dirty Labs Signature."</p>
+  </div>
+  <img class="eviv" src="assets/googleaio-best-smelling-detergent-on-2026-07-01.png" alt="Google AI Overview for the category query, Mozi Wash absent">
+  <p class="cap-img">Google AI Overview for the category query. The named picks are Gain (best fresh), Dirty Labs (best eco), and Topanga Scents (best luxury). Mozi Wash is absent, while its own blog post ranks on page 1 of the organic results below. Captured July 1, 2026; the Overview is non-deterministic, so presence can vary by render.</p>
+  <p>The one exception matters, and so does its fragility. Gemini, in a clean logged-out session, put Mozi Wash in its luxury tier by name, called it a brand that "has exploded in popularity for creating detergents inspired by luxury colognes and perfumes," and cited moziwash.com itself as a source. When we re-ran the identical query in a fresh session the same day, the mention was gone: that render sourced Marie Claire and PureWow instead, and its luxury tier was Laundry Sauce, Snif, and Maison Francis Kurkdjian. When Gemini's retrieval happens to reach the brand's own content, Mozi gets a strong and accurate recommendation. Nothing third-party makes that happen reliably, so today it happens by luck.</p>
+  <img class="eviv" src="assets/gemini-best-smelling-detergent-on-2026-07-01.png" alt="Gemini names Mozi Wash in its luxury tier, first render">
+  <p class="cap-img">Gemini, live retrieval, logged out, first render: the only pass of eight that named Mozi Wash. The source chip citing moziwash.com is visible after the opening paragraph; the luxury-tier mention sits below the fold of this capture. The same-day re-render (captured separately in the evidence log) did not repeat the mention. Captured July 1, 2026.</p>
+  <p class="sub-h">Why this is the most expensive finding in the deck</p>
+  <p>Category recommendation is the moment of intent: a shopper who has not chosen a brand yet, asking to be told. Mozi is absent there, and the absence compounds, because every engine that adds retrieval reads the same roundups (PureWow, Allure, The Quality Edit, Who What Wear, Yahoo, Good Housekeeping) and the same Reddit threads, and none of them feature Mozi. Copilot's list even included brands with 23 reviews and 5 reviews, sourced from retailer data. The bar for inclusion is not size. It is being present in the sources the engines read.</p>
+  <p class="fixline"><b>The fix.</b> Recommendability is downstream of findings 3, 4, and 5: a reputation that exists on surfaces engines read, review data in machine-readable form, and the brand's own strong content connected to the citation layer. We map the exact sources each engine cited (they are in this deck's evidence log) and work that list.</p>
+</section>
+
+<!-- FINDING 2 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 2 of 6 &middot; Critical</p>
+  <h2 class="ruled">The brand loses its own head-to-head</h2>
+  <p>The brand-defense query is the one a warm shopper asks right before buying: "Mozi Wash vs Laundry Sauce, which is better?" This is the shopper Mozi's ads already paid for. We ran it on ChatGPT in both passes, in a clean Temporary Chat.</p>
+  <p>From memory, ChatGPT does not admit it has never heard of Mozi Wash. It invents a profile from the name, and the invention is the exact opposite of the brand:</p>
+  <div class="ai avoid">
+    <p class="plabel">ChatGPT, from memory (web search off): "Mozi Wash vs Laundry Sauce"</p>
+    <p class="resp">"Choose Mozi Wash if you want: a more straightforward everyday wash... less of a perfume-forward detergent experience... Laundry Sauce wins on scent and presentation; Mozi Wash is the more sensible choice for regular laundry."</p>
+  </div>
+  <p>Perfume-forward scent is Mozi Wash's entire identity. A shopper who asks this question from a model's memory is told, with confidence, that the brand's core promise is the thing it lacks. This is what zero training-data presence looks like in practice: not silence, but confident misdescription.</p>
+  <p>With live retrieval, ChatGPT fetches moziwash.com instantly, shows Mozi product cards, and identifies both brands correctly as luxury fragrance detergents. So the data is reachable. The verdict still goes to the competitor:</p>
+  <div class="ai avoid">
+    <p class="plabel">ChatGPT, live retrieval (web search on): "Mozi Wash vs Laundry Sauce"</p>
+    <p class="resp">"Forced pick: Laundry Sauce is probably the better 'luxury scented detergent.' It has the stronger scent-centered reputation, more reviews on its own site, and at least one direct luxury-detergent comparison picked Laundry Sauce over Mozi."</p>
+  </div>
+  <img class="eviv" src="assets/chatgpt-mozi-vs-laundry-sauce-on-2026-07-01.png" alt="ChatGPT live-retrieval verdict picks Laundry Sauce over Mozi Wash">
+  <p class="cap-img">ChatGPT with live retrieval on the brand-defense query. It pulls Mozi's own product cards and still picks Laundry Sauce. Captured July 1, 2026.</p>
+  <p class="sub-h">Why it matters</p>
+  <p>Everything ChatGPT used to break the tie is a fixable visibility asset, not a product fact: "stronger scent-centered reputation" means editorial citations, "more reviews on its own site" means review counts a machine can see, and the "direct luxury-detergent comparison" is a third-party page Mozi is losing in absentia. The engine did not judge the detergent. It judged the evidence trail, and Mozi has not built one where machines look.</p>
+  <p class="fixline"><b>The fix.</b> Win the evidence trail: machine-readable review data (finding 4), presence on the review surfaces engines trust (finding 3), and a seat in the comparison content engines retrieve (finding 5). The head-to-head is re-run in our day-30 re-benchmark.</p>
+</section>
+
+<!-- FINDING 3 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 3 of 6 &middot; High severity</p>
+  <h2 class="ruled">The reputation machines can see is thin, and rougher than the one on-site</h2>
+  <p>Mozi's own <code>llms.txt</code> tells agents the brand is "Trusted by 100,000+ customers. 4.8 stars across 40,000+ reviews." Those reviews live in the on-site Okendo widget, and they may well be real. But an AI engine building a recommendation does not read a brand's own widget. It reads the open review surfaces. We pulled all six that our methodology fixes, the same day:</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Surface</th><th>Status</th><th>What a machine finds</th></tr>
+    <tr><td class="k1">Trustpilot</td><td><span class="pill no">no profile</span></td><td>trustpilot.com/review/moziwash.com returns a 404; brand search returns car washes</td></tr>
+    <tr><td class="k1">BBB</td><td><span class="pill no">no profile</span></td><td>"No results for Mozi Wash"</td></tr>
+    <tr><td class="k1">ConsumerAffairs</td><td><span class="pill no">no profile</span></td><td>Search returns unrelated washer brands only</td></tr>
+    <tr><td class="k1">Amazon (brand storefront)</td><td><span class="pill part">present, mid ratings</span></td><td>Roughly 1,500 ratings across scents at 3.8 to 4.2 stars; heavy sponsored placement; "5K+ bought from this brand in past month"</td></tr>
+    <tr><td class="k1">Reddit (r/laundry)</td><td><span class="pill part">present, mixed-negative</span></td><td>Six-plus organic threads; scent praised, packaging failures and cleaning performance criticized</td></tr>
+    <tr><td class="k1">YouTube</td><td><span class="pill part">thin, ad-skewed</span></td><td>Rotating sponsored slots; organic coverage is shorts and two small year-old reviews, one via free product</td></tr>
+  </table>
+  <p>Amazon is the strongest external surface, and it runs well below the on-site claim: Cozy Cashmere at 3.9 stars (491 ratings), Alpine Woods at 3.8 (339), Central Coast at 4.1 (319), Sugar Dew at 4.2 (200). On the same results page, Tyler sits at 4.6 to 4.7 on 18,000+ combined ratings and Dirty Labs at 4.3 on 5,100 with EPA Safer Choice and EWG Verified badges attached.</p>
+  <img class="eviv" src="assets/reputation-retailer-amazon-2026-07-01.png" alt="Amazon results for Mozi Wash showing 3.9-star flagship rating">
+  <p class="cap-img">Amazon brand shelf for Mozi Wash: real distribution, heavy sponsorship, and a 3.9-star flagship. Captured July 1, 2026.</p>
+  <p>Reddit is the surface that should worry the brand most, because engines cite it directly (Gemini cited Reddit in its category answer). The r/laundry community, 739K weekly visitors, has been having an unmanaged conversation about Mozi for a year:</p>
+  <div class="quote">"Mozi wash is pretty horrible. In fact Jeeves NY rated it as one of the worst detergents of 2025. It's way too expensive considering the lousy performance and the only nice thing about it is the fragrance." <span class="src">(top 1% commenter, r/laundry, one month ago, replying to a shopper asking whether Mozi's known issues were fixed)</span></div>
+  <div class="quote">"The replacement can also began leaking from the same seam, and it did so within a much shorter amount of time... this suggests a recurring packaging issue rather than an isolated defect." <span class="src">(r/laundry, five months ago; two separate users report rusted or leaking tins in the same thread, both note support replaced them)</span></div>
+  <img class="eviv" src="assets/reputation-reddit-thread2-2026-07-01.png" alt="r/laundry thread with negative Mozi Wash assessment" style="width:78%">
+  <p class="cap-img">The most recent r/laundry thread on Mozi Wash, one month old. This is retrievable by every engine. Captured July 1, 2026.</p>
+  <p class="sub-h">Why it matters</p>
+  <p>The sentiment is not hopeless, and that should be said plainly: the same threads praise the scents, note that customer service replaced the failed tins, and a respected commenter called the version 3.0 formula "surprisingly legit." But nobody from the brand's side has put the fix on the record where the complaints live, no external review base exists to outweigh them, and the on-site 4.8 has no presence on any surface an engine reads. The result is that a machine weighing Mozi Wash sees a mid-3.9 Amazon rating and a Reddit thread calling it one of the worst of 2025. That is the reputation the engines are working with.</p>
+  <p class="fixline"><b>The fix.</b> Stand up the external review base (Trustpilot claim plus post-purchase syndication so the 40,000-review corpus starts existing off-site), and answer the packaging narrative on the record: the threads already say the tins were replaced and the materials changed, and no one authoritative has closed the loop. We deliver the exact thread list and a response plan; the responses are yours to post.</p>
+</section>
+
+<!-- FINDING 4 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 4 of 6 &middot; High severity</p>
+  <h2 class="ruled">None of the review corpus is machine-readable</h2>
+  <p>The most valuable dataset Mozi owns for AI visibility is the one it already paid to collect: tens of thousands of first-party reviews in Okendo. Not one of them reaches the machine-readable layer. Alongside that, the entity markup that tells an engine "this store is this brand" is half-broken.</p>
+  <pre class="code"><span class="c">// moziwash.com product pages, July 1, 2026</span>
+AggregateRating / Review schema:   <span class="r">none on any PDP</span>  (Okendo runs on-site with the full corpus)
+Product JSON-LD:   <span class="r">two overlapping blocks per page</span>  (one relative, one absolute; one types brand as "Thing")
+
+<span class="c">// homepage Organization entity</span>
+"sameAs": ["", "https://www.facebook.com/moziwash/shop/", "",
+  "https://www.instagram.com/moziwash/", "https://www.tiktok.com/@moziwash",
+  "", "", "", ""]   <span class="c">// six empty strings; no Amazon storefront, no YouTube, no review profile</span>
+
+&lt;title&gt;<span class="r">Mozi Wash</span>&lt;/title&gt;   <span class="c">// brand name only; no category keywords</span></pre>
+  <p class="sub-h">Why it matters</p>
+  <p>ChatGPT's head-to-head verdict in finding 2 leaned on "more reviews on its own site" for Laundry Sauce. Review visibility is a tiebreaker engines actually use, and Mozi is sitting on a corpus that is plausibly larger than what several competitors show publicly, emitting none of it. The <code>sameAs</code> gap has the same shape: the brand's strongest external asset, an Amazon storefront moving thousands of units a month, is not linked from the entity, so an engine has no machine-readable path between moziwash.com and its Amazon reputation. And empty strings in <code>sameAs</code> are invalid values that schema validators flag, which is the wrong first impression for a crawler that reads markup quality as a proxy for data quality.</p>
+  <p>For scale: none of the three competitors emits <code>AggregateRating</code> either. This is an open lane. The first brand in this category to publish its review corpus in structured form is the one whose stars show up when an engine compares.</p>
+  <p class="fixline"><b>The fix.</b> Wire Okendo's review data into <code>Product</code> JSON-LD (<code>AggregateRating</code> + top <code>Review</code> entries) across all 64 products, consolidate to one valid Product block per page with <code>brand</code> typed as <code>Brand</code>, repair <code>sameAs</code> (drop the empty strings, add Amazon, YouTube, and the socials), and give the homepage a descriptive title. All template-level changes from data the store already holds.</p>
+</section>
+
+<!-- FINDING 5 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 5 of 6 &middot; Medium severity</p>
+  <h2 class="ruled">The content is one hop from the answer</h2>
+  <p>This is the encouraging finding. Mozi has done the content work: 153 blog posts, keyword-targeted collections ("Non-Toxic Laundry Detergent," "Laundry Detergent for Men"), and valid <code>Article</code> schema on the posts we sampled. It is working, up to a point. On the exact category query we battery-tested, Google ranks Mozi's own roundup ("Best Smelling Laundry Detergent: Top Picks for 2026," May 15, 2026) on page 1 of organic results, and Mozi products appear in the shopping units on the same page.</p>
+  <p>Then the ceiling: the AI Overview sitting above those organic results does not include the brand. It names Gain, Dirty Labs, and Topanga Scents, and it cites Topanga's own blog as a source. Topanga Scents is not a bigger brand than Mozi. It ran the same play, a category blog post on its own domain, and its post got absorbed into the Overview's source set while Mozi's page-1 post did not.</p>
+  <p>Gemini shows the same mechanism from the other side: the one battery pass whose retrieval used moziwash.com as a source is the one pass that recommended the brand, accurately and enthusiastically. A same-day re-render that sourced Marie Claire and PureWow instead dropped the brand entirely. When an engine reads Mozi's content, Mozi wins; whether an engine reads it is currently a coin flip on one engine and a no on the other five, because the third-party layer (the roundups, the comparisons, Reddit) gives them no reason to.</p>
+  <p class="sub-h">Why it matters</p>
+  <p>The distance between "page 1 organic" and "in the answer" is the whole game now, and Mozi is close. The content, markup, and ranking already exist; what is missing is corroboration. Engines pull a brand's own content into answers when third-party sources agree it belongs there. That is also why this finding is graded medium rather than critical: the expensive part is done, and the remaining work is the citation layer, not a content rebuild.</p>
+  <p class="fixline"><b>The fix.</b> Target the specific source set this battery exposed: the roundups every engine cited (PureWow, The Quality Edit, Who What Wear, Yahoo, Good Housekeeping, Allure) plus the Reddit threads and comparison pages. We deliver the dossier with per-source angles; placements are pursued, never promised.</p>
+</section>
+
+<!-- FINDING 6 -->
+<section class="sec">
+  <p class="eyebrow red">Finding 6 of 6 &middot; Strength, with one caveat</p>
+  <h2 class="ruled">The agent rails are the best in the set</h2>
+  <p>The infrastructure that agent-driven commerce will run on is already live on moziwash.com, and it is better provisioned than any competitor we checked the same day. All seven AI crawlers (GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, Amazonbot, Bingbot) get HTTP 200 on product pages. The full Shopify UCP stack is live: <code>/.well-known/ucp</code> merchant profile, MCP transport answering on the backend, agentic-discovery sitemap, <code>agents.md</code>.</p>
+  <pre class="code"><span class="c">// the llms.txt gap, measured the same day</span>
+moziwash.com/llms.txt        <span class="r">19,504 bytes, custom</span>  (founder story, scent portfolio,
+                              pricing table, subscription terms, policies, FAQ)
+laundrysauce.com/llms.txt     6,287 bytes
+thelaundress.com/llms.txt     4,411 bytes  <span class="c">// near-boilerplate</span>
+dedcool.com/llms.txt          4,268 bytes  <span class="c">// near-boilerplate</span></pre>
+  <p>This is the layer most brands have not even heard of, and Mozi has the deepest implementation we have audited in this category. It is plausibly why the one battery pass that reached the brand's own surface (a Gemini render) produced a detailed and accurate recommendation while every other pass produced silence.</p>
+  <p class="sub-h">The caveat</p>
+  <p>The <code>llms.txt</code> leads with "4.8 stars across 40,000+ reviews," and an agent that cross-checks that claim against the surfaces in finding 3 finds a 3.9-star Amazon flagship and no external review profile at all. Engines are getting better at exactly this kind of corroboration. The file is an asset; an unverifiable superlative inside it is a liability waiting for the cross-check. Once the external review base exists, the claim stops being a risk and becomes evidence.</p>
+  <p class="fixline"><b>The fix.</b> Keep the rails and the depth. Back the reputation claims with the off-site review base from finding 3, and reference the strongest verifiable proof points (Amazon storefront, named editorial coverage once it exists) directly from the <code>llms.txt</code>.</p>
+</section>
+
+<!-- COMPETITIVE -->
+<section class="sec">
+  <h2 class="ruled">Competitive position</h2>
+  <p>The same machine-readable signals across the four brands, checked the same day. Mozi wins the agent-surface layer outright and loses everything that depends on other people writing about the brand. The competitive set was selected by us from public category research: Laundry Sauce is the direct head-to-head (cologne-inspired premium detergent, and the brand every engine recommends), DedCool is the perfume-house entrant, The Laundress is the luxury incumbent.</p>
+  <table class="grid avoid">
+    <tr><th class="k1">Signal</th><th>Mozi Wash</th><th>Laundry Sauce</th><th>The Laundress</th><th>DedCool</th></tr>
+    <tr><td class="k1">Named in AI category answers</td><td class="bad">1 of 8 passes, unrepeated on re-run</td><td class="good">every live pass</td><td class="good">most passes, incl. from memory</td><td>3 live passes</td></tr>
+    <tr><td class="k1">In the roundups engines cite</td><td class="bad">no</td><td class="good">yes (PureWow, Quality Edit, Yahoo)</td><td class="good">yes (NYT, PureWow)</td><td class="good">yes (Allure)</td></tr>
+    <tr><td class="k1">Product structured data</td><td>2 overlapping blocks, brand as Thing</td><td class="good">Product + AggregateOffer + FAQPage</td><td>Product + Offer + Brand</td><td class="bad">none found on PDP</td></tr>
+    <tr><td class="k1">AggregateRating in schema</td><td class="bad">no</td><td class="bad">no</td><td class="bad">no</td><td class="bad">no</td></tr>
+    <tr><td class="k1">llms.txt depth</td><td class="good">19.5KB custom</td><td>6.3KB</td><td>4.4KB boilerplate</td><td>4.3KB boilerplate</td></tr>
+    <tr><td class="k1">UCP / agent checkout rails</td><td class="good">live</td><td class="good">live</td><td class="good">live</td><td class="good">live</td></tr>
+    <tr><td class="k1">Retail / marketplace presence (as observed in this battery)</td><td>Amazon storefront, Faire wholesale</td><td class="good">Ulta (4.3, 1.4K ratings, per Copilot retail data)</td><td class="good">Amazon (4.2, 1.6K ratings)</td><td>not checked same day</td></tr>
+  </table>
+  <p style="font-size:9.2pt;color:var(--soft);margin-top:9pt">All four brands run the same Shopify agent rails, so the plumbing is not the differentiator. Laundry Sauce owns the live answer because it owns the citation layer: the roundups engines retrieve name it first, retailer data at Ulta gives Copilot a rating to quote, and a third-party comparison page even decides the head-to-head in its favor. Nothing in that list is a product advantage. It is a visibility position, built where engines look, and it is the position this engagement goes after.</p>
+</section>
+
+<!-- THE WORK -->
+<section class="sec">
+  <h2 class="ruled">The work</h2>
+  <p>Two phases. Phase 1 is a 30-day sprint that makes the review corpus machine-readable, repairs the entity, stands up the off-site reputation base, and re-runs this exact battery to measure movement. Phase 2 is the ongoing work of getting the brand into the citation layer that decides live answers. After Phase 1 we measure against benchmarks set together and decide whether Phase 2 makes sense.</p>
+
+  <div class="phase avoid">
+    <p class="eyebrow red" style="margin-bottom:4pt">Phase 1 &middot; 30 days</p>
+    <div class="price">$1,000</div>
+    <h3 style="margin:0 0 6pt">Stabilization sprint</h3>
+    <p style="font-size:9pt;color:var(--soft);margin:0 0 4pt">Seven remediations, each closing a finding above.</p>
+    <ul class="rem">
+      <li><code>AggregateRating</code> + <code>Review</code> JSON-LD wired from the Okendo corpus across all 64 products (finding 4)</li>
+      <li>One valid <code>Product</code> block per page, <code>brand</code> typed as <code>Brand</code>, absolute URLs (finding 4)</li>
+      <li><code>Organization</code> entity repair: <code>sameAs</code> cleaned and linked to Amazon storefront, YouTube, and socials (finding 4)</li>
+      <li>Descriptive homepage title and meta templates carrying the category (finding 4)</li>
+      <li>Trustpilot profile claim spec and post-purchase review syndication plan, so the first-party corpus starts existing off-site (finding 3)</li>
+      <li>Reddit dossier: every thread this audit surfaced, with an on-the-record response plan for the packaging narrative (finding 3)</li>
+      <li>Citation-target dossier: the exact roundups, comparisons, and sources each engine cited in this battery, with per-source angles (findings 1, 2, 5)</li>
+    </ul>
+    <div class="bench"><b>Phase 1 benchmarks, finalized at kickoff.</b> Composite AI visibility score (target 60 toward the high 60s); <code>AggregateRating</code> and entity coverage validated across the catalog; presence in live AI category answers and the "Mozi Wash vs Laundry Sauce" head-to-head re-measured by re-running this same six-engine battery at day 30. $1,000 all-in for Phase 1, refunded in full if the benchmarks are not met. We deliver the specs, dossiers, and the re-benchmark; the theme changes, Trustpilot claim, and thread responses are yours to apply, and editorial placements are something we pursue, not something anyone can promise.</div>
+  </div>
+
+  <p class="sub-h" style="margin-top:16pt">Phase 2 and beyond</p>
+  <p>Phase 1 makes the brand's evidence machine-readable and puts its reputation on the surfaces engines check. Phase 2 builds the citation layer that actually flips live answers: continuous per-dimension AI behavior monitoring with drift alerts, an entity establishment campaign so "Mozi Wash" resolves cleanly across engines, placement work against the specific roundups and comparison pages this battery exposed, and tracking of the schema and protocol changes (UCP, agent commerce) that move every quarter. Phase 2 scope and pricing are discussed after Phase 1 benchmarks land.</p>
+  <p style="break-inside:avoid">For Phase 2 design partners we are standing up a vetted panel of independent reviewers and UGC creators, scored for neutrality, that can seed genuine third-party reviews of your product across YouTube, Reddit, and short-form video. Mentions of that kind are the single strongest correlate of AI visibility, well ahead of backlinks, and they are the part of reputation that on-site schema fixes cannot reach. For a brand whose YouTube presence today is its own ads and whose Reddit presence is an unanswered complaint thread, this is the off-site lever that matters most.</p>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="sec">
+  <h2 class="ruled">How we built this audit</h2>
+  <p>Every finding came from running specific tools and queries against public surfaces, in an order designed to separate what the brand publishes from what machines actually do with it. It is all externally reproducible.</p>
+  <p class="sub-h">Truth table, frozen first</p>
+  <p>Before querying any engine, we pulled Mozi Wash's own machine surface directly: homepage and product <code>&lt;head&gt;</code> and JSON-LD, <code>robots.txt</code>, <code>llms.txt</code>, <code>agents.md</code>, <code>/.well-known/ucp</code> and its MCP endpoint, the AI-crawler access matrix across seven bot user-agents, and the product, collection, and blog sitemaps. Counts (64 products, 38+ collections, 153 blog posts) come from those sitemaps and <code>products.json</code>, pulled July 1, 2026.</p>
+  <p class="sub-h">AI behavior and recommendability</p>
+  <p>We ran the full six-engine battery (ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, Microsoft Copilot) in headed browser sessions, two passes each: from the model's memory with web search off, then with live retrieval on. The category query was identical across engines; the brand-defense query ran on ChatGPT in both passes. Logged-in engines ran in their clean modes (ChatGPT Temporary Chat, fresh Claude chats); Gemini and Google ran logged out; Copilot ran as a guest. Perplexity ran on a logged-in profile with no laundry history because its incognito mode was not reachable, which we disclose because logged-in state biases toward naming familiar brands, and Mozi was still absent, the conservative direction. Every pass was captured to a screenshot; the per-pass log accompanies this deck. The single pass that named the brand (Gemini) was re-run the same day in a fresh session to test stability, and the mention did not repeat; both renders are captured, and the deck reports the mention as per-render throughout.</p>
+  <p class="sub-h">Reputation corpus</p>
+  <p>We pulled the six fixed sources the same day: Trustpilot, BBB, ConsumerAffairs, Reddit, YouTube, and the retailer surface (Amazon), each captured. Ratings and counts quoted in finding 3 are from those captures. The Google AI Overview is non-deterministic, and one YouTube ad shelf rotated between renders; where a result varied by render, the deck says so.</p>
+  <p class="sub-h">Competitive set</p>
+  <p>Laundry Sauce, DedCool, and The Laundress were selected by us from public category research (not named by the brand) and checked the same day on the same signals: crawler access, entity and product schema, <code>llms.txt</code>, UCP surface, and AI category presence. Their dimension scores are estimates from those public signals, not full audits, and are labeled as such on the scorecard.</p>
+  <div class="bench" style="margin-top:14pt"><b>Reproducibility.</b> Every technical finding is verifiable with view-source, the Schema.org validator, and the store's own <code>robots.txt</code>, <code>sitemap.xml</code>, <code>llms.txt</code>, and <code>/products.json</code>. Reputation and recommendability findings are reproducible by running the same public queries; note that AI Overview composition and sponsored placements vary between renders. Counts pulled July 1, 2026.
+  <div style="margin-top:7pt;color:var(--soft)">Blackwell Enterprises &middot; Armaan Priyadarshan &middot; Samarjit Deshmukh &middot; Ethan Zhou &middot; Shamit D'Souza &middot; ethanpzhou@berkeley.edu</div></div>
+</section>
+
+</body>
+</html>

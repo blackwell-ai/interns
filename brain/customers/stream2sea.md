@@ -4,8 +4,10 @@ Reef-safe mineral sunscreen and ocean-safe body care brand (stream2sea.com),
 founded by cosmetic chemist Autumn Blum. Positioning: USDA BioBased, biodegradable,
 tested to be safe for coral and marine life ("safe for you and our Blue Planet").
 Core audience is divers, snorkelers, and ocean lovers. Shopify store, sold direct
-and through Amazon and dive/snorkel retailers. Cold prospect, audited by the GEO
-agent starting 2026-06-29. No engagement or contact established yet.
+and through Amazon and dive/snorkel retailers. Audited by the GEO agent starting
+2026-06-29. As of 2026-06-30 no longer fully cold: reachable through an e-commerce
+agency (contact Leandro) that manages Stream2Sea and asked us to pitch it. See
+"Agency channel" below.
 
 Last updated 2026-06-29. Sources: nine-phase AI visibility audit in progress
 (`skills/ai-visibility-audit/`), artifacts under `agents/geo/stream2sea/` dated
@@ -90,7 +92,39 @@ content; Badger wins on the HEL certification. Stream2Sea's pitch is warm: the
 engines already know and respect the brand from memory, so the work is getting that
 reputation into the live citation graph and connecting it to the entity.
 
+## Agency channel (2026-06-30)
+
+Source: Granola meeting "E-commerce agency insights", 2026-06-30 10:00 PDT
+(Granola auto-titled the brand "Stream to See"). Armaan met an e-commerce agency
+that manages Stream2Sea plus two other brands (Guardian, WavMob). The agency
+reviewer is Leandro, who verifies references by looking, not calling, and then
+escalates to the brand founder.
+
+- The agency praised the audit and the concept. Two pushbacks: the $1,000 fee
+  reads as proof-of-concept (they asked where recurring revenue comes from), and
+  they need defined before/after KPIs so the money-back guarantee is measurable.
+- What they want per brand: a one-pager with 6 to 12 specific fixes, expected
+  benefit, KPIs, and price, with the audit behind it as backup, plus two reference
+  case studies. Target 2026-07-05.
+- Timing risk: Stream2Sea just hired another SEO agency; confirm no overlap. The
+  agency lead is satisfied GEO and SEO are complementary.
+- Side opportunity: the agency lead has CEO-level relationships at Rip Curl,
+  O'Neill, Hurley, Manera, and Decathlon via CircularFlow (neoprene recycling)
+  and floated Blackwell becoming a reseller for European/UK brands.
+
+Deliverable built 2026-06-30 (awaiting human sign-off before it goes to Leandro):
+one-pager `agents/geo/stream2sea/stream2sea-one-pager.pdf` (framing, 8 fixes tied
+to findings, 30-day money-back KPIs, $1,000 Phase 1 plus a Phase 2 retainer for
+the recurring off-site work). Reference pack for Leandro:
+`brain/customers/documents/blackwell-reference-pack.pdf` (Good Molecules and
+Public Goods). Sibling audits: [[guardian]], [[wavmob]].
+
 ## Open items
 
 - Human sign-off required before anything goes to the customer (charter guardrail).
-- Cold prospect, no contact captured yet.
+- Armaan to set the Phase 2 retainer figure (the recurring-revenue answer Leandro
+  asked for) before the one-pager ships.
+- Confirm Armaan is fine naming Good Molecules and Public Goods to the agency
+  (decided yes on 2026-06-30; overview.md's cite-with-care caution still applies).
+- Live engine batteries now captured for all three: Stream2Sea (prior run),
+  Guardian and WavMob run 2026-07-01 (ChatGPT, Perplexity, Gemini via /browse).

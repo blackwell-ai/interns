@@ -43,3 +43,6 @@ agents/geo/good-molecules/proposals.zip
 
 # tryblackwell.com website / platform front end — its own git repo, nested here.
 /website/
+
+# blackwell-benchmark — its own git repo, nested here.
+/blackwell-benchmark/

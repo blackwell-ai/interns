@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WavMob: AI visibility</title>
+<style>
+  :root{
+    --ink:#16140f; --body:#26221c; --soft:#4a443c; --muted:#8d857a; --faint:#a8a096;
+    --red:#9e2a22; --rule:#d8d0c4; --rule-hard:#1c1a15;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif; --mono:"Menlo","DejaVu Sans Mono",monospace;
+  }
+  @page{ size:Letter; margin:0.62in 0.62in 0.72in; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--sans); font-size:9.9pt; line-height:1.5; color:var(--body);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--ink); font-weight:700; }
+  code,.mono{ font-family:var(--mono); font-size:8.6pt; }
+  h1,h2{ color:var(--ink); font-weight:700; }
+  .brand{ font-size:8pt; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 16pt; }
+  h1{ font-size:29pt; line-height:1.06; letter-spacing:-.5pt; margin:0; }
+  h1 .l2{ display:block; }
+  .sub{ font-size:11pt; line-height:1.45; color:var(--soft); margin:12pt 0 0; max-width:90%; }
+  hr.divide{ border:0; border-top:1.5px solid var(--rule-hard); margin:16pt 0 0; }
+  h2{ font-size:14pt; line-height:1.15; letter-spacing:-.2pt; margin:22pt 0 6pt; }
+  ol{ margin:0; padding-left:20pt; }
+  ol li{ margin:0 0 7pt; padding-left:3pt; }
+  ul{ margin:2pt 0 8pt; padding-left:18pt; }
+  ul li{ margin:0 0 4pt; }
+  .pagefoot{ position:fixed; bottom:0.34in; left:0.62in; right:0.62in; display:flex; justify-content:space-between; font-size:7.2pt; color:var(--faint); letter-spacing:.02em; }
+  .foot{ font-size:8.4pt; color:var(--muted); line-height:1.5; margin-top:24pt; }
+</style>
+</head>
+<body>
+
+<p class="brand">Blackwell Enterprises</p>
+<h1>WavMob<span class="l2">AI visibility</span></h1>
+<p class="sub">How WavMob shows up when people ask AI assistants about wheelchair accessible vehicles, and what we would do about it in 30 days.</p>
+
+<h2>What we found</h2>
+<p>WavMob has good reviews: a real Trustpilot profile, strong Google ratings, Excellent across the board. But your own site is closed to AI. Every AI crawler gets an HTTP 403 error, while a normal browser loads the site fine. On July 1 we asked the six main AI engines which UK WAV dealers they would recommend. Three of them (ChatGPT, Perplexity, Google) left WavMob out. Three (Copilot, Claude, Gemini) named it, but they pulled that from other directories, not from your site. Allied Mobility, Jubilee, and WavsGB showed up in all six, because their sites are open and their content is structured. So half the engines miss you, and the half that find you are quoting someone else's page about you. WavMob is a lead-generation site, not a shop, so the goal is to make the stock and the enquiry path readable to AI, not to add a checkout.</p>
+
+<h2>What we would do</h2>
+<ol>
+  <li>Open the site to AI crawlers (allow GPTBot, ClaudeBot, PerplexityBot, and the rest). Everything else depends on this. Right now all seven are blocked.</li>
+  <li>Add data for each vehicle in stock (make, model, conversion type, access, seats, price, mileage) so engines can surface specific WAVs, not just the company name.</li>
+  <li>Add your Trustpilot and Google reviews to the site's data so engines can read the reputation you already have.</li>
+  <li>Add an llms.txt and agents.md file describing the stock, finance, part-exchange, delivery, and how to enquire.</li>
+  <li>Link the site to your Trustpilot, Google, AutoTrader, and Facebook profiles so engines see one business, not scattered listings.</li>
+  <li>Make the enquiry path readable to AI: clear contact details, opening hours, and finance and part-exchange written as structured questions and answers.</li>
+</ol>
+
+<h2>How we would measure it (30 days, money back)</h2>
+<p>We set the baseline on July 1. Three of the six engines already leave you out. At day 30 we check:</p>
+<ul>
+  <li>All seven AI crawlers can read the site. Today all seven are blocked.</li>
+  <li>WavMob named in the live answers, from your own site.</li>
+  <li>The vehicle data, ratings, and llms.txt live and passing a checker.</li>
+</ul>
+<p>WavMob is a lead-generation site, so we judge the pilot on the checks above rather than on sales. If we miss the targets we agree on, you get the $1,000 back.</p>
+
+<h2>Price</h2>
+<p>Phase 1 is $1,000 for the 30-day sprint, refunded in full if we miss the targets.</p>
+<p>Phase 2, if you want it, is a monthly retainer to keep the stock data current, watch the AI answers, and generate reviews.</p>
+
+<div class="foot">
+The crawler block is checkable with one request per bot against the live site. The schema and file findings are checkable with view source and the Schema.org checker. The recommendation results come from a live test across ChatGPT, Perplexity, Gemini, Claude, Google AI Overview, and Copilot on July 1, 2026. Blackwell Enterprises. armaan@tryblackwell.com. cal.com/armaanp/30min
+</div>
+
+</body>
+</html>

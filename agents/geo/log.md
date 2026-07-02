@@ -379,3 +379,56 @@ agents/geo/stream2sea/stream2sea-ai-visibility-audit.html. Findings:
 brain/customers/stream2sea.md. Posted for human sign-off at
 inbox/queue/2026-06-29-review-stream2sea-audit-deck.md per the charter guardrail.
 Open before sending: confirm cold prospect vs paid pilot, add a real contact.
+
+---
+
+## 2026-07-01 · Mozi Wash · full nine-phase audit
+
+Customer: Mozi Wash (moziwash.com), luxury perfume-inspired concentrated laundry
+detergent, LA-based, Shopify DTC plus an Amazon storefront and Faire wholesale.
+Requested by Armaan 2026-07-01. Engagement context confirmed later the same day
+from the Dartmouth email thread: Ethan Zhou's cold outreach 2026-06-30, Geno
+Quaid (geno@moziwash.com) asked for proof of delivery and then requested the
+audit be sent ("Okay, please send it over"). Requested leave-behind, not a
+Leandro referral and not a paid engagement; recipient on approval is Geno via
+reply on that thread. Competitor set agent-selected from public research,
+labeled as such in deck and brain: Laundry Sauce (direct head-to-head), DedCool,
+The Laundress.
+
+Scorecard composite 60 (C, one point above D) against a set averaging ~72
+(Laundry Sauce ~80, The Laundress ~72, DedCool ~65). Discoverability 66,
+Quotability 66, Recommendability 30, Transactability 86, Reputation 50.
+
+Flagship finding: near-total engine invisibility, worse than a memory/retrieval
+split. Named in 1 of 8 battery passes (Gemini render 1, citing moziwash.com);
+a same-day Gemini re-render dropped the mention, so even the single yes is
+per-render. No parametric memory in ChatGPT or Claude; ChatGPT OFF confabulates
+an inverted brand profile ("less of a perfume-forward detergent experience") on
+the brand-defense query and ChatGPT ON picks Laundry Sauce head-to-head.
+Laundry Sauce named in every live pass on every engine. Second axis: the
+claimed on-site 4.8/40k Okendo reputation is invisible off-site (no Trustpilot/
+BBB/ConsumerAffairs; Amazon 3.8 to 4.2 across ~1,500; r/laundry led by
+rusted-tin/leak complaints and a "worst detergents of 2025" citation), and none
+of it is machine-readable (no AggregateRating, sameAs six empty strings).
+Strengths: full Shopify UCP layer live and the deepest llms.txt in the set
+(19.5KB custom vs 4.3 to 6.3KB boilerplate); blog has valid Article schema and
+ranks page-1 organic for the money query while the AIO skips the brand.
+
+Battery notes: Perplexity logged-in (no reachable in-app incognito; low
+contamination, disclosed); Copilot/Gemini/AIO ON-only per documented
+limitations; Gemini + AIO presence treated as per-render. No engine blocks hit;
+all six engines captured. Amazon reputation read on a logged-in profile
+(disclosed; ratings not personalized).
+
+Gates: verify-evidence PASS; dash gates 0 (HTML) and 0 (PDF text); 18-page
+visual QA clean after two fixes (narrowed a Reddit embed that crowded the
+footer, kept the Phase 2 closing paragraph unsplit). Same-day competitive cells
+corrected mid-QA to only what was verified (dropped an unverified "Ulta +
+Amazon" cell for Laundry Sauce and an unverified DedCool retail cell).
+
+Deliverable: brain/customers/documents/moziwash-audit.pdf. Working source:
+agents/geo/moziwash/moziwash-ai-visibility-audit.html. Findings:
+brain/customers/moziwash.md. Posted for human sign-off at
+inbox/queue/2026-07-01-review-moziwash-audit-deck.md per the charter guardrail.
+Open before sending: Armaan's review and approval of the deck; send is a reply
+to Geno Quaid on the existing email thread.
